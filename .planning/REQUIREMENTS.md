@@ -35,7 +35,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **JE-01**: User can create journal entries with date, description/memo, and 2+ line items (account + debit/credit + optional line memo)
 - [ ] **JE-02**: System enforces double-entry: total debits must equal total credits (client-side + server-side + DB constraint)
-- [ ] **JE-03**: Journal entries support Draft → Approved → Posted workflow states
+- [ ] **JE-03**: Journal entries support Draft -> Approved -> Posted workflow states
 - [ ] **JE-04**: User can edit and delete draft entries; posted entries are immutable
 - [ ] **JE-05**: User can create reversing entries (one-click offsetting JE linked to original)
 - [ ] **JE-06**: System prevents posting to closed periods (enforced at DB layer)
@@ -149,13 +149,66 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| — | — | — |
+| AUTH-01 | Phase 1 | Pending |
+| AUTH-02 | Phase 1 | Pending |
+| AUTH-03 | Phase 1 | Pending |
+| ENTM-01 | Phase 1 | Pending |
+| ENTM-02 | Phase 1 | Pending |
+| ENTM-03 | Phase 1 | Pending |
+| ENTM-04 | Phase 1 | Pending |
+| ENTM-05 | Phase 1 | Pending |
+| DI-01 | Phase 1 | Pending |
+| DI-02 | Phase 1 | Pending |
+| UI-01 | Phase 1 | Pending |
+| API-01 | Phase 1 | Pending |
+| API-02 | Phase 1 | Pending |
+| API-03 | Phase 1 | Pending |
+| COA-01 | Phase 2 | Pending |
+| COA-02 | Phase 2 | Pending |
+| COA-03 | Phase 2 | Pending |
+| COA-04 | Phase 2 | Pending |
+| COA-05 | Phase 2 | Pending |
+| COA-06 | Phase 2 | Pending |
+| COA-07 | Phase 2 | Pending |
+| JE-01 | Phase 2 | Pending |
+| JE-02 | Phase 2 | Pending |
+| JE-03 | Phase 2 | Pending |
+| JE-04 | Phase 2 | Pending |
+| JE-05 | Phase 2 | Pending |
+| JE-06 | Phase 2 | Pending |
+| JE-07 | Phase 2 | Pending |
+| JE-08 | Phase 2 | Pending |
+| DI-03 | Phase 2 | Pending |
+| DI-04 | Phase 2 | Pending |
+| DI-05 | Phase 2 | Pending |
+| LED-01 | Phase 3 | Pending |
+| LED-02 | Phase 3 | Pending |
+| LED-03 | Phase 3 | Pending |
+| LED-04 | Phase 3 | Pending |
+| LED-05 | Phase 3 | Pending |
+| TB-01 | Phase 3 | Pending |
+| TB-02 | Phase 3 | Pending |
+| TB-03 | Phase 3 | Pending |
+| TB-04 | Phase 3 | Pending |
+| TB-05 | Phase 3 | Pending |
+| TB-06 | Phase 3 | Pending |
+| UI-03 | Phase 3 | Pending |
+| DASH-01 | Phase 4 | Pending |
+| DASH-02 | Phase 4 | Pending |
+| DASH-03 | Phase 4 | Pending |
+| DASH-04 | Phase 4 | Pending |
+| DASH-05 | Phase 4 | Pending |
+| PC-01 | Phase 4 | Pending |
+| PC-02 | Phase 4 | Pending |
+| PC-03 | Phase 4 | Pending |
+| PC-04 | Phase 4 | Pending |
+| UI-02 | Phase 4 | Pending |
 
 **Coverage:**
 - v1 requirements: 48 total
-- Mapped to phases: 0
-- Unmapped: 48 ⚠️
+- Mapped to phases: 48
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-26*
-*Last updated: 2026-03-26 after initial definition*
+*Last updated: 2026-03-26 after roadmap creation*
