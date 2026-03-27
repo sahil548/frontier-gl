@@ -256,7 +256,11 @@ export function AccountForm({
               }
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="None (top-level)" />
+                <SelectValue>
+                  {parentAccount
+                    ? `${parentAccount.number} - ${parentAccount.name}`
+                    : "None (top-level)"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>

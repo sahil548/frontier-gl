@@ -184,10 +184,14 @@ export function AccountTable({
 
   // Filter accounts
   const filteredAccounts = useMemo(() => {
-    return accounts.filter((account) => {
+    // First pass: find accounts matching search + type filters
+    const directMatches = new Set<string>();
+    const parentIdsNeeded = new Set<string>();
+
+    for (const account of accounts) {
       // Type filter
       if (activeTypes.size > 0 && !activeTypes.has(account.type)) {
-        return false;
+        continue;
       }
 
       // Search filter
@@ -196,12 +200,20 @@ export function AccountTable({
         const matchesName = account.name.toLowerCase().includes(lowerSearch);
         const matchesNumber = account.number.startsWith(search);
         if (!matchesName && !matchesNumber) {
-          return false;
+          continue;
         }
       }
 
-      return true;
-    });
+      directMatches.add(account.id);
+      // If a child matches, ensure its parent is included for tree structure
+      if (account.parentId) {
+        parentIdsNeeded.add(account.parentId);
+      }
+    }
+
+    return accounts.filter(
+      (account) => directMatches.has(account.id) || parentIdsNeeded.has(account.id)
+    );
   }, [accounts, search, activeTypes]);
 
   const flattenedAccounts = useMemo(

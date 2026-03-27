@@ -38,10 +38,8 @@ export function AccountNumberInput({
       .then((json) => {
         if (json.success && json.data.suggestedNumber) {
           setSuggestion(json.data.suggestedNumber);
-          // Auto-fill if field is empty
-          if (!value) {
-            onChange(json.data.suggestedNumber);
-          }
+          // Auto-fill when field is empty or when parent changes
+          onChange(json.data.suggestedNumber);
         }
       })
       .catch(() => {
