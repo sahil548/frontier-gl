@@ -23,12 +23,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Chart of Accounts
 
-- [ ] **COA-01**: User can create accounts with name, number, type (Asset/Liability/Equity/Income/Expense), and optional description
-- [ ] **COA-02**: User can organize accounts hierarchically with parent/sub-account relationships
-- [ ] **COA-03**: User can assign customizable account numbers (e.g., 1000-series Assets, 2000-series Liabilities)
-- [ ] **COA-04**: User can search and filter accounts by name, number, or type
-- [ ] **COA-05**: User can see current balance inline for each account (sum of posted transactions)
-- [ ] **COA-06**: User can edit account details and deactivate accounts (no hard delete)
+- [x] **COA-01**: User can create accounts with name, number, type (Asset/Liability/Equity/Income/Expense), and optional description
+- [x] **COA-02**: User can organize accounts hierarchically with parent/sub-account relationships
+- [x] **COA-03**: User can assign customizable account numbers (e.g., 1000-series Assets, 2000-series Liabilities)
+- [x] **COA-04**: User can search and filter accounts by name, number, or type
+- [x] **COA-05**: User can see current balance inline for each account (sum of posted transactions)
+- [x] **COA-06**: User can edit account details and deactivate accounts (no hard delete)
 - [x] **COA-07**: Each entity has its own chart of accounts scoped by entity_id
 
 ### Journal Entries
@@ -163,12 +163,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | API-01 | Phase 1 | Complete |
 | API-02 | Phase 1 | Complete |
 | API-03 | Phase 1 | Complete |
-| COA-01 | Phase 2 | Pending |
-| COA-02 | Phase 2 | Pending |
-| COA-03 | Phase 2 | Pending |
-| COA-04 | Phase 2 | Pending |
-| COA-05 | Phase 2 | Pending |
-| COA-06 | Phase 2 | Pending |
+| COA-01 | Phase 2 | Complete |
+| COA-02 | Phase 2 | Complete |
+| COA-03 | Phase 2 | Complete |
+| COA-04 | Phase 2 | Complete |
+| COA-05 | Phase 2 | Complete |
+| COA-06 | Phase 2 | Complete |
 | COA-07 | Phase 2 | Complete |
 | JE-01 | Phase 2 | Complete |
 | JE-02 | Phase 2 | Complete |

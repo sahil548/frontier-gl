@@ -52,6 +52,7 @@ Progress: [████░░░░░░] 46%
 
 *Updated after each plan completion*
 | Phase 02 P01 | 7min | 2 tasks | 25 files |
+| Phase 02 P02 | 8min | 2 tasks | 14 files |
 | Phase 02 P03 | 6min | 2 tasks | 12 files |
 
 ## Accumulated Context
@@ -76,6 +77,9 @@ Recent decisions affecting current work:
 - [02-01]: Used db push + db execute instead of prisma migrate dev (existing unmanaged DB schema)
 - [02-01]: Prisma Decimal increment confirmed working with @db.Decimal(19,4)
 - [02-01]: Status transition helper as standalone module for reuse in API routes
+- [02-02]: Used createAccountSchema for both create/edit form (update schema partial handling at API level)
+- [02-02]: Parent account balance computed at query time by aggregating children's AccountBalance records
+- [02-02]: Empty AccountBalance row created alongside each new account for consistent display
 - [02-03]: Audit entries deleted alongside JE on draft deletion (FK constraint prevents orphaned records)
 - [02-03]: Bulk-approve filters to DRAFT entries silently rather than failing entire batch
 - [02-03]: Inline serialization helpers per route file to avoid over-engineering shared module
