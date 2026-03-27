@@ -1,0 +1,72 @@
+// Frontier GL - Prisma Schema
+// PostgreSQL via Neon (managed serverless Postgres)
+//
+// CONVENTIONS (for all future phases):
+// - All money/currency fields MUST use Decimal @db.Decimal(19,4)
+//   This ensures precision for financial calculations (DI-01)
+// - All financial tables MUST include entityId String with
+//   @relation(fields: [entityId], references: [id]) to Entity
+//   This enforces entity-scoped data isolation (DI-02)
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────
+
+enum EntityType {
+  LP
+  LLC
+  CORPORATION
+  S_CORP
+  TRUST
+  FOUNDATION
+  PARTNERSHIP
+  INDIVIDUAL
+  OTHER
+}
+
+enum CoaTemplate {
+  TEMPLATE
+  BLANK
+}
+
+// ─── Models ──────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  entities Entity[]
+}
+
+model Entity {
+  id            String      @id @default(cuid())
+  name          String
+  type          EntityType
+  typeOther     String? // Free text when type is OTHER
+  fiscalYearEnd String // "MM-DD" format, e.g. "12-31"
+  coaTemplate   CoaTemplate @default(BLANK)
+  isActive      Boolean     @default(true)
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // All future financial tables (Account, JournalEntry, etc.)
+  // will include a relation back to this Entity model (DI-02)
+
+  @@index([createdById])
+  @@index([isActive])
+}
