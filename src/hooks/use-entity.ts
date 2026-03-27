@@ -76,6 +76,6 @@ export function useEntity(): EntityContextType {
     setCurrentEntityId,
     entities,
     isLoading,
-    refreshEntities: fetchEntities as () => Promise<void>,
+    refreshEntities: async () => { await fetchEntities(); },
   };
 }

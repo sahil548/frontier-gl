@@ -56,7 +56,7 @@ function SidebarNav({
   const pathname = usePathname();
 
   return (
-    <TooltipProvider delayDuration={0}>
+    <TooltipProvider delay={0}>
       <nav className="flex flex-col gap-1 px-2">
         {navItems.map((item) => {
           const isActive =
@@ -84,7 +84,7 @@ function SidebarNav({
           if (isCollapsed) {
             return (
               <Tooltip key={item.href}>
-                <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+                <TooltipTrigger>{linkContent}</TooltipTrigger>
                 <TooltipContent side="right" className="font-medium">
                   {item.label}
                 </TooltipContent>
@@ -186,11 +186,13 @@ export function Sidebar() {
 export function MobileSidebarTrigger() {
   return (
     <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="md:hidden h-9 w-9">
-          <Menu className="h-5 w-5" />
-          <span className="sr-only">Toggle navigation</span>
-        </Button>
+      <SheetTrigger
+        render={
+          <Button variant="ghost" size="icon" className="md:hidden h-9 w-9" />
+        }
+      >
+        <Menu className="h-5 w-5" />
+        <span className="sr-only">Toggle navigation</span>
       </SheetTrigger>
       <SheetContent side="left" className="w-60 p-0">
         <div className="flex items-center gap-2 px-4 py-4">
