@@ -46,12 +46,16 @@ function Button({
   className,
   variant = "default",
   size = "default",
+  render,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
   return (
     <ButtonPrimitive
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      // When render swaps the element (e.g. <Link>), disable nativeButton
+      // to avoid Base UI warning about non-<button> elements
+      {...(render ? { render, nativeButton: false } : {})}
       {...props}
     />
   )
