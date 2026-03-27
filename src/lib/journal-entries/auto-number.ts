@@ -8,7 +8,8 @@
  * @returns Next entry number string (e.g., "JE-001")
  */
 export async function generateNextEntryNumber(
-  tx: { journalEntry: { findFirst: Function } },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tx: { journalEntry: { findFirst: (...args: any[]) => Promise<{ entryNumber: string } | null> } },
   entityId: string
 ): Promise<string> {
   const lastEntry = await tx.journalEntry.findFirst({

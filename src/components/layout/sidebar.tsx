@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Building2,
+  BookOpen,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -27,6 +28,7 @@ const SIDEBAR_STORAGE_KEY = "frontier-gl-sidebar";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/entities", label: "Entities", icon: Building2 },
+  { href: "/accounts", label: "Accounts", icon: BookOpen },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
