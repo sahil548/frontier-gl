@@ -15,8 +15,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Entity Management
 
-- [ ] **ENTM-01**: User can create an entity with name, type (LP, LLC, Corporation, Trust), and fiscal year end
-- [ ] **ENTM-02**: User can edit and deactivate entities
+- [x] **ENTM-01**: User can create an entity with name, type (LP, LLC, Corporation, Trust), and fiscal year end
+- [x] **ENTM-02**: User can edit and deactivate entities
 - [ ] **ENTM-03**: User can switch between entities via header dropdown without page reload (sub-second)
 - [ ] **ENTM-04**: User can select "All Entities" for consolidated cross-entity views
 - [ ] **ENTM-05**: Entity selection persists in localStorage across sessions
@@ -90,9 +90,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### API
 
-- [ ] **API-01**: All GL operations are exposed via RESTful API endpoints scoped under /api/entities/:entityId/
-- [ ] **API-02**: API validates all inputs with Zod schemas matching client-side validation
-- [ ] **API-03**: API returns consistent JSON response format with proper HTTP status codes
+- [x] **API-01**: All GL operations are exposed via RESTful API endpoints scoped under /api/entities/:entityId/
+- [x] **API-02**: API validates all inputs with Zod schemas matching client-side validation
+- [x] **API-03**: API returns consistent JSON response format with proper HTTP status codes
 
 ## v2 Requirements
 
@@ -152,17 +152,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-01 | Phase 1 | Complete |
 | AUTH-02 | Phase 1 | Complete |
 | AUTH-03 | Phase 1 | Complete |
-| ENTM-01 | Phase 1 | Pending |
-| ENTM-02 | Phase 1 | Pending |
+| ENTM-01 | Phase 1 | Complete |
+| ENTM-02 | Phase 1 | Complete |
 | ENTM-03 | Phase 1 | Pending |
 | ENTM-04 | Phase 1 | Pending |
 | ENTM-05 | Phase 1 | Pending |
 | DI-01 | Phase 1 | Complete |
 | DI-02 | Phase 1 | Complete |
 | UI-01 | Phase 1 | Complete |
-| API-01 | Phase 1 | Pending |
-| API-02 | Phase 1 | Pending |
-| API-03 | Phase 1 | Pending |
+| API-01 | Phase 1 | Complete |
+| API-02 | Phase 1 | Complete |
+| API-03 | Phase 1 | Complete |
 | COA-01 | Phase 2 | Pending |
 | COA-02 | Phase 2 | Pending |
 | COA-03 | Phase 2 | Pending |

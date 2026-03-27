@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-03-27T01:35:11Z"
-last_activity: 2026-03-27 -- Completed 01-01-PLAN.md
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-03-27T01:44:52.985Z"
+last_activity: 2026-03-27 -- Completed 01-02-PLAN.md
 progress:
   total_phases: 4
   completed_phases: 0
-  total_plans: 10
-  completed_plans: 1
-  percent: 10
+  total_plans: 13
+  completed_plans: 2
+  percent: 15
 ---
 
 # Project State
@@ -26,28 +26,28 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 1 of 4 (Foundation)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: Executing
-Last activity: 2026-03-27 -- Completed 01-01-PLAN.md
+Last activity: 2026-03-27 -- Completed 01-02-PLAN.md
 
-Progress: [█░░░░░░░░░] 10%
+Progress: [██░░░░░░░░] 15%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 11min
-- Total execution time: 0.18 hours
+- Total plans completed: 2
+- Average duration: 7min
+- Total execution time: 0.23 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1. Foundation | 1/3 | 11min | 11min |
+| 1. Foundation | 2/3 | 14min | 7min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (11min)
-- Trend: baseline
+- Last 5 plans: 01-01 (11min), 01-02 (3min)
+- Trend: accelerating
 
 *Updated after each plan completion*
 
@@ -64,6 +64,8 @@ Recent decisions affecting current work:
 - [01-01]: Upgraded to Next.js 15 (Clerk v7 requires it as peer dependency)
 - [01-01]: Prisma v7 adapter pattern with PrismaPg instead of connection string in schema
 - [01-01]: oklch color format for CSS variables (Tailwind v4 / shadcn v4 standard)
+- [01-02]: User upsert pattern -- first API call from new Clerk user auto-creates internal User record
+- [01-02]: Entity routes user-scoped (/api/entities), entity-scoped financial data routes in Phase 2
 
 ### Pending Todos
 
@@ -76,6 +78,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T01:35:11Z
-Stopped at: Completed 01-01-PLAN.md
-Resume file: .planning/phases/01-foundation/01-02-PLAN.md
+Last session: 2026-03-27T01:44:51.781Z
+Stopped at: Completed 01-02-PLAN.md
+Resume file: .planning/phases/01-foundation/01-03-PLAN.md
