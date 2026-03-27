@@ -29,16 +29,16 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **COA-04**: User can search and filter accounts by name, number, or type
 - [ ] **COA-05**: User can see current balance inline for each account (sum of posted transactions)
 - [ ] **COA-06**: User can edit account details and deactivate accounts (no hard delete)
-- [ ] **COA-07**: Each entity has its own chart of accounts scoped by entity_id
+- [x] **COA-07**: Each entity has its own chart of accounts scoped by entity_id
 
 ### Journal Entries
 
 - [ ] **JE-01**: User can create journal entries with date, description/memo, and 2+ line items (account + debit/credit + optional line memo)
-- [ ] **JE-02**: System enforces double-entry: total debits must equal total credits (client-side + server-side + DB constraint)
+- [x] **JE-02**: System enforces double-entry: total debits must equal total credits (client-side + server-side + DB constraint)
 - [ ] **JE-03**: Journal entries support Draft -> Approved -> Posted workflow states
 - [ ] **JE-04**: User can edit and delete draft entries; posted entries are immutable
 - [ ] **JE-05**: User can create reversing entries (one-click offsetting JE linked to original)
-- [ ] **JE-06**: System prevents posting to closed periods (enforced at DB layer)
+- [x] **JE-06**: System prevents posting to closed periods (enforced at DB layer)
 - [ ] **JE-07**: Audit trail records who created, who approved, when posted, and all edits immutably
 - [ ] **JE-08**: User can bulk-post multiple selected draft entries at once
 
@@ -78,9 +78,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **DI-01**: All money fields use PostgreSQL NUMERIC(19,4) / Prisma Decimal — no floating-point anywhere
 - [x] **DI-02**: All financial tables include entity_id foreign key with row-level entity scoping
-- [ ] **DI-03**: Account balances are maintained via materialized/cached balance table updated atomically within posting transactions
-- [ ] **DI-04**: DB trigger prevents UPDATE/DELETE on posted journal entries (immutability enforcement)
-- [ ] **DI-05**: DB trigger validates SUM(debit) = SUM(credit) on journal entry line items
+- [x] **DI-03**: Account balances are maintained via materialized/cached balance table updated atomically within posting transactions
+- [x] **DI-04**: DB trigger prevents UPDATE/DELETE on posted journal entries (immutability enforcement)
+- [x] **DI-05**: DB trigger validates SUM(debit) = SUM(credit) on journal entry line items
 
 ### UI & Responsiveness
 
@@ -169,18 +169,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | COA-04 | Phase 2 | Pending |
 | COA-05 | Phase 2 | Pending |
 | COA-06 | Phase 2 | Pending |
-| COA-07 | Phase 2 | Pending |
+| COA-07 | Phase 2 | Complete |
 | JE-01 | Phase 2 | Pending |
-| JE-02 | Phase 2 | Pending |
+| JE-02 | Phase 2 | Complete |
 | JE-03 | Phase 2 | Pending |
 | JE-04 | Phase 2 | Pending |
 | JE-05 | Phase 2 | Pending |
-| JE-06 | Phase 2 | Pending |
+| JE-06 | Phase 2 | Complete |
 | JE-07 | Phase 2 | Pending |
 | JE-08 | Phase 2 | Pending |
-| DI-03 | Phase 2 | Pending |
-| DI-04 | Phase 2 | Pending |
-| DI-05 | Phase 2 | Pending |
+| DI-03 | Phase 2 | Complete |
+| DI-04 | Phase 2 | Complete |
+| DI-05 | Phase 2 | Complete |
 | LED-01 | Phase 3 | Pending |
 | LED-02 | Phase 3 | Pending |
 | LED-03 | Phase 3 | Pending |

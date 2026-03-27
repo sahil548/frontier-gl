@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: Phase 2 planned (5 plans, 4 waves)
-last_updated: "2026-03-26T00:00:00.000Z"
-last_activity: 2026-03-26 -- Phase 2 plans created and verified
+status: executing
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-03-27T05:44:00.000Z"
+last_activity: 2026-03-27 -- Phase 2 Plan 01 executed
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 13
-  completed_plans: 3
-  percent: 23
+  completed_plans: 4
+  percent: 31
 ---
 
 # Project State
@@ -25,32 +25,33 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 
 ## Current Position
 
-Phase: 2 of 4 (Accounting Engine) -- PLANNED
-Plan: 0 of 5 in current phase
-Status: Ready to execute
-Last activity: 2026-03-26 -- Phase 2 plans created and verified
+Phase: 2 of 4 (Accounting Engine) -- EXECUTING
+Plan: 1 of 5 in current phase (Plan 01 complete)
+Status: Executing
+Last activity: 2026-03-27 -- Completed 02-01-PLAN.md
 
-Progress: [██░░░░░░░░] 23%
+Progress: [███░░░░░░░] 31%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
+- Total plans completed: 4
 - Average duration: 7min
-- Total execution time: 0.37 hours
+- Total execution time: 0.48 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1. Foundation | 3/3 | 22min | 7min |
+| 2. Accounting Engine | 1/5 | 7min | 7min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (11min), 01-02 (3min), 01-03 (8min)
+- Last 5 plans: 01-01 (11min), 01-02 (3min), 01-03 (8min), 02-01 (7min)
 - Trend: steady
 
 *Updated after each plan completion*
-| Phase 01 P03 | 8min | 3 tasks | 17 files |
+| Phase 02 P01 | 7min | 2 tasks | 25 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,9 @@ Recent decisions affecting current work:
 - [01-03]: Sidebar collapse state persisted in localStorage alongside entity selection
 - [01-03]: onSuccess callbacks made async to support refreshEntities() before navigation
 - [Phase 01-03]: Entity selector uses Popover+Command pattern for searchable switching
+- [02-01]: Used db push + db execute instead of prisma migrate dev (existing unmanaged DB schema)
+- [02-01]: Prisma Decimal increment confirmed working with @db.Decimal(19,4)
+- [02-01]: Status transition helper as standalone module for reuse in API routes
 
 ### Pending Todos
 
@@ -83,6 +87,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T02:19:09.647Z
-Stopped at: Completed 01-03-PLAN.md (Phase 1 complete)
+Last session: 2026-03-27T05:44:00.000Z
+Stopped at: Completed 02-01-PLAN.md
 Resume file: None
