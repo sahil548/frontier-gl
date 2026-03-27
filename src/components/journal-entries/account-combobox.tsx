@@ -43,8 +43,9 @@ const TYPE_LABELS: Record<string, string> = {
   EXPENSE: "Expense",
 };
 
-// Module-level cache keyed by entityId
-const accountsCache = new Map<string, AccountOption[]>();
+// Module-level cache keyed by entityId with TTL (30 seconds)
+const accountsCache = new Map<string, { data: AccountOption[]; fetchedAt: number }>();
+const CACHE_TTL_MS = 30_000;
 
 /**
  * Searchable account selector built on Popover + Command (cmdk).
@@ -58,14 +59,18 @@ export function AccountCombobox({
   disabled,
 }: AccountComboboxProps) {
   const [open, setOpen] = useState(false);
+  const cached = accountsCache.get(entityId);
+  const isCacheValid = cached && (Date.now() - cached.fetchedAt) < CACHE_TTL_MS;
   const [accounts, setAccounts] = useState<AccountOption[]>(
-    accountsCache.get(entityId) ?? []
+    isCacheValid ? cached.data : []
   );
-  const [isLoading, setIsLoading] = useState(!accountsCache.has(entityId));
+  const [isLoading, setIsLoading] = useState(!isCacheValid);
 
   useEffect(() => {
-    if (accountsCache.has(entityId)) {
-      setAccounts(accountsCache.get(entityId)!);
+    const cached = accountsCache.get(entityId);
+    const isCacheValid = cached && (Date.now() - cached.fetchedAt) < CACHE_TTL_MS;
+    if (isCacheValid) {
+      setAccounts(cached.data);
       setIsLoading(false);
       return;
     }
@@ -78,7 +83,7 @@ export function AccountCombobox({
         const json = await res.json();
         if (json.success && !cancelled) {
           const all = json.data as AccountOption[];
-          accountsCache.set(entityId, all);
+          accountsCache.set(entityId, { data: all, fetchedAt: Date.now() });
           setAccounts(all);
         }
       } catch {
