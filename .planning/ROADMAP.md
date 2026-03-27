@@ -46,12 +46,14 @@ Plans:
   3. User can create journal entries with date, description, and line items (account + debit/credit + memo) -- system rejects entries where total debits do not equal total credits at both client and server layers
   4. Journal entries move through Draft, Approved, and Posted states -- drafts are editable/deletable, posted entries are immutable, and a complete audit trail records who created, approved, and when posted
   5. User can create one-click reversing entries and bulk-post multiple drafts -- system prevents posting to closed periods at the database layer
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
-- [ ] 02-03: TBD
+- [ ] 02-01-PLAN.md — Prisma schema (accounts, JEs, balances), DB triggers (immutability, balance validation, closed period), Zod validators, business logic (post, reverse, bulk-post, template)
+- [ ] 02-02-PLAN.md — Account CRUD API, COA page with indented table, slide-over form, search/filter, template seeding
+- [ ] 02-03-PLAN.md — Journal entry CRUD API, approve/post/reverse/bulk endpoints
+- [ ] 02-04-PLAN.md — JE form with spreadsheet line items and account combobox, JE list with tabs and bulk action bar
+- [ ] 02-05-PLAN.md — End-to-end human verification of COA and JE features
 
 ### Phase 3: Ledger and Trial Balance
 **Goal**: Users can view, filter, and export posted transaction data at both account-level (GL ledger) and summary-level (trial balance)
@@ -95,6 +97,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 0/3 | Not started | - |
-| 2. Accounting Engine | 0/3 | Not started | - |
+| 2. Accounting Engine | 0/5 | Not started | - |
 | 3. Ledger and Trial Balance | 0/4 | Not started | - |
 | 4. Dashboard, Period Close, and Polish | 0/2 | Not started | - |
