@@ -73,5 +73,10 @@ export const journalEntrySchema = z
 
 // ─── Inferred Types ───────────────────────────────────────
 
+/** Output type (after Zod transforms/defaults). Used by API endpoints. */
 export type JournalEntryFormValues = z.infer<typeof journalEntrySchema>;
 export type LineItemFormValues = z.infer<typeof lineItemSchema>;
+
+/** Input type (before Zod defaults apply). Used by react-hook-form. */
+export type JournalEntryFormInput = z.input<typeof journalEntrySchema>;
+export type LineItemFormInput = z.input<typeof lineItemSchema>;
