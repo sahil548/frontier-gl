@@ -33,14 +33,14 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Journal Entries
 
-- [ ] **JE-01**: User can create journal entries with date, description/memo, and 2+ line items (account + debit/credit + optional line memo)
+- [x] **JE-01**: User can create journal entries with date, description/memo, and 2+ line items (account + debit/credit + optional line memo)
 - [x] **JE-02**: System enforces double-entry: total debits must equal total credits (client-side + server-side + DB constraint)
-- [ ] **JE-03**: Journal entries support Draft -> Approved -> Posted workflow states
-- [ ] **JE-04**: User can edit and delete draft entries; posted entries are immutable
-- [ ] **JE-05**: User can create reversing entries (one-click offsetting JE linked to original)
+- [x] **JE-03**: Journal entries support Draft -> Approved -> Posted workflow states
+- [x] **JE-04**: User can edit and delete draft entries; posted entries are immutable
+- [x] **JE-05**: User can create reversing entries (one-click offsetting JE linked to original)
 - [x] **JE-06**: System prevents posting to closed periods (enforced at DB layer)
-- [ ] **JE-07**: Audit trail records who created, who approved, when posted, and all edits immutably
-- [ ] **JE-08**: User can bulk-post multiple selected draft entries at once
+- [x] **JE-07**: Audit trail records who created, who approved, when posted, and all edits immutably
+- [x] **JE-08**: User can bulk-post multiple selected draft entries at once
 
 ### GL Ledger
 
@@ -170,14 +170,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | COA-05 | Phase 2 | Pending |
 | COA-06 | Phase 2 | Pending |
 | COA-07 | Phase 2 | Complete |
-| JE-01 | Phase 2 | Pending |
+| JE-01 | Phase 2 | Complete |
 | JE-02 | Phase 2 | Complete |
-| JE-03 | Phase 2 | Pending |
-| JE-04 | Phase 2 | Pending |
-| JE-05 | Phase 2 | Pending |
+| JE-03 | Phase 2 | Complete |
+| JE-04 | Phase 2 | Complete |
+| JE-05 | Phase 2 | Complete |
 | JE-06 | Phase 2 | Complete |
-| JE-07 | Phase 2 | Pending |
-| JE-08 | Phase 2 | Pending |
+| JE-07 | Phase 2 | Complete |
+| JE-08 | Phase 2 | Complete |
 | DI-03 | Phase 2 | Complete |
 | DI-04 | Phase 2 | Complete |
 | DI-05 | Phase 2 | Complete |
