@@ -29,11 +29,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can switch between entities via header dropdown without page reload, and "All Entities" consolidated view is available
   4. Entity selection persists across browser sessions (survives close and reopen)
   5. All database tables use NUMERIC(19,4) for money fields and include entity_id foreign key scoping -- API endpoints follow RESTful /api/entities/:entityId/ pattern with Zod validation and consistent JSON responses
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [ ] 01-01-PLAN.md — Scaffold Next.js project, Clerk auth, Prisma schema, shadcn/ui theming, dark mode, Vitest setup
+- [ ] 01-02-PLAN.md — Zod validation schemas, API response helpers, entity CRUD API endpoints
+- [ ] 01-03-PLAN.md — Layout shell (sidebar, header), entity switcher, entity management pages, onboarding
 
 ### Phase 2: Accounting Engine
 **Goal**: Users can manage a chart of accounts and create, approve, and post journal entries with full double-entry integrity
@@ -91,7 +92,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/2 | Not started | - |
+| 1. Foundation | 0/3 | Not started | - |
 | 2. Accounting Engine | 0/3 | Not started | - |
 | 3. Ledger and Trial Balance | 0/2 | Not started | - |
 | 4. Dashboard, Period Close, and Polish | 0/2 | Not started | - |
