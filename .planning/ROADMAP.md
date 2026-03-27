@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Project scaffolding, authentication, entity management, data model, and API patterns (completed 2026-03-27)
 - [ ] **Phase 2: Accounting Engine** - Chart of accounts and journal entry system with double-entry enforcement
-- [ ] **Phase 3: Ledger and Trial Balance** - Read-side views of posted data with filtering, pagination, and export
+- [x] **Phase 3: Ledger and Trial Balance** - Read-side views of posted data with filtering, pagination, and export (completed 2026-03-27)
 - [ ] **Phase 4: Dashboard, Period Close, and Polish** - Financial dashboards, period governance, responsive layout, and final integration
 
 ## Phase Details
@@ -99,5 +99,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete    | 2026-03-27 |
 | 2. Accounting Engine | 4/5 | In Progress|  |
-| 3. Ledger and Trial Balance | 3/5 | In Progress|  |
+| 3. Ledger and Trial Balance | 5/5 | Complete   | 2026-03-27 |
 | 4. Dashboard, Period Close, and Polish | 0/2 | Not started | - |
