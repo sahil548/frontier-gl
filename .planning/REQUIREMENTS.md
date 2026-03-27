@@ -44,20 +44,20 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### GL Ledger
 
-- [ ] **LED-01**: User can view all posted transactions for any account with date, JE number, description, debit, credit, and running balance
-- [ ] **LED-02**: User can filter ledger by date range, amount range, and memo text
-- [ ] **LED-03**: Ledger is paginated at 50 transactions per page
-- [ ] **LED-04**: User can export ledger data as CSV
-- [ ] **LED-05**: User can export ledger data as PDF
+- [x] **LED-01**: User can view all posted transactions for any account with date, JE number, description, debit, credit, and running balance
+- [x] **LED-02**: User can filter ledger by date range, amount range, and memo text
+- [x] **LED-03**: Ledger is paginated at 50 transactions per page
+- [x] **LED-04**: User can export ledger data as CSV
+- [x] **LED-05**: User can export ledger data as PDF
 
 ### Trial Balance
 
-- [ ] **TB-01**: User can view all active accounts with debit/credit balances for a selected period (as-of date)
-- [ ] **TB-02**: Trial balance displays verification check confirming total debits equal total credits
-- [ ] **TB-03**: User can sort trial balance by account number, name, type, or balance
-- [ ] **TB-04**: User can export trial balance as CSV
-- [ ] **TB-05**: User can export trial balance as PDF
-- [ ] **TB-06**: User can view consolidated trial balance across multiple/all entities
+- [x] **TB-01**: User can view all active accounts with debit/credit balances for a selected period (as-of date)
+- [x] **TB-02**: Trial balance displays verification check confirming total debits equal total credits
+- [x] **TB-03**: User can sort trial balance by account number, name, type, or balance
+- [x] **TB-04**: User can export trial balance as CSV
+- [x] **TB-05**: User can export trial balance as PDF
+- [x] **TB-06**: User can view consolidated trial balance across multiple/all entities
 
 ### Period Close
 
@@ -86,7 +86,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **UI-01**: Application uses shadcn/ui + Tailwind CSS component library consistently
 - [ ] **UI-02**: Layout is responsive and usable on tablet and mobile screens
-- [ ] **UI-03**: Data tables use TanStack Table with sorting, filtering, and pagination
+- [x] **UI-03**: Data tables use TanStack Table with sorting, filtering, and pagination
 
 ### API
 
@@ -181,18 +181,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DI-03 | Phase 2 | Complete |
 | DI-04 | Phase 2 | Complete |
 | DI-05 | Phase 2 | Complete |
-| LED-01 | Phase 3 | Pending |
-| LED-02 | Phase 3 | Pending |
-| LED-03 | Phase 3 | Pending |
-| LED-04 | Phase 3 | Pending |
-| LED-05 | Phase 3 | Pending |
-| TB-01 | Phase 3 | Pending |
-| TB-02 | Phase 3 | Pending |
-| TB-03 | Phase 3 | Pending |
-| TB-04 | Phase 3 | Pending |
-| TB-05 | Phase 3 | Pending |
-| TB-06 | Phase 3 | Pending |
-| UI-03 | Phase 3 | Pending |
+| LED-01 | Phase 3 | Complete |
+| LED-02 | Phase 3 | Complete |
+| LED-03 | Phase 3 | Complete |
+| LED-04 | Phase 3 | Complete |
+| LED-05 | Phase 3 | Complete |
+| TB-01 | Phase 3 | Complete |
+| TB-02 | Phase 3 | Complete |
+| TB-03 | Phase 3 | Complete |
+| TB-04 | Phase 3 | Complete |
+| TB-05 | Phase 3 | Complete |
+| TB-06 | Phase 3 | Complete |
+| UI-03 | Phase 3 | Complete |
 | DASH-01 | Phase 4 | Pending |
 | DASH-02 | Phase 4 | Pending |
 | DASH-03 | Phase 4 | Pending |
