@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Building2,
   BookOpen,
+  FileText,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -29,6 +30,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/entities", label: "Entities", icon: Building2 },
   { href: "/accounts", label: "Accounts", icon: BookOpen },
+  { href: "/journal-entries", label: "Journal Entries", icon: FileText },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
