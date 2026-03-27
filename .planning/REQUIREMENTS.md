@@ -9,9 +9,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Authentication
 
-- [ ] **AUTH-01**: User can sign up and log in via Clerk-managed authentication
-- [ ] **AUTH-02**: User session persists across browser refresh and page navigation
-- [ ] **AUTH-03**: All application routes are protected behind authentication
+- [x] **AUTH-01**: User can sign up and log in via Clerk-managed authentication
+- [x] **AUTH-02**: User session persists across browser refresh and page navigation
+- [x] **AUTH-03**: All application routes are protected behind authentication
 
 ### Entity Management
 
@@ -76,15 +76,15 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Data Integrity
 
-- [ ] **DI-01**: All money fields use PostgreSQL NUMERIC(19,4) / Prisma Decimal — no floating-point anywhere
-- [ ] **DI-02**: All financial tables include entity_id foreign key with row-level entity scoping
+- [x] **DI-01**: All money fields use PostgreSQL NUMERIC(19,4) / Prisma Decimal — no floating-point anywhere
+- [x] **DI-02**: All financial tables include entity_id foreign key with row-level entity scoping
 - [ ] **DI-03**: Account balances are maintained via materialized/cached balance table updated atomically within posting transactions
 - [ ] **DI-04**: DB trigger prevents UPDATE/DELETE on posted journal entries (immutability enforcement)
 - [ ] **DI-05**: DB trigger validates SUM(debit) = SUM(credit) on journal entry line items
 
 ### UI & Responsiveness
 
-- [ ] **UI-01**: Application uses shadcn/ui + Tailwind CSS component library consistently
+- [x] **UI-01**: Application uses shadcn/ui + Tailwind CSS component library consistently
 - [ ] **UI-02**: Layout is responsive and usable on tablet and mobile screens
 - [ ] **UI-03**: Data tables use TanStack Table with sorting, filtering, and pagination
 
@@ -149,17 +149,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
-| AUTH-03 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Complete |
+| AUTH-02 | Phase 1 | Complete |
+| AUTH-03 | Phase 1 | Complete |
 | ENTM-01 | Phase 1 | Pending |
 | ENTM-02 | Phase 1 | Pending |
 | ENTM-03 | Phase 1 | Pending |
 | ENTM-04 | Phase 1 | Pending |
 | ENTM-05 | Phase 1 | Pending |
-| DI-01 | Phase 1 | Pending |
-| DI-02 | Phase 1 | Pending |
-| UI-01 | Phase 1 | Pending |
+| DI-01 | Phase 1 | Complete |
+| DI-02 | Phase 1 | Complete |
+| UI-01 | Phase 1 | Complete |
 | API-01 | Phase 1 | Pending |
 | API-02 | Phase 1 | Pending |
 | API-03 | Phase 1 | Pending |
