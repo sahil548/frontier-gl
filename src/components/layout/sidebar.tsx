@@ -32,6 +32,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/entities", label: "Entities", icon: Building2 },
   { href: "/accounts", label: "Chart of Accounts", icon: BookOpen },
+  { href: "/gl-ledger", label: "GL Ledger", icon: BookText },
   { href: "/trial-balance", label: "Trial Balance", icon: Scale },
   { href: "/journal-entries", label: "Journal Entries", icon: FileText },
   { href: "/settings", label: "Settings", icon: Settings },

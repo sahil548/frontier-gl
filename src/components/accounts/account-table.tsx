@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import {
   Search,
@@ -389,20 +390,23 @@ export function AccountTable({
                 return (
                   <TableRow
                     key={account.id}
-                    className="group"
+                    className="group cursor-pointer"
                   >
                     {/* Number */}
                     <TableCell
                       className={isChild ? "pl-8" : ""}
                     >
-                      <span className={isParent ? "font-semibold" : ""}>
+                      <Link
+                        href={`/gl-ledger/${account.id}`}
+                        className={`text-primary underline-offset-4 hover:underline ${isParent ? "font-semibold" : ""}`}
+                      >
                         {isChild && (
                           <span className="text-muted-foreground mr-1">
                             {"  "}
                           </span>
                         )}
                         {account.number}
-                      </span>
+                      </Link>
                     </TableCell>
 
                     {/* Name */}
@@ -453,7 +457,13 @@ export function AccountTable({
                             <span className="sr-only">More actions</span>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                window.location.assign(
+                                  `/gl-ledger/${account.id}`
+                                )
+                              }
+                            >
                               <BookOpen className="mr-2 h-4 w-4" />
                               View Ledger
                             </DropdownMenuItem>
