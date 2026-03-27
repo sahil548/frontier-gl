@@ -54,15 +54,16 @@ export function AccountNumberInput({
       <Input
         type="text"
         inputMode="numeric"
-        pattern="\d{1,5}"
+        pattern="\d{5,}"
+        minLength={5}
         placeholder={suggestion || "e.g. 10000"}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
       />
       <p className="text-xs text-muted-foreground">
-        5-digit format: 10000s Assets, 20000s Liabilities, 30000s Equity, 40000s
-        Income, 50000s+ Expenses
+        Minimum 5 digits: 10000s Assets, 20000s Liabilities, 30000s Equity,
+        40000s Income, 50000s+ Expenses
       </p>
     </div>
   );

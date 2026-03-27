@@ -10,7 +10,8 @@ export const createAccountSchema = z.object({
     .max(200, "Account name must be 200 characters or fewer"),
   number: z
     .string()
-    .regex(/^\d{1,5}$/, "Account number must be 1-5 digits"),
+    .min(5, "Account number must be at least 5 digits")
+    .regex(/^\d+$/, "Account number must contain only digits"),
   type: z.nativeEnum(AccountType, {
     message: "Invalid account type",
   }),

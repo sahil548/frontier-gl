@@ -144,11 +144,13 @@ export function AccountForm({
     }
   }, [parentAccount, setValue, mode]);
 
-  // Parent-eligible accounts: only top-level (no parentId) and active
+  // Parent-eligible accounts: any active account EXCEPT category headers
+  // (10000, 20000, 30000, 40000, 50000) and the account being edited.
+  // Category headers are section groups determined by type — nobody posts to them.
   const parentOptions = accounts.filter(
     (a) =>
-      a.parentId === null &&
       a.isActive &&
+      parseInt(a.number, 10) % 10000 !== 0 &&
       (!isEdit || a.id !== editAccount?.id) // Can't be parent of itself
   );
 
@@ -212,8 +214,8 @@ export function AccountForm({
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+    <Sheet open={open} onOpenChange={onOpenChange} modal={false}>
+      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto" showOverlay={false}>
         <SheetHeader>
           <SheetTitle>
             {isEdit ? "Edit Account" : "Create Account"}

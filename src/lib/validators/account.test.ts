@@ -67,13 +67,22 @@ describe("Account Validators", () => {
       expect(result.success).toBe(false);
     });
 
-    it("rejects account number longer than 5 digits", () => {
+    it("rejects account number shorter than 5 digits", () => {
+      const result = createAccountSchema.safeParse({
+        name: "Cash",
+        number: "1010",
+        type: "ASSET",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("accepts account number longer than 5 digits", () => {
       const result = createAccountSchema.safeParse({
         name: "Cash",
         number: "123456",
         type: "ASSET",
       });
-      expect(result.success).toBe(false);
+      expect(result.success).toBe(true);
     });
 
     it("rejects non-numeric account number", () => {
