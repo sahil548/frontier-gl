@@ -98,6 +98,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | Complete    | 2026-03-27 |
-| 2. Accounting Engine | 3/5 | In Progress|  |
+| 2. Accounting Engine | 4/5 | In Progress|  |
 | 3. Ledger and Trial Balance | 0/5 | Not started | - |
 | 4. Dashboard, Period Close, and Polish | 0/2 | Not started | - |
