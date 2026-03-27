@@ -12,7 +12,7 @@ Frontier GL delivers a multi-entity general ledger that replaces QuickBooks Onli
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Project scaffolding, authentication, entity management, data model, and API patterns
+- [x] **Phase 1: Foundation** - Project scaffolding, authentication, entity management, data model, and API patterns (completed 2026-03-27)
 - [ ] **Phase 2: Accounting Engine** - Chart of accounts and journal entry system with double-entry enforcement
 - [ ] **Phase 3: Ledger and Trial Balance** - Read-side views of posted data with filtering, pagination, and export
 - [ ] **Phase 4: Dashboard, Period Close, and Polish** - Financial dashboards, period governance, responsive layout, and final integration
@@ -97,7 +97,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 2/3 | In Progress|  |
+| 1. Foundation | 3/3 | Complete   | 2026-03-27 |
 | 2. Accounting Engine | 0/5 | Not started | - |
 | 3. Ledger and Trial Balance | 0/5 | Not started | - |
 | 4. Dashboard, Period Close, and Polish | 0/2 | Not started | - |

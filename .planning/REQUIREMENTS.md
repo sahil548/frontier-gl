@@ -17,9 +17,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **ENTM-01**: User can create an entity with name, type (LP, LLC, Corporation, Trust), and fiscal year end
 - [x] **ENTM-02**: User can edit and deactivate entities
-- [ ] **ENTM-03**: User can switch between entities via header dropdown without page reload (sub-second)
-- [ ] **ENTM-04**: User can select "All Entities" for consolidated cross-entity views
-- [ ] **ENTM-05**: Entity selection persists in localStorage across sessions
+- [x] **ENTM-03**: User can switch between entities via header dropdown without page reload (sub-second)
+- [x] **ENTM-04**: User can select "All Entities" for consolidated cross-entity views
+- [x] **ENTM-05**: Entity selection persists in localStorage across sessions
 
 ### Chart of Accounts
 
@@ -154,9 +154,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-03 | Phase 1 | Complete |
 | ENTM-01 | Phase 1 | Complete |
 | ENTM-02 | Phase 1 | Complete |
-| ENTM-03 | Phase 1 | Pending |
-| ENTM-04 | Phase 1 | Pending |
-| ENTM-05 | Phase 1 | Pending |
+| ENTM-03 | Phase 1 | Complete |
+| ENTM-04 | Phase 1 | Complete |
+| ENTM-05 | Phase 1 | Complete |
 | DI-01 | Phase 1 | Complete |
 | DI-02 | Phase 1 | Complete |
 | UI-01 | Phase 1 | Complete |
