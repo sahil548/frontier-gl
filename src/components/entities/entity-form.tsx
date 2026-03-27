@@ -70,7 +70,7 @@ type EntityFormValues = z.infer<typeof entityFormSchema>;
 type EntityFormProps = {
   mode: "create" | "edit";
   defaultValues?: Partial<EntityFormValues> & { id?: string; isActive?: boolean };
-  onSuccess?: () => void;
+  onSuccess?: () => void | Promise<void>;
 };
 
 /**
@@ -123,7 +123,7 @@ export function EntityForm({ mode, defaultValues, onSuccess }: EntityFormProps) 
         toast.success(
           mode === "create" ? "Entity created" : "Entity updated"
         );
-        onSuccess?.();
+        await onSuccess?.();
         router.refresh();
       } else {
         toast.error(json.error || "Something went wrong");

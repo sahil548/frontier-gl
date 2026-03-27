@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useEntityContext } from "@/providers/entity-provider";
 import { EntityForm } from "@/components/entities/entity-form";
 import {
   Card,
@@ -15,6 +16,7 @@ import type { SerializedEntity } from "@/types";
 export default function EditEntityPage() {
   const params = useParams();
   const entityId = params.entityId as string;
+  const { refreshEntities } = useEntityContext();
   const [entity, setEntity] = useState<SerializedEntity | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +81,9 @@ export default function EditEntityPage() {
               fiscalYearEnd: entity.fiscalYearEnd,
               coaTemplate: entity.coaTemplate,
               isActive: entity.isActive,
+            }}
+            onSuccess={async () => {
+              await refreshEntities();
             }}
           />
         </CardContent>

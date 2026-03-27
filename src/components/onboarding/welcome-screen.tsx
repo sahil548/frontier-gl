@@ -1,14 +1,20 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useEntityContext } from "@/providers/entity-provider";
 import { EntityForm } from "@/components/entities/entity-form";
 
 /**
  * Welcome screen shown when a user has zero entities.
  * Displays a clean onboarding experience with an embedded entity creation form.
+ *
+ * After entity creation, refreshes the entity list in context before navigating
+ * to the dashboard. This avoids a race condition where router.refresh() in
+ * EntityForm would conflict with the redirect.
  */
 export function WelcomeScreen() {
   const router = useRouter();
+  const { refreshEntities } = useEntityContext();
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
@@ -40,7 +46,10 @@ export function WelcomeScreen() {
         <div className="rounded-lg border bg-card p-6">
           <EntityForm
             mode="create"
-            onSuccess={() => router.push("/dashboard")}
+            onSuccess={async () => {
+              await refreshEntities();
+              router.push("/dashboard");
+            }}
           />
         </div>
       </div>

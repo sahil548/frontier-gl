@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useEntityContext } from "@/providers/entity-provider";
 import { EntityForm } from "@/components/entities/entity-form";
 import {
   Card,
@@ -13,6 +14,7 @@ import {
 
 export default function NewEntityPage() {
   const router = useRouter();
+  const { refreshEntities } = useEntityContext();
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
@@ -35,7 +37,8 @@ export default function NewEntityPage() {
         <CardContent>
           <EntityForm
             mode="create"
-            onSuccess={() => {
+            onSuccess={async () => {
+              await refreshEntities();
               toast.success("Entity created successfully");
               router.push("/entities");
             }}
