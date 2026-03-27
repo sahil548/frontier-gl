@@ -65,12 +65,13 @@ Plans:
   3. User can view a trial balance for any selected period showing all active accounts with debit/credit balances, with verification that total debits equal total credits -- sortable by account number, name, type, or balance
   4. User can view a consolidated trial balance across multiple or all entities
   5. User can export both GL ledger and trial balance data as CSV and PDF
-**Plans**: 4 plans
+**Plans**: 5 plans
 
 Plans:
+- [ ] 03-00-PLAN.md — Wave 0 test stubs for all Phase 3 requirements (Vitest)
 - [ ] 03-01-PLAN.md — Install dependencies, reusable DataTable component, AccountCombobox, DateRangePicker
 - [ ] 03-02-PLAN.md — Accounting utilities, Prisma query modules (ledger + TB), CSV and PDF export utilities
-- [ ] 03-03-PLAN.md — GL Ledger API endpoint, filter bar, summary card, export dropdown, and ledger pages
+- [ ] 03-03-PLAN.md — GL Ledger API endpoint, filter bar, summary card, export dropdown, ledger pages, and COA drill-down wiring
 - [ ] 03-04-PLAN.md — Trial Balance API endpoint, verification banner, consolidated entity tree, export, and TB page
 
 ### Phase 4: Dashboard, Period Close, and Polish
@@ -98,5 +99,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Foundation | 0/3 | Not started | - |
 | 2. Accounting Engine | 0/5 | Not started | - |
-| 3. Ledger and Trial Balance | 0/4 | Not started | - |
+| 3. Ledger and Trial Balance | 0/5 | Not started | - |
 | 4. Dashboard, Period Close, and Polish | 0/2 | Not started | - |
