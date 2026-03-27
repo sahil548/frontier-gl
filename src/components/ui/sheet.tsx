@@ -11,12 +11,14 @@ function Sheet({ ...props }: SheetPrimitive.Root.Props) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />
 }
 
-function SheetTrigger({ ...props }: SheetPrimitive.Trigger.Props) {
-  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />
+function SheetTrigger({ id, ...props }: SheetPrimitive.Trigger.Props) {
+  const autoId = React.useId()
+  return <SheetPrimitive.Trigger id={id ?? autoId} data-slot="sheet-trigger" {...props} />
 }
 
-function SheetClose({ ...props }: SheetPrimitive.Close.Props) {
-  return <SheetPrimitive.Close data-slot="sheet-close" {...props} />
+function SheetClose({ id, ...props }: SheetPrimitive.Close.Props) {
+  const autoId = React.useId()
+  return <SheetPrimitive.Close id={id ?? autoId} data-slot="sheet-close" {...props} />
 }
 
 function SheetPortal({ ...props }: SheetPrimitive.Portal.Props) {
