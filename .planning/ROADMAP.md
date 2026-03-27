@@ -68,7 +68,7 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 03-00-PLAN.md — Wave 0 test stubs for all Phase 3 requirements (Vitest)
+- [x] 03-00-PLAN.md — Wave 0 test stubs for all Phase 3 requirements (Vitest) (completed 2026-03-27)
 - [ ] 03-01-PLAN.md — Install dependencies, reusable DataTable component, AccountCombobox, DateRangePicker
 - [ ] 03-02-PLAN.md — Accounting utilities, Prisma query modules (ledger + TB), CSV and PDF export utilities
 - [ ] 03-03-PLAN.md — GL Ledger API endpoint, filter bar, summary card, export dropdown, ledger pages, and COA drill-down wiring
