@@ -7,6 +7,8 @@ import {
   LayoutDashboard,
   Building2,
   BookOpen,
+  BookText,
+  Scale,
   FileText,
   Settings,
   ChevronLeft,
@@ -29,7 +31,8 @@ const SIDEBAR_STORAGE_KEY = "frontier-gl-sidebar";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/entities", label: "Entities", icon: Building2 },
-  { href: "/accounts", label: "Accounts", icon: BookOpen },
+  { href: "/accounts", label: "Chart of Accounts", icon: BookOpen },
+  { href: "/trial-balance", label: "Trial Balance", icon: Scale },
   { href: "/journal-entries", label: "Journal Entries", icon: FileText },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
