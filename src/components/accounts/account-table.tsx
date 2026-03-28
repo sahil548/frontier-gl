@@ -122,26 +122,15 @@ function flattenAccounts(accounts: SerializedAccount[]): SerializedAccount[] {
 }
 
 /**
- * Compute aggregated balance for parent accounts (sum of children balances).
+ * Display balance for an account.
+ * The API already returns aggregated balances for parent accounts,
+ * so we just return the balance directly.
  */
 function getDisplayBalance(
   account: SerializedAccount,
-  allAccounts: SerializedAccount[]
+  _allAccounts: SerializedAccount[]
 ): string {
-  if (account.parentId !== null) {
-    return account.balance;
-  }
-
-  const children = allAccounts.filter((a) => a.parentId === account.id);
-  if (children.length === 0) {
-    return account.balance;
-  }
-
-  const aggregated = children.reduce(
-    (sum, child) => sum.plus(new Decimal(child.balance)),
-    new Decimal(account.balance)
-  );
-  return aggregated.toString();
+  return account.balance;
 }
 
 type AccountTableProps = {

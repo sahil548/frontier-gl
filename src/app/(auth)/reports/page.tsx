@@ -50,7 +50,27 @@ interface BalanceSheetData {
   totalEquity: number;
 }
 
-type ActiveTab = "income-statement" | "balance-sheet";
+interface CashFlowItem {
+  accountName: string;
+  amount: number;
+}
+
+interface CashFlowSection {
+  label: string;
+  items: CashFlowItem[];
+  total: number;
+}
+
+interface CashFlowStatementData {
+  operating: CashFlowSection;
+  investing: CashFlowSection;
+  financing: CashFlowSection;
+  netChange: number;
+  beginningCash: number;
+  endingCash: number;
+}
+
+type ActiveTab = "income-statement" | "balance-sheet" | "cash-flow";
 
 // ─── Constants ──────────────────────────────────────────
 
@@ -196,6 +216,14 @@ export default function ReportsPage() {
   const [bsLoading, setBsLoading] = useState(true);
   const [asOfCalOpen, setAsOfCalOpen] = useState(false);
 
+  // Cash flow state
+  const [cfStartDate, setCfStartDate] = useState<Date>(getFirstOfMonth());
+  const [cfEndDate, setCfEndDate] = useState<Date>(getEndOfMonth());
+  const [cfData, setCfData] = useState<CashFlowStatementData | null>(null);
+  const [cfLoading, setCfLoading] = useState(true);
+  const [cfStartCalOpen, setCfStartCalOpen] = useState(false);
+  const [cfEndCalOpen, setCfEndCalOpen] = useState(false);
+
   const resolvedEntityId =
     currentEntityId === "all" && entities.length > 0
       ? entities[0].id
@@ -256,6 +284,34 @@ export default function ReportsPage() {
     }
   }, [resolvedEntityId, asOfDate, entities.length]);
 
+  // ─── Fetch cash flow statement ────────────────────
+
+  const fetchCashFlow = useCallback(async () => {
+    if (!resolvedEntityId || entities.length === 0) return;
+
+    setCfLoading(true);
+    try {
+      const params = new URLSearchParams({
+        startDate: toISODateString(cfStartDate),
+        endDate: toISODateString(cfEndDate),
+      });
+
+      const res = await fetch(
+        `/api/entities/${resolvedEntityId}/reports/cash-flow?${params}`
+      );
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) {
+          setCfData(json.data);
+        }
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setCfLoading(false);
+    }
+  }, [resolvedEntityId, cfStartDate, cfEndDate, entities.length]);
+
   // ─── Effects ────────────────────────────────────────
 
   useEffect(() => {
@@ -269,6 +325,12 @@ export default function ReportsPage() {
       fetchBalanceSheet();
     }
   }, [activeTab, fetchBalanceSheet]);
+
+  useEffect(() => {
+    if (activeTab === "cash-flow") {
+      fetchCashFlow();
+    }
+  }, [activeTab, fetchCashFlow]);
 
   // ─── Export handlers ────────────────────────────────
 
@@ -393,6 +455,54 @@ export default function ReportsPage() {
     );
   }
 
+  function handleExportCashFlow() {
+    if (!cfData) return;
+
+    const rows: Record<string, unknown>[] = [];
+
+    const addSection = (section: CashFlowSection) => {
+      rows.push({ Section: section.label, Item: "", Amount: "" });
+      for (const item of section.items) {
+        rows.push({
+          Section: "",
+          Item: item.accountName,
+          Amount: item.amount.toFixed(2),
+        });
+      }
+      rows.push({
+        Section: "",
+        Item: `Total ${section.label}`,
+        Amount: section.total.toFixed(2),
+      });
+      rows.push({ Section: "", Item: "", Amount: "" });
+    };
+
+    addSection(cfData.operating);
+    addSection(cfData.investing);
+    addSection(cfData.financing);
+
+    rows.push({
+      Section: "",
+      Item: "Net Change in Cash",
+      Amount: cfData.netChange.toFixed(2),
+    });
+    rows.push({
+      Section: "",
+      Item: "Beginning Cash Balance",
+      Amount: cfData.beginningCash.toFixed(2),
+    });
+    rows.push({
+      Section: "",
+      Item: "Ending Cash Balance",
+      Amount: cfData.endingCash.toFixed(2),
+    });
+
+    exportToCsv(
+      rows,
+      `cash-flow-${toISODateString(cfStartDate)}-to-${toISODateString(cfEndDate)}.csv`
+    );
+  }
+
   // ─── Early returns ────────────────────────────────
 
   if (entitiesLoading) {
@@ -459,6 +569,17 @@ export default function ReportsPage() {
           )}
         >
           Balance Sheet
+        </button>
+        <button
+          onClick={() => setActiveTab("cash-flow")}
+          className={cn(
+            "rounded-md px-4 py-2 text-sm font-medium transition-colors",
+            activeTab === "cash-flow"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Cash Flow
         </button>
       </div>
 
@@ -766,6 +887,251 @@ export default function ReportsPage() {
                               )}
                             </Badge>
                           )}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ─── Cash Flow Tab ─────────────────────────────── */}
+      {activeTab === "cash-flow" && (
+        <div className="space-y-6">
+          {/* Date range controls */}
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm text-muted-foreground">From</span>
+            <Popover open={cfStartCalOpen} onOpenChange={setCfStartCalOpen}>
+              <PopoverTrigger
+                render={
+                  <Button
+                    variant="outline"
+                    className="h-9 gap-2 font-normal"
+                  />
+                }
+              >
+                <CalendarIcon className="h-4 w-4" />
+                {formatDateDisplay(cfStartDate)}
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={cfStartDate}
+                  onSelect={(date) => {
+                    if (date) {
+                      setCfStartDate(date);
+                      setCfStartCalOpen(false);
+                    }
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+
+            <span className="text-sm text-muted-foreground">to</span>
+            <Popover open={cfEndCalOpen} onOpenChange={setCfEndCalOpen}>
+              <PopoverTrigger
+                render={
+                  <Button
+                    variant="outline"
+                    className="h-9 gap-2 font-normal"
+                  />
+                }
+              >
+                <CalendarIcon className="h-4 w-4" />
+                {formatDateDisplay(cfEndDate)}
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={cfEndDate}
+                  onSelect={(date) => {
+                    if (date) {
+                      setCfEndDate(date);
+                      setCfEndCalOpen(false);
+                    }
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Loading */}
+          {cfLoading && <ReportSkeleton />}
+
+          {/* Content */}
+          {!cfLoading && cfData && (
+            <>
+              {/* Export */}
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={handleExportCashFlow}
+                >
+                  <Download className="h-4 w-4" />
+                  Export CSV
+                </Button>
+              </div>
+
+              {/* Empty state */}
+              {cfData.operating.items.length <= 1 &&
+                cfData.investing.items.length === 0 &&
+                cfData.financing.items.length === 0 &&
+                cfData.netChange === 0 && (
+                  <div className="rounded-md border py-12 text-center">
+                    <p className="text-muted-foreground">
+                      No cash flow data found for this period.
+                    </p>
+                  </div>
+                )}
+
+              {/* Table */}
+              {(cfData.operating.items.length > 0 ||
+                cfData.investing.items.length > 0 ||
+                cfData.financing.items.length > 0) && (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[70%]">Description</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {/* Operating Activities */}
+                      <TableRow className="bg-muted/30 hover:bg-muted/30">
+                        <TableCell colSpan={2} className="py-2 font-semibold text-sm">
+                          {cfData.operating.label}
+                        </TableCell>
+                      </TableRow>
+                      {cfData.operating.items.map((item, i) => (
+                        <TableRow key={`op-${i}`}>
+                          <TableCell className="pl-6">{item.accountName}</TableCell>
+                          <TableCell className="text-right font-mono text-sm">
+                            {formatCurrency(item.amount)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow className="bg-muted/20 hover:bg-muted/20">
+                        <TableCell className="font-semibold text-sm">
+                          Net Cash from Operating Activities
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-sm font-semibold">
+                          {formatCurrency(cfData.operating.total)}
+                        </TableCell>
+                      </TableRow>
+
+                      {/* Investing Activities */}
+                      <TableRow className="bg-muted/30 hover:bg-muted/30">
+                        <TableCell colSpan={2} className="py-2 font-semibold text-sm">
+                          {cfData.investing.label}
+                        </TableCell>
+                      </TableRow>
+                      {cfData.investing.items.length === 0 ? (
+                        <TableRow>
+                          <TableCell className="pl-6 text-muted-foreground">
+                            No investing activities
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm">
+                            {formatCurrency(0)}
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        cfData.investing.items.map((item, i) => (
+                          <TableRow key={`inv-${i}`}>
+                            <TableCell className="pl-6">{item.accountName}</TableCell>
+                            <TableCell className="text-right font-mono text-sm">
+                              {formatCurrency(item.amount)}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                      <TableRow className="bg-muted/20 hover:bg-muted/20">
+                        <TableCell className="font-semibold text-sm">
+                          Net Cash from Investing Activities
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-sm font-semibold">
+                          {formatCurrency(cfData.investing.total)}
+                        </TableCell>
+                      </TableRow>
+
+                      {/* Financing Activities */}
+                      <TableRow className="bg-muted/30 hover:bg-muted/30">
+                        <TableCell colSpan={2} className="py-2 font-semibold text-sm">
+                          {cfData.financing.label}
+                        </TableCell>
+                      </TableRow>
+                      {cfData.financing.items.length === 0 ? (
+                        <TableRow>
+                          <TableCell className="pl-6 text-muted-foreground">
+                            No financing activities
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm">
+                            {formatCurrency(0)}
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        cfData.financing.items.map((item, i) => (
+                          <TableRow key={`fin-${i}`}>
+                            <TableCell className="pl-6">{item.accountName}</TableCell>
+                            <TableCell className="text-right font-mono text-sm">
+                              {formatCurrency(item.amount)}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                      <TableRow className="bg-muted/20 hover:bg-muted/20">
+                        <TableCell className="font-semibold text-sm">
+                          Net Cash from Financing Activities
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-sm font-semibold">
+                          {formatCurrency(cfData.financing.total)}
+                        </TableCell>
+                      </TableRow>
+
+                      {/* Spacer */}
+                      <TableRow>
+                        <TableCell colSpan={2} className="h-2 p-0" />
+                      </TableRow>
+
+                      {/* Net Change in Cash */}
+                      <TableRow className="bg-muted/50 font-bold">
+                        <TableCell className="font-bold">
+                          Net Change in Cash
+                        </TableCell>
+                        <TableCell
+                          className={cn(
+                            "text-right font-mono font-bold",
+                            cfData.netChange < 0
+                              ? "text-red-600 dark:text-red-400"
+                              : "text-green-600 dark:text-green-400"
+                          )}
+                        >
+                          {formatCurrency(cfData.netChange)}
+                        </TableCell>
+                      </TableRow>
+
+                      {/* Beginning Cash */}
+                      <TableRow>
+                        <TableCell>Beginning Cash Balance</TableCell>
+                        <TableCell className="text-right font-mono text-sm">
+                          {formatCurrency(cfData.beginningCash)}
+                        </TableCell>
+                      </TableRow>
+
+                      {/* Ending Cash */}
+                      <TableRow className="bg-muted/50 font-bold">
+                        <TableCell className="font-bold">
+                          Ending Cash Balance
+                        </TableCell>
+                        <TableCell className="text-right font-mono font-bold">
+                          {formatCurrency(cfData.endingCash)}
                         </TableCell>
                       </TableRow>
                     </TableBody>

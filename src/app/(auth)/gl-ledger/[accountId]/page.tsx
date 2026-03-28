@@ -53,11 +53,15 @@ export default function AccountLedgerPage() {
 
   const [data, setData] = useState<LedgerApiResponse | null>(null)
   const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState<LedgerFilterValues | null>(null)
+  const [filters, setFilters] = useState<LedgerFilterValues>({
+    dateRange: { from: startOfMonth(new Date()), to: new Date() },
+    memoSearch: "",
+    minAmount: "",
+    maxAmount: "",
+  })
 
   const fetchLedger = useCallback(async () => {
     if (!currentEntityId || currentEntityId === "all" || !accountId) return
-    if (!filters) return
 
     setLoading(true)
     try {
