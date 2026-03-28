@@ -2,9 +2,23 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
+import { BookmarkPlus } from "lucide-react";
+import { toast } from "sonner";
 import { useEntityContext } from "@/providers/entity-provider";
 import { JEForm } from "@/components/journal-entries/je-form";
 import { JEAuditTrail } from "@/components/journal-entries/je-audit-trail";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type SerializedLineItem = {
   id: string;
@@ -106,9 +120,14 @@ export default function JournalEntryDetailPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">
-        {entry.entryNumber} - Journal Entry
-      </h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {entry.entryNumber} - Journal Entry
+        </h1>
+        {entry.lineItems && entry.lineItems.length > 0 && (
+          <SaveAsTemplateButton entry={entry} />
+        )}
+      </div>
 
       <JEForm
         mode="edit"
@@ -121,5 +140,95 @@ export default function JournalEntryDetailPage() {
         <JEAuditTrail entries={entry.auditEntries} />
       )}
     </div>
+  );
+}
+
+function SaveAsTemplateButton({ entry }: { entry: SerializedJournalEntry }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(entry.description || "");
+  const [description, setDescription] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    if (!name.trim()) {
+      toast.error("Template name is required");
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(
+        `/api/entities/${entry.entityId}/templates`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: name.trim(),
+            description: description.trim() || undefined,
+            lines: (entry.lineItems ?? []).map((li) => ({
+              accountId: li.accountId,
+              debit: parseFloat(li.debit),
+              credit: parseFloat(li.credit),
+              memo: li.memo,
+            })),
+          }),
+        }
+      );
+      const json = await res.json();
+      if (res.ok && json.success) {
+        toast.success(`Template "${name}" saved`);
+        setOpen(false);
+      } else {
+        toast.error(json.error ?? "Failed to save template");
+      }
+    } catch {
+      toast.error("Failed to save template");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button variant="outline" />}>
+        <BookmarkPlus className="mr-2 h-4 w-4" />
+        Save as Template
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Save as Template</DialogTitle>
+          <DialogDescription>
+            Save this journal entry&apos;s line items as a reusable template.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="template-name">Template Name</Label>
+            <Input
+              id="template-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Monthly Rent Accrual"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="template-desc">Description (optional)</Label>
+            <Input
+              id="template-desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="e.g., Recurring monthly rent expense"
+            />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {entry.lineItems?.length ?? 0} line items will be saved.
+          </p>
+        </div>
+        <DialogFooter>
+          <Button onClick={handleSave} disabled={saving || !name.trim()}>
+            {saving ? "Saving..." : "Save Template"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
