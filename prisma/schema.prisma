@@ -35,6 +35,7 @@ model Entity {
   accounts       Account[]
   journalEntries JournalEntry[]
   periodCloses   PeriodClose[]
+  templates      JournalEntryTemplate[]
 
   @@index([createdById])
   @@index([isActive])
@@ -55,7 +56,8 @@ model Account {
   entity      Entity             @relation(fields: [entityId], references: [id])
   parent      Account?           @relation("AccountHierarchy", fields: [parentId], references: [id])
   children    Account[]          @relation("AccountHierarchy")
-  lineItems   JournalEntryLine[]
+  lineItems      JournalEntryLine[]
+  templateLines  JournalEntryTemplateLine[]
 
   @@unique([entityId, number])
   @@index([entityId, isActive])
@@ -129,6 +131,36 @@ model JournalEntryAudit {
 
   @@index([journalEntryId])
   @@map("journal_entry_audit")
+}
+
+model JournalEntryTemplate {
+  id          String                     @id @default(cuid())
+  entityId    String
+  name        String
+  description String?
+  createdBy   String
+  createdAt   DateTime                   @default(now())
+  updatedAt   DateTime                   @updatedAt
+  entity      Entity                     @relation(fields: [entityId], references: [id])
+  lines       JournalEntryTemplateLine[]
+
+  @@unique([entityId, name])
+  @@map("journal_entry_templates")
+}
+
+model JournalEntryTemplateLine {
+  id         String                 @id @default(cuid())
+  templateId String
+  accountId  String
+  debit      Decimal                @default(0) @db.Decimal(19, 4)
+  credit     Decimal                @default(0) @db.Decimal(19, 4)
+  memo       String?
+  sortOrder  Int                    @default(0)
+  template   JournalEntryTemplate   @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  account    Account                @relation(fields: [accountId], references: [id])
+
+  @@index([templateId])
+  @@map("journal_entry_template_lines")
 }
 
 model PeriodClose {

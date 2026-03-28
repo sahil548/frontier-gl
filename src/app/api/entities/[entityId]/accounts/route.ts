@@ -36,49 +36,23 @@ async function getUserEntityIds(clerkUserId: string): Promise<string[]> {
   return entities.map((e) => e.id);
 }
 
-/**
- * Serialize an account with its balance for JSON transport.
- */
-function serializeAccount(account: {
-  id: string;
-  entityId: string;
-  number: string;
-  name: string;
-  type: string;
-  description: string | null;
-  parentId: string | null;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  balance?: { debitTotal: Decimal; creditTotal: Decimal; balance: Decimal } | null;
-  children?: Array<{
-    id: string;
-    balance?: { debitTotal: Decimal; creditTotal: Decimal; balance: Decimal } | null;
-  }>;
-}) {
-  // For parent accounts, compute aggregated balance from children
-  let displayBalance: string;
-  if (account.children && account.children.length > 0) {
-    const aggregated = account.children.reduce(
-      (sum, child) => {
-        if (child.balance) {
-          return sum.plus(new Decimal(child.balance.balance.toString()));
-        }
-        return sum;
-      },
-      new Decimal(0)
-    );
-    // Also include parent's own balance if it has one
-    if (account.balance) {
-      displayBalance = aggregated.plus(new Decimal(account.balance.balance.toString())).toString();
-    } else {
-      displayBalance = aggregated.toString();
-    }
-  } else {
-    displayBalance = account.balance
-      ? serializeDecimal(new Decimal(account.balance.balance.toString())) ?? "0"
-      : "0";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function aggregateBalance(node: any): Decimal {
+  let total = new Decimal(0);
+  if (node.balance) {
+    total = total.plus(new Decimal(node.balance.balance.toString()));
   }
+  if (node.children && node.children.length > 0) {
+    for (const child of node.children) {
+      total = total.plus(aggregateBalance(child));
+    }
+  }
+  return total;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function serializeAccount(account: any) {
+  const displayBalance = aggregateBalance(account).toString();
 
   return {
     id: account.id,
@@ -139,7 +113,19 @@ export async function GET(
       balance: true,
       children: {
         where: { isActive: true },
-        include: { balance: true },
+        include: {
+          balance: true,
+          children: {
+            where: { isActive: true },
+            include: {
+              balance: true,
+              children: {
+                where: { isActive: true },
+                include: { balance: true },
+              },
+            },
+          },
+        },
       },
     },
     orderBy: { number: "asc" },
@@ -193,10 +179,21 @@ export async function POST(
       return errorResponse("Parent account not found", 400);
     }
 
-    // CRITICAL: Reject 3rd-level nesting (parent already has a parent)
-    if (parent.parentId) {
+    // Enforce max 4-level hierarchy depth
+    let depth = 1;
+    let ancestor = parent;
+    while (ancestor.parentId) {
+      depth++;
+      if (depth >= 4) break;
+      const next = await prisma.account.findUnique({
+        where: { id: ancestor.parentId },
+      });
+      if (!next) break;
+      ancestor = next;
+    }
+    if (depth >= 4) {
       return errorResponse(
-        "Cannot create 3rd-level account. Maximum hierarchy depth is 2 levels (parent and sub-account).",
+        "Maximum hierarchy depth is 4 levels.",
         400
       );
     }
@@ -245,13 +242,7 @@ export async function POST(
 
     return tx.account.findUnique({
       where: { id: created.id },
-      include: {
-        balance: true,
-        children: {
-          where: { isActive: true },
-          include: { balance: true },
-        },
-      },
+      include: { balance: true, children: { where: { isActive: true }, include: { balance: true } } },
     });
   });
 

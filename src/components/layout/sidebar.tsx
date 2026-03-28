@@ -10,6 +10,8 @@ import {
   BookText,
   Scale,
   FileText,
+  BarChart3,
+  Lock,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -32,9 +34,11 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/entities", label: "Entities", icon: Building2 },
   { href: "/accounts", label: "Chart of Accounts", icon: BookOpen },
+  { href: "/journal-entries", label: "Journal Entries", icon: FileText },
   { href: "/gl-ledger", label: "GL Ledger", icon: BookText },
   { href: "/trial-balance", label: "Trial Balance", icon: Scale },
-  { href: "/journal-entries", label: "Journal Entries", icon: FileText },
+  { href: "/reports", label: "Reports", icon: BarChart3 },
+  { href: "/period-close", label: "Period Close", icon: Lock },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

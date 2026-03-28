@@ -1,10 +1,12 @@
 "use client";
 
+import { useRef } from "react";
 import Link from "next/link";
 import { PlusCircle } from "lucide-react";
 import { useEntityContext } from "@/providers/entity-provider";
 import { Button } from "@/components/ui/button";
 import { JEList } from "@/components/journal-entries/je-list";
+import { CsvImportDialog } from "@/components/journal-entries/csv-import-dialog";
 
 /**
  * Journal Entries list page.
@@ -12,6 +14,7 @@ import { JEList } from "@/components/journal-entries/je-list";
  */
 export default function JournalEntriesPage() {
   const { currentEntityId, entities, isLoading } = useEntityContext();
+  const listRef = useRef<{ refresh: () => void }>(null);
 
   if (isLoading) {
     return (
@@ -64,10 +67,16 @@ export default function JournalEntriesPage() {
             </p>
           )}
         </div>
-        <Button render={<Link href="/journal-entries/new" />}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          New Journal Entry
-        </Button>
+        <div className="flex gap-2">
+          <CsvImportDialog
+            entityId={currentEntityId}
+            onSuccess={() => listRef.current?.refresh()}
+          />
+          <Button render={<Link href="/journal-entries/new" />}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            New Journal Entry
+          </Button>
+        </div>
       </div>
 
       {/* JE List with tabs */}
