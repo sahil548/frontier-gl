@@ -46,7 +46,16 @@ export async function GET() {
     return errorResponse("Unauthorized", 401);
   }
 
-  const user = await getOrCreateUser(userId);
+  // Fast path: look up user by clerkId without the expensive currentUser() call.
+  // The user record is created on first entity creation (POST), so if it doesn't
+  // exist yet, just return an empty list (triggers onboarding).
+  const user = await prisma.user.findUnique({
+    where: { clerkId: userId },
+  });
+
+  if (!user) {
+    return successResponse([]);
+  }
 
   const entities = await prisma.entity.findMany({
     where: {
