@@ -17,14 +17,14 @@ BEGIN
 
     SELECT EXISTS(
       SELECT 1 FROM period_closes
-      WHERE entity_id = NEW.entity_id
+      WHERE "entityId" = NEW."entityId"
         AND year = je_year
         AND month = je_month
     ) INTO is_closed;
 
     IF is_closed THEN
       RAISE EXCEPTION 'Cannot post to closed period: %/% for entity %',
-        je_year, je_month, NEW.entity_id;
+        je_year, je_month, NEW."entityId";
     END IF;
   END IF;
 

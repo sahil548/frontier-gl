@@ -1,12 +1,5 @@
-// Frontier GL - Prisma Schema
-// PostgreSQL via Neon (managed serverless Postgres)
-//
-// CONVENTIONS (for all future phases):
-// - All money/currency fields MUST use Decimal @db.Decimal(19,4)
-//   This ensures precision for financial calculations (DI-01)
-// - All financial tables MUST include entityId String with
-//   @relation(fields: [entityId], references: [id]) to Entity
-//   This enforces entity-scoped data isolation (DI-02)
+// DI-01: All money/financial fields use Decimal(19,4) — @db.Decimal(19, 4)
+// DI-02: All financial tables include entityId FK for entity-scoped data isolation
 
 generator client {
   provider = "prisma-client"
@@ -17,7 +10,139 @@ datasource db {
   provider = "postgresql"
 }
 
-// ─── Enums ───────────────────────────────────────────────
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  entities  Entity[]
+}
+
+model Entity {
+  id             String         @id @default(cuid())
+  name           String
+  type           EntityType
+  typeOther      String?
+  fiscalYearEnd  String
+  coaTemplate    CoaTemplate    @default(BLANK)
+  isActive       Boolean        @default(true)
+  createdById    String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  createdBy      User           @relation(fields: [createdById], references: [id])
+  accounts       Account[]
+  journalEntries JournalEntry[]
+  periodCloses   PeriodClose[]
+
+  @@index([createdById])
+  @@index([isActive])
+}
+
+model Account {
+  id          String             @id @default(cuid())
+  entityId    String
+  number      String
+  name        String
+  type        AccountType
+  description String?
+  parentId    String?
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  balance     AccountBalance?
+  entity      Entity             @relation(fields: [entityId], references: [id])
+  parent      Account?           @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children    Account[]          @relation("AccountHierarchy")
+  lineItems   JournalEntryLine[]
+
+  @@unique([entityId, number])
+  @@index([entityId, isActive])
+  @@index([entityId, type])
+  @@map("accounts")
+}
+
+model AccountBalance {
+  id          String   @id @default(cuid())
+  accountId   String   @unique
+  debitTotal  Decimal  @default(0) @db.Decimal(19, 4)
+  creditTotal Decimal  @default(0) @db.Decimal(19, 4)
+  balance     Decimal  @default(0) @db.Decimal(19, 4)
+  updatedAt   DateTime @updatedAt
+  account     Account  @relation(fields: [accountId], references: [id])
+
+  @@map("account_balances")
+}
+
+model JournalEntry {
+  id           String              @id @default(cuid())
+  entityId     String
+  entryNumber  String
+  date         DateTime            @db.Date
+  description  String
+  status       JournalEntryStatus  @default(DRAFT)
+  createdBy    String
+  approvedBy   String?
+  postedBy     String?
+  createdAt    DateTime            @default(now())
+  approvedAt   DateTime?
+  postedAt     DateTime?
+  updatedAt    DateTime            @updatedAt
+  reversalOfId String?             @unique
+  entity       Entity              @relation(fields: [entityId], references: [id])
+  reversalOf   JournalEntry?       @relation("Reversal", fields: [reversalOfId], references: [id])
+  reversedBy   JournalEntry?       @relation("Reversal")
+  auditEntries JournalEntryAudit[]
+  lineItems    JournalEntryLine[]
+
+  @@unique([entityId, entryNumber])
+  @@index([entityId, status])
+  @@index([entityId, date])
+  @@map("journal_entries")
+}
+
+model JournalEntryLine {
+  id             String       @id @default(cuid())
+  journalEntryId String
+  accountId      String
+  debit          Decimal      @default(0) @db.Decimal(19, 4)
+  credit         Decimal      @default(0) @db.Decimal(19, 4)
+  memo           String?
+  sortOrder      Int          @default(0)
+  account        Account      @relation(fields: [accountId], references: [id])
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+
+  @@index([journalEntryId])
+  @@index([accountId])
+  @@map("journal_entry_lines")
+}
+
+model JournalEntryAudit {
+  id             String       @id @default(cuid())
+  journalEntryId String
+  action         String
+  userId         String
+  changes        Json?
+  createdAt      DateTime     @default(now())
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id])
+
+  @@index([journalEntryId])
+  @@map("journal_entry_audit")
+}
+
+model PeriodClose {
+  id       String   @id @default(cuid())
+  entityId String
+  year     Int
+  month    Int
+  closedBy String
+  closedAt DateTime @default(now())
+  entity   Entity   @relation(fields: [entityId], references: [id])
+
+  @@unique([entityId, year, month])
+  @@map("period_closes")
+}
 
 enum EntityType {
   LP
@@ -48,153 +173,4 @@ enum JournalEntryStatus {
   DRAFT
   APPROVED
   POSTED
-}
-
-// ─── Models ──────────────────────────────────────────────
-
-model User {
-  id        String   @id @default(cuid())
-  clerkId   String   @unique
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  entities Entity[]
-}
-
-model Entity {
-  id            String      @id @default(cuid())
-  name          String
-  type          EntityType
-  typeOther     String? // Free text when type is OTHER
-  fiscalYearEnd String // "MM-DD" format, e.g. "12-31"
-  coaTemplate   CoaTemplate @default(BLANK)
-  isActive      Boolean     @default(true)
-
-  createdById String
-  createdBy   User   @relation(fields: [createdById], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Phase 2 relations
-  accounts       Account[]
-  journalEntries JournalEntry[]
-  periodCloses   PeriodClose[]
-
-  @@index([createdById])
-  @@index([isActive])
-}
-
-// ─── Phase 2: Accounting Engine Models ───────────────────
-
-model Account {
-  id          String      @id @default(cuid())
-  entityId    String
-  entity      Entity      @relation(fields: [entityId], references: [id])
-  number      String      // "10000", "10100", etc.
-  name        String
-  type        AccountType
-  description String?
-  parentId    String?
-  parent      Account?    @relation("AccountHierarchy", fields: [parentId], references: [id])
-  children    Account[]   @relation("AccountHierarchy")
-  isActive    Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-
-  lineItems   JournalEntryLine[]
-  balance     AccountBalance?
-
-  @@unique([entityId, number])
-  @@index([entityId, isActive])
-  @@index([entityId, type])
-  @@map("accounts")
-}
-
-model AccountBalance {
-  id          String   @id @default(cuid())
-  accountId   String   @unique
-  account     Account  @relation(fields: [accountId], references: [id])
-  debitTotal  Decimal  @default(0) @db.Decimal(19, 4)
-  creditTotal Decimal  @default(0) @db.Decimal(19, 4)
-  balance     Decimal  @default(0) @db.Decimal(19, 4) // debitTotal - creditTotal
-  updatedAt   DateTime @updatedAt
-
-  @@map("account_balances")
-}
-
-model JournalEntry {
-  id          String              @id @default(cuid())
-  entityId    String
-  entity      Entity              @relation(fields: [entityId], references: [id])
-  entryNumber String              // "JE-001" auto-generated per entity
-  date        DateTime            @db.Date
-  description String
-  status      JournalEntryStatus  @default(DRAFT)
-
-  // Audit fields
-  createdBy   String              // Clerk user ID
-  approvedBy  String?
-  postedBy    String?
-  createdAt   DateTime            @default(now())
-  approvedAt  DateTime?
-  postedAt    DateTime?
-  updatedAt   DateTime            @updatedAt
-
-  // Reversal linking
-  reversalOfId String?            @unique
-  reversalOf   JournalEntry?      @relation("Reversal", fields: [reversalOfId], references: [id])
-  reversedBy   JournalEntry?      @relation("Reversal")
-
-  lineItems    JournalEntryLine[]
-  auditEntries JournalEntryAudit[]
-
-  @@unique([entityId, entryNumber])
-  @@index([entityId, status])
-  @@index([entityId, date])
-  @@map("journal_entries")
-}
-
-model JournalEntryLine {
-  id             String       @id @default(cuid())
-  journalEntryId String
-  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
-  accountId      String
-  account        Account      @relation(fields: [accountId], references: [id])
-  debit          Decimal      @default(0) @db.Decimal(19, 4)
-  credit         Decimal      @default(0) @db.Decimal(19, 4)
-  memo           String?
-  sortOrder      Int          @default(0)
-
-  @@index([journalEntryId])
-  @@index([accountId])
-  @@map("journal_entry_lines")
-}
-
-model JournalEntryAudit {
-  id             String       @id @default(cuid())
-  journalEntryId String
-  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id])
-  action         String       // "CREATED", "EDITED", "APPROVED", "POSTED", "REVERSAL_CREATED"
-  userId         String       // Clerk user ID
-  changes        Json?        // diff of what changed (for edits)
-  createdAt      DateTime     @default(now())
-
-  @@index([journalEntryId])
-  @@map("journal_entry_audit")
-}
-
-model PeriodClose {
-  id        String   @id @default(cuid())
-  entityId  String
-  entity    Entity   @relation(fields: [entityId], references: [id])
-  year      Int
-  month     Int
-  closedBy  String   // Clerk user ID
-  closedAt  DateTime @default(now())
-
-  @@unique([entityId, year, month])
-  @@map("period_closes")
 }

@@ -206,6 +206,7 @@ function JEFormInner({
       }
 
       router.push(`/journal-entries/${savedEntry.id}`);
+      router.refresh();
     } catch {
       toast.error("An error occurred while saving");
     } finally {

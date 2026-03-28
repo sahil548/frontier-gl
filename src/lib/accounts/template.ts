@@ -95,16 +95,14 @@ export async function applyTemplate(
   // Get existing account numbers for this entity
   const existingAccounts = await client.account.findMany({
     where: { entityId },
-    select: { number: true },
+    select: { id: true, number: true },
   });
   const existingNumbers = new Set(existingAccounts.map((a) => a.number));
 
   // Build a map of number -> id for parent lookups
   const numberToId = new Map<string, string>();
-  for (const acct of existingAccounts as Array<{ number: string; id?: string }>) {
-    if ("id" in acct && acct.id) {
-      numberToId.set(acct.number, acct.id);
-    }
+  for (const acct of existingAccounts) {
+    numberToId.set(acct.number, acct.id);
   }
 
   let inserted = 0;

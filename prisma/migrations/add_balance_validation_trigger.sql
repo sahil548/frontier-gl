@@ -9,15 +9,15 @@ DECLARE
   je_id TEXT;
 BEGIN
   IF TG_OP = 'DELETE' THEN
-    je_id := OLD.journal_entry_id;
+    je_id := OLD."journalEntryId";
   ELSE
-    je_id := NEW.journal_entry_id;
+    je_id := NEW."journalEntryId";
   END IF;
 
   SELECT COALESCE(SUM(debit), 0), COALESCE(SUM(credit), 0)
   INTO total_debit, total_credit
   FROM journal_entry_lines
-  WHERE journal_entry_id = je_id;
+  WHERE "journalEntryId" = je_id;
 
   IF total_debit != total_credit THEN
     RAISE EXCEPTION 'Journal entry % is unbalanced: total debits (%) != total credits (%)',

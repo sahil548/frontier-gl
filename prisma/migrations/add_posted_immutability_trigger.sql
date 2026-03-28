@@ -39,9 +39,9 @@ DECLARE
   je_status TEXT;
 BEGIN
   IF TG_OP = 'DELETE' THEN
-    SELECT status INTO je_status FROM journal_entries WHERE id = OLD.journal_entry_id;
+    SELECT status INTO je_status FROM journal_entries WHERE id = OLD."journalEntryId";
   ELSE
-    SELECT status INTO je_status FROM journal_entries WHERE id = NEW.journal_entry_id;
+    SELECT status INTO je_status FROM journal_entries WHERE id = NEW."journalEntryId";
   END IF;
 
   IF je_status = 'POSTED' THEN
