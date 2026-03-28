@@ -57,6 +57,12 @@ type JEFormProps = {
   mode: "create" | "edit";
   entityId: string;
   entry?: SerializedJournalEntry;
+  initialLines?: Array<{
+    accountId: string;
+    debit: string;
+    credit: string;
+    memo: string | null;
+  }>;
 };
 
 /**
@@ -65,7 +71,7 @@ type JEFormProps = {
  * Three action buttons: Save Draft, Approve, Post (with balance gating).
  * Reverse button on posted entries.
  */
-export function JEForm({ mode, entityId, entry }: JEFormProps) {
+export function JEForm({ mode, entityId, entry, initialLines }: JEFormProps) {
   const router = useRouter();
   const isPosted = entry?.status === "POSTED";
   const isApproved = entry?.status === "APPROVED";
@@ -74,6 +80,12 @@ export function JEForm({ mode, entityId, entry }: JEFormProps) {
 
   const defaultLineItems =
     entry?.lineItems?.map((li) => ({
+      accountId: li.accountId,
+      debit: li.debit,
+      credit: li.credit,
+      memo: li.memo ?? "",
+    })) ??
+    initialLines?.map((li) => ({
       accountId: li.accountId,
       debit: li.debit,
       credit: li.credit,

@@ -7,11 +7,21 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  BookCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useEntityContext } from "@/providers/entity-provider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Card,
   CardContent,
@@ -98,6 +108,10 @@ export default function PeriodClosePage() {
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [bulkMonth, setBulkMonth] = useState<number>(0);
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [yecOpen, setYecOpen] = useState(false);
+  const [yecLoading, setYecLoading] = useState(false);
+  const [equityAccounts, setEquityAccounts] = useState<Array<{ id: string; number: string; name: string }>>([]);
+  const [selectedREAccount, setSelectedREAccount] = useState<string>("");
 
   const isAllEntities = currentEntityId === "all";
 
@@ -239,6 +253,63 @@ export default function PeriodClosePage() {
     setBulkLoading(false);
   }
 
+  // ─── Year-End Close ──────────────────────────────────
+
+  async function fetchEquityAccounts() {
+    try {
+      const res = await fetch(`/api/entities/${currentEntityId}/accounts`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) {
+          const equity = json.data.filter(
+            (a: { type: string; parentId: string | null; isActive: boolean }) =>
+              a.type === "EQUITY" && a.isActive
+          );
+          setEquityAccounts(equity);
+          // Auto-select "Retained Earnings" if it exists
+          const re = equity.find((a: { name: string }) =>
+            a.name.toLowerCase().includes("retained earnings")
+          );
+          if (re) setSelectedREAccount(re.id);
+        }
+      }
+    } catch { /* ignore */ }
+  }
+
+  async function runYearEndClose() {
+    if (!selectedREAccount) {
+      toast.error("Select a retained earnings account");
+      return;
+    }
+    setYecLoading(true);
+    try {
+      const res = await fetch(
+        `/api/entities/${currentEntityId}/year-end-close`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fiscalYear: year,
+            retainedEarningsAccountId: selectedREAccount,
+          }),
+        }
+      );
+      const json = await res.json();
+      if (res.ok && json.success) {
+        toast.success(
+          `Year-end close complete: ${json.data.entryNumber} created`
+        );
+        setYecOpen(false);
+      } else {
+        toast.error(json.error ?? "Year-end close failed");
+      }
+    } catch {
+      toast.error("Year-end close failed");
+    } finally {
+      setYecLoading(false);
+    }
+  }
+
   // ─── Summary counts ───────────────────────────────────
 
   const closedCount = Array.from({ length: 12 }, (_, i) => i + 1).filter(
@@ -342,7 +413,7 @@ export default function PeriodClosePage() {
         </CardHeader>
         <CardContent className="flex items-center gap-3">
           <Select
-            value={bulkMonth}
+            value={bulkMonth || null}
             onValueChange={(val) => setBulkMonth(val as number)}
           >
             <SelectTrigger className="w-44">
@@ -444,6 +515,85 @@ export default function PeriodClosePage() {
             );
           })}
         </div>
+      )}
+
+      {/* Year-End Close */}
+      {!loading && (
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BookCheck className="h-4 w-4" />
+              Year-End Close
+            </CardTitle>
+            <CardDescription>
+              Generate closing entries that zero out income and expense accounts
+              to retained earnings. All 12 months must be closed first.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Dialog
+              open={yecOpen}
+              onOpenChange={(open) => {
+                setYecOpen(open);
+                if (open) fetchEquityAccounts();
+              }}
+            >
+              <DialogTrigger
+                render={
+                  <Button disabled={closedCount < 12} />
+                }
+              >
+                <BookCheck className="mr-2 h-4 w-4" />
+                {closedCount < 12
+                  ? `Close all 12 months first (${closedCount}/12)`
+                  : `Run Year-End Close for ${year}`}
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Year-End Close — FY{year}</DialogTitle>
+                  <DialogDescription>
+                    This will create a posted journal entry that zeros out all
+                    income and expense accounts and transfers the net amount to
+                    the selected retained earnings account.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">
+                    Retained Earnings Account
+                  </label>
+                  <Select
+                    value={selectedREAccount || null}
+                    onValueChange={(val) => setSelectedREAccount(val as string)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select equity account" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {equityAccounts.map((acct) => (
+                        <SelectItem key={acct.id} value={acct.id}>
+                          {acct.number} — {acct.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <DialogFooter>
+                  <Button
+                    onClick={runYearEndClose}
+                    disabled={!selectedREAccount || yecLoading}
+                  >
+                    {yecLoading && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Generate Closing Entry
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { UserButton } from "@clerk/nextjs";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { EntitySelector } from "@/components/layout/entity-selector";
 import { MobileSidebarTrigger } from "@/components/layout/sidebar";
 
 export function Header() {
@@ -10,6 +11,8 @@ export function Header() {
       <MobileSidebarTrigger />
 
       <div className="flex-1" />
+
+      <EntitySelector />
 
       <ThemeToggle />
 

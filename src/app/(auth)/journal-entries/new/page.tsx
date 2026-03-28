@@ -1,14 +1,21 @@
 "use client";
 
+import { useState } from "react";
 import { useEntityContext } from "@/providers/entity-provider";
 import { JEForm } from "@/components/journal-entries/je-form";
+import { TemplateSelector } from "@/components/journal-entries/template-selector";
 
-/**
- * New Journal Entry page.
- * Renders the JE form in create mode.
- */
+interface TemplateLine {
+  accountId: string;
+  debit: string;
+  credit: string;
+  memo: string | null;
+}
+
 export default function NewJournalEntryPage() {
   const { currentEntityId, entities, isLoading } = useEntityContext();
+  const [templateLines, setTemplateLines] = useState<TemplateLine[] | null>(null);
+  const [formKey, setFormKey] = useState(0);
 
   if (isLoading) {
     return (
@@ -44,12 +51,28 @@ export default function NewJournalEntryPage() {
     );
   }
 
+  const handleTemplateSelect = (lines: TemplateLine[]) => {
+    setTemplateLines(lines);
+    setFormKey((k) => k + 1); // force re-mount to reset form with new defaults
+  };
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">
-        New Journal Entry
-      </h1>
-      <JEForm mode="create" entityId={currentEntityId} />
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          New Journal Entry
+        </h1>
+        <TemplateSelector
+          entityId={currentEntityId}
+          onSelect={handleTemplateSelect}
+        />
+      </div>
+      <JEForm
+        key={formKey}
+        mode="create"
+        entityId={currentEntityId}
+        initialLines={templateLines ?? undefined}
+      />
     </div>
   );
 }
