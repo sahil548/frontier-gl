@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { CalendarIcon } from "lucide-react";
 import { useEntityContext } from "@/providers/entity-provider";
 import { Button } from "@/components/ui/button";
@@ -387,9 +388,15 @@ function AccountTypeGroupRows({ group }: { group: AccountTypeGroup }) {
 
       {/* Account rows */}
       {group.rows.map((row) => (
-        <TableRow key={row.accountId}>
+        <TableRow
+          key={row.accountId}
+          className="cursor-pointer hover:bg-muted/50"
+          onClick={() => window.location.href = `/gl-ledger/${row.accountId}`}
+        >
           <TableCell className="font-mono text-sm pl-6">
-            {row.accountNumber}
+            <Link href={`/gl-ledger/${row.accountId}`} className="hover:underline text-primary">
+              {row.accountNumber}
+            </Link>
           </TableCell>
           <TableCell>{row.accountName}</TableCell>
           <TableCell>

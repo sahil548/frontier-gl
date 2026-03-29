@@ -156,8 +156,12 @@ function SectionRows({
 
       {/* Account rows */}
       {rows.map((row) => (
-        <TableRow key={row.accountId}>
-          <TableCell className="font-mono text-sm pl-6">
+        <TableRow
+          key={row.accountId}
+          className="cursor-pointer hover:bg-muted/50"
+          onClick={() => window.location.href = `/gl-ledger/${row.accountId}`}
+        >
+          <TableCell className="font-mono text-sm pl-6 text-primary hover:underline">
             {row.accountNumber}
           </TableCell>
           <TableCell>{row.accountName}</TableCell>
