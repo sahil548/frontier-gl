@@ -29,6 +29,7 @@ type SerializedLineItem = {
   memo: string | null;
   sortOrder: number;
   account?: { id: string; number: string; name: string; type: string };
+  dimensionTags?: Record<string, string>;
 };
 
 type AuditEntry = {

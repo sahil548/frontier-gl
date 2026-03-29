@@ -195,6 +195,7 @@ export async function POST(
   }
 
   const { date, description, lineItems } = result.data;
+  console.log("JE POST validated payload:", JSON.stringify({ date, description, lineItemCount: lineItems.length, lineItems: lineItems.map((li, i) => ({ i, accountId: li.accountId.slice(-6), debit: li.debit, credit: li.credit, dimTags: li.dimensionTags })) }));
 
   // Validate all accountIds exist and belong to this entity
   const accountIds = lineItems.map((li) => li.accountId);
@@ -223,64 +224,93 @@ export async function POST(
     );
   }
 
-  // Create journal entry within transaction (auto-number + create + audit)
-  const entry = await prisma.$transaction(async (tx) => {
-    const entryNumber = await generateNextEntryNumber(tx, entityId);
+  // Create journal entry within transaction (auto-number + create + audit + dimension tags)
+  try {
+    const entry = await prisma.$transaction(async (tx) => {
+      const entryNumber = await generateNextEntryNumber(tx, entityId);
 
-    const je = await tx.journalEntry.create({
-      data: {
-        entityId,
-        entryNumber,
-        date: new Date(date),
-        description,
-        status: "DRAFT",
-        createdBy: userId,
-        lineItems: {
-          create: lineItems.map((li, index) => ({
-            accountId: li.accountId,
-            debit: new Prisma.Decimal(li.debit || "0"),
-            credit: new Prisma.Decimal(li.credit || "0"),
-            memo: li.memo || null,
-            sortOrder: index,
-            dimensionTags: {
-              create: Object.values(li.dimensionTags ?? {})
-                .filter(Boolean)
-                .map((tagId) => ({ dimensionTagId: tagId })),
-            },
-          })),
+      // Step 1: Create JE with line items (no dimension tags yet)
+      const je = await tx.journalEntry.create({
+        data: {
+          entityId,
+          entryNumber,
+          date: new Date(date),
+          description,
+          status: "DRAFT",
+          createdBy: userId,
+          lineItems: {
+            create: lineItems.map((li, index) => ({
+              accountId: li.accountId,
+              debit: new Prisma.Decimal(li.debit || "0"),
+              credit: new Prisma.Decimal(li.credit || "0"),
+              memo: li.memo || null,
+              sortOrder: index,
+            })),
+          },
         },
-      },
-      include: {
-        lineItems: {
-          include: {
-            account: { select: { id: true, number: true, name: true, type: true } },
-            dimensionTags: {
-              include: {
-                dimensionTag: {
-                  include: { dimension: { select: { id: true, name: true } } },
+        include: {
+          lineItems: {
+            orderBy: { sortOrder: "asc" },
+          },
+        },
+      });
+
+      // Step 2: Create dimension tag junction records
+      const tagCreates: Array<{ journalEntryLineId: string; dimensionTagId: string }> = [];
+      for (let i = 0; i < je.lineItems.length; i++) {
+        const li = lineItems[i];
+        const lineId = je.lineItems[i].id;
+        if (li.dimensionTags) {
+          for (const tagId of Object.values(li.dimensionTags)) {
+            if (tagId) {
+              tagCreates.push({ journalEntryLineId: lineId, dimensionTagId: tagId });
+            }
+          }
+        }
+      }
+      if (tagCreates.length > 0) {
+        await tx.journalEntryLineDimensionTag.createMany({ data: tagCreates });
+      }
+
+      // Step 3: Create audit trail
+      await tx.journalEntryAudit.create({
+        data: {
+          journalEntryId: je.id,
+          action: "CREATED",
+          userId,
+        },
+      });
+
+      // Step 4: Re-fetch with full includes for response
+      const full = await tx.journalEntry.findUniqueOrThrow({
+        where: { id: je.id },
+        include: {
+          lineItems: {
+            include: {
+              account: { select: { id: true, number: true, name: true, type: true } },
+              dimensionTags: {
+                include: {
+                  dimensionTag: {
+                    include: { dimension: { select: { id: true, name: true } } },
+                  },
                 },
               },
             },
+            orderBy: { sortOrder: "asc" },
           },
-          orderBy: { sortOrder: "asc" },
         },
-      },
+      });
+
+      return full;
     });
 
-    // Create audit trail
-    await tx.journalEntryAudit.create({
-      data: {
-        journalEntryId: je.id,
-        action: "CREATED",
-        userId,
-      },
-    });
-
-    return je;
-  });
-
-  return successResponse(
-    serializeJournalEntry(entry as unknown as Record<string, unknown>),
-    201
-  );
+    return successResponse(
+      serializeJournalEntry(entry as unknown as Record<string, unknown>),
+      201
+    );
+  } catch (err) {
+    console.error("JE create error:", err);
+    console.error("JE create lineItems with tags:", JSON.stringify(lineItems.map(li => li.dimensionTags)));
+    return errorResponse("Failed to create journal entry", 500);
+  }
 }
