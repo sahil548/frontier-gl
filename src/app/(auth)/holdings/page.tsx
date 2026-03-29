@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -919,8 +919,8 @@ export default function HoldingsPage() {
                 const isExpanded = expandedIds.has(item.id);
                 const expandable = canExpand(item);
                 return (
-                  <>
-                    <TableRow key={item.id} className={cn(isExpanded && "bg-muted/20")}>
+                  <React.Fragment key={item.id}>
+                    <TableRow className={cn(isExpanded && "bg-muted/20")}>
                       <TableCell className="w-8 px-2">
                         {expandable && (
                           <button
@@ -996,7 +996,7 @@ export default function HoldingsPage() {
                         onBalanceUpdated={fetchItems}
                       />
                     )}
-                  </>
+                  </React.Fragment>
                 );
               })}
             </TableBody>
