@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { CalendarIcon, Download } from "lucide-react";
 import { useEntityContext } from "@/providers/entity-provider";
 import { Button } from "@/components/ui/button";
+import { IncomeStatementView } from "@/components/reports/income-statement-view";
 import {
   Popover,
   PopoverContent,
@@ -207,14 +208,6 @@ export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("income-statement");
   const [basis, setBasis] = useState<'accrual' | 'cash'>('accrual');
 
-  // Income statement state
-  const [startDate, setStartDate] = useState<Date>(getFirstOfMonth());
-  const [endDate, setEndDate] = useState<Date>(getEndOfMonth());
-  const [isData, setIsData] = useState<IncomeStatementData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [startCalOpen, setStartCalOpen] = useState(false);
-  const [endCalOpen, setEndCalOpen] = useState(false);
-
   // Balance sheet state
   const [asOfDate, setAsOfDate] = useState<Date>(new Date());
   const [bsData, setBsData] = useState<BalanceSheetData | null>(null);
@@ -233,35 +226,6 @@ export default function ReportsPage() {
     currentEntityId === "all" && entities.length > 0
       ? entities[0].id
       : currentEntityId;
-
-  // ─── Fetch income statement ─────────────────────────
-
-  const fetchIncomeStatement = useCallback(async () => {
-    if (!resolvedEntityId || entities.length === 0) return;
-
-    setIsLoading(true);
-    try {
-      const params = new URLSearchParams({
-        startDate: toISODateString(startDate),
-        endDate: toISODateString(endDate),
-        basis,
-      });
-
-      const res = await fetch(
-        `/api/entities/${resolvedEntityId}/reports/income-statement?${params}`
-      );
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success) {
-          setIsData(json.data);
-        }
-      }
-    } catch {
-      // Silently fail
-    } finally {
-      setIsLoading(false);
-    }
-  }, [resolvedEntityId, startDate, endDate, basis, entities.length]);
 
   // ─── Fetch balance sheet ────────────────────────────
 
@@ -322,12 +286,6 @@ export default function ReportsPage() {
   // ─── Effects ────────────────────────────────────────
 
   useEffect(() => {
-    if (activeTab === "income-statement") {
-      fetchIncomeStatement();
-    }
-  }, [activeTab, fetchIncomeStatement]);
-
-  useEffect(() => {
     if (activeTab === "balance-sheet") {
       fetchBalanceSheet();
     }
@@ -340,58 +298,6 @@ export default function ReportsPage() {
   }, [activeTab, fetchCashFlow]);
 
   // ─── Export handlers ────────────────────────────────
-
-  function handleExportIncomeStatement() {
-    if (!isData) return;
-
-    const rows: Record<string, unknown>[] = [];
-
-    rows.push({ Section: "Revenue", "Account Number": "", "Account Name": "", Balance: "" });
-    for (const r of isData.incomeRows) {
-      rows.push({
-        Section: "",
-        "Account Number": r.accountNumber,
-        "Account Name": r.accountName,
-        Balance: r.netBalance.toFixed(2),
-      });
-    }
-    rows.push({
-      Section: "",
-      "Account Number": "",
-      "Account Name": "Total Revenue",
-      Balance: isData.totalIncome.toFixed(2),
-    });
-
-    rows.push({ Section: "", "Account Number": "", "Account Name": "", Balance: "" });
-    rows.push({ Section: "Expenses", "Account Number": "", "Account Name": "", Balance: "" });
-    for (const r of isData.expenseRows) {
-      rows.push({
-        Section: "",
-        "Account Number": r.accountNumber,
-        "Account Name": r.accountName,
-        Balance: r.netBalance.toFixed(2),
-      });
-    }
-    rows.push({
-      Section: "",
-      "Account Number": "",
-      "Account Name": "Total Expenses",
-      Balance: isData.totalExpenses.toFixed(2),
-    });
-
-    rows.push({ Section: "", "Account Number": "", "Account Name": "", Balance: "" });
-    rows.push({
-      Section: "",
-      "Account Number": "",
-      "Account Name": "Net Income",
-      Balance: isData.netIncome.toFixed(2),
-    });
-
-    exportToCsv(
-      rows,
-      `income-statement-${toISODateString(startDate)}-to-${toISODateString(endDate)}.csv`
-    );
-  }
 
   function handleExportBalanceSheet() {
     if (!bsData) return;
@@ -612,153 +518,8 @@ export default function ReportsPage() {
       </div>
 
       {/* ─── Income Statement Tab ─────────────────────── */}
-      {activeTab === "income-statement" && (
-        <div className="space-y-6">
-          {/* Date range controls */}
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm text-muted-foreground">From</span>
-            <Popover open={startCalOpen} onOpenChange={setStartCalOpen}>
-              <PopoverTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    className="h-9 gap-2 font-normal"
-                  />
-                }
-              >
-                <CalendarIcon className="h-4 w-4" />
-                {formatDateDisplay(startDate)}
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={startDate}
-                  onSelect={(date) => {
-                    if (date) {
-                      setStartDate(date);
-                      setStartCalOpen(false);
-                    }
-                  }}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-
-            <span className="text-sm text-muted-foreground">to</span>
-            <Popover open={endCalOpen} onOpenChange={setEndCalOpen}>
-              <PopoverTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    className="h-9 gap-2 font-normal"
-                  />
-                }
-              >
-                <CalendarIcon className="h-4 w-4" />
-                {formatDateDisplay(endDate)}
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={endDate}
-                  onSelect={(date) => {
-                    if (date) {
-                      setEndDate(date);
-                      setEndCalOpen(false);
-                    }
-                  }}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          {/* Loading */}
-          {isLoading && <ReportSkeleton />}
-
-          {/* Content */}
-          {!isLoading && isData && (
-            <>
-              {/* Export */}
-              <div className="flex justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={handleExportIncomeStatement}
-                >
-                  <Download className="h-4 w-4" />
-                  Export CSV
-                </Button>
-              </div>
-
-              {/* Empty state */}
-              {isData.incomeRows.length === 0 &&
-                isData.expenseRows.length === 0 && (
-                  <div className="rounded-md border py-12 text-center">
-                    <p className="text-muted-foreground">
-                      No income or expense data found for this period.
-                    </p>
-                  </div>
-                )}
-
-              {/* Table */}
-              {(isData.incomeRows.length > 0 ||
-                isData.expenseRows.length > 0) && (
-                <div className="overflow-x-auto rounded-md border">
-                  <Table className="w-max min-w-full">
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Account Number</TableHead>
-                        <TableHead>Account Name</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead className="text-right">Balance</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {/* Revenue section */}
-                      {isData.incomeRows.length > 0 && (
-                        <SectionRows
-                          label="Revenue"
-                          rows={isData.incomeRows}
-                          total={isData.totalIncome}
-                          totalLabel="Total Revenue"
-                        />
-                      )}
-
-                      {/* Expenses section */}
-                      {isData.expenseRows.length > 0 && (
-                        <SectionRows
-                          label="Expenses"
-                          rows={isData.expenseRows}
-                          total={isData.totalExpenses}
-                          totalLabel="Total Expenses"
-                        />
-                      )}
-
-                      {/* Net Income row */}
-                      <TableRow className="bg-muted/50 font-bold">
-                        <TableCell />
-                        <TableCell className="font-bold">Net Income</TableCell>
-                        <TableCell />
-                        <TableCell
-                          className={cn(
-                            "text-right font-mono font-bold",
-                            isData.netIncome < 0
-                              ? "text-red-600 dark:text-red-400"
-                              : "text-green-600 dark:text-green-400"
-                          )}
-                        >
-                          {formatCurrency(isData.netIncome)}
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+      {activeTab === "income-statement" && resolvedEntityId && (
+        <IncomeStatementView entityId={resolvedEntityId} basis={basis} />
       )}
 
       {/* ─── Balance Sheet Tab ────────────────────────── */}

@@ -13,6 +13,7 @@ const querySchema = z.object({
     message: "endDate must be a valid date string",
   }),
   basis: z.enum(['accrual', 'cash']).optional(),
+  dimensionId: z.string().optional(),
 });
 
 // ─── GET: Income Statement ──────────────────────────────
@@ -43,6 +44,7 @@ export async function GET(
     startDate: url.searchParams.get("startDate"),
     endDate: url.searchParams.get("endDate"),
     basis: url.searchParams.get("basis") ?? undefined,
+    dimensionId: url.searchParams.get("dimensionId") ?? undefined,
   });
 
   if (!parsed.success) {
@@ -56,7 +58,8 @@ export async function GET(
       entityId,
       new Date(startDate),
       new Date(endDate),
-      parsed.data.basis ?? 'accrual'
+      parsed.data.basis ?? 'accrual',
+      parsed.data.dimensionId
     );
 
     return successResponse(data);

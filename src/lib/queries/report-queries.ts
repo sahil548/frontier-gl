@@ -43,6 +43,30 @@ export interface IncomeStatementData {
   netIncome: number;
 }
 
+// ---------------------------------------------------------------------------
+// Dimensioned Income Statement Types
+// ---------------------------------------------------------------------------
+
+export interface TagBreakdownEntry {
+  tagId: string | null;
+  tagName: string | null;
+  netBalance: number;
+}
+
+export interface DimensionedReportRow extends ReportRow {
+  tagBreakdown: TagBreakdownEntry[];
+  totalBalance: number;
+}
+
+export interface DimensionedIncomeStatementData {
+  incomeRows: DimensionedReportRow[];
+  expenseRows: DimensionedReportRow[];
+  totalIncome: number;
+  totalExpenses: number;
+  netIncome: number;
+  tags: Array<{ id: string; name: string }>;
+}
+
 export interface BalanceSheetData {
   assetRows: ReportRow[];
   liabilityRows: ReportRow[];
@@ -71,6 +95,190 @@ function toNum(val: unknown): number {
  * income is credit-normal, expense is debit-normal.
  */
 export async function getIncomeStatement(
+  entityId: string,
+  startDate: Date,
+  endDate: Date,
+  basis: 'accrual' | 'cash' = 'accrual',
+  dimensionId?: string
+): Promise<IncomeStatementData | DimensionedIncomeStatementData> {
+  if (dimensionId) {
+    return getIncomeStatementByDimension(entityId, startDate, endDate, basis, dimensionId);
+  }
+  return getIncomeStatementBase(entityId, startDate, endDate, basis);
+}
+
+/**
+ * Income Statement sliced by a dimension: returns column-per-tag layout.
+ */
+async function getIncomeStatementByDimension(
+  entityId: string,
+  startDate: Date,
+  endDate: Date,
+  basis: 'accrual' | 'cash',
+  dimensionId: string
+): Promise<DimensionedIncomeStatementData> {
+  const cashFilter = basis === 'cash'
+    ? Prisma.sql`AND je.id IN (
+        SELECT DISTINCT jel2."journalEntryId"
+        FROM journal_entry_lines jel2
+        JOIN accounts a2 ON a2.id = jel2."accountId"
+        WHERE a2."entityId" = ${entityId}
+          AND a2.type = 'ASSET'
+          AND (
+            LOWER(a2.name) LIKE '%cash%'
+            OR LOWER(a2.name) LIKE '%bank%'
+            OR LOWER(a2.name) LIKE '%checking%'
+            OR LOWER(a2.name) LIKE '%savings%'
+          )
+      )`
+    : Prisma.sql``;
+
+  // Fetch rows grouped by account + tag
+  const rows = await prisma.$queryRaw<
+    {
+      account_id: string;
+      account_number: string;
+      account_name: string;
+      account_type: string;
+      tag_id: string | null;
+      tag_name: string | null;
+      net_balance: unknown;
+    }[]
+  >(
+    Prisma.sql`
+      SELECT
+        a.id                                       AS account_id,
+        a.number                                   AS account_number,
+        a.name                                     AS account_name,
+        a.type::text                               AS account_type,
+        dt.id                                      AS tag_id,
+        dt.name                                    AS tag_name,
+        COALESCE(SUM(
+          CASE
+            WHEN a.type = 'EXPENSE'
+              THEN jel.debit - jel.credit
+            ELSE jel.credit - jel.debit
+          END
+        ), 0)                                      AS net_balance
+      FROM accounts a
+      LEFT JOIN (
+        journal_entry_lines jel
+        JOIN journal_entries je ON je.id = jel."journalEntryId"
+          AND je.status = 'POSTED'
+          AND je.date >= ${startDate}
+          AND je.date <= ${endDate}
+          ${cashFilter}
+      ) ON jel."accountId" = a.id
+      LEFT JOIN journal_entry_line_dimension_tags jeldt ON jeldt."journalEntryLineId" = jel.id
+      LEFT JOIN dimension_tags dt ON dt.id = jeldt."dimensionTagId" AND dt."dimensionId" = ${dimensionId}
+      WHERE a."entityId" = ${entityId}
+        AND a."isActive" = true
+        AND a.type IN ('INCOME', 'EXPENSE')
+      GROUP BY a.id, a.number, a.name, a.type, dt.id, dt.name
+      ORDER BY a.number, dt.name
+    `
+  );
+
+  // Fetch all active tags for the dimension (for complete column headers)
+  const allTags = await prisma.$queryRaw<{ id: string; name: string }[]>(
+    Prisma.sql`
+      SELECT id, name
+      FROM dimension_tags
+      WHERE "dimensionId" = ${dimensionId} AND "isActive" = true
+      ORDER BY "sortOrder", name
+    `
+  );
+
+  // Post-process: group by account, build tagBreakdown
+  const accountMap = new Map<string, {
+    accountId: string;
+    accountNumber: string;
+    accountName: string;
+    accountType: string;
+    tagMap: Map<string | null, number>;
+  }>();
+
+  for (const r of rows) {
+    let entry = accountMap.get(r.account_id);
+    if (!entry) {
+      entry = {
+        accountId: r.account_id,
+        accountNumber: r.account_number,
+        accountName: r.account_name,
+        accountType: r.account_type,
+        tagMap: new Map(),
+      };
+      accountMap.set(r.account_id, entry);
+    }
+    const bal = toNum(r.net_balance);
+    if (bal !== 0) {
+      const key = r.tag_id; // null = unclassified
+      entry.tagMap.set(key, (entry.tagMap.get(key) ?? 0) + bal);
+    }
+  }
+
+  // Build dimensioned rows
+  const tagIds = allTags.map((t) => t.id);
+  const buildRow = (entry: NonNullable<ReturnType<typeof accountMap.get>>): DimensionedReportRow => {
+    const tagBreakdown: TagBreakdownEntry[] = [];
+
+    // One entry per known tag
+    for (const tag of allTags) {
+      tagBreakdown.push({
+        tagId: tag.id,
+        tagName: tag.name,
+        netBalance: entry.tagMap.get(tag.id) ?? 0,
+      });
+    }
+
+    // Unclassified bucket: null key + any tag IDs not in the active dimension
+    let unclassifiedBalance = entry.tagMap.get(null) ?? 0;
+    for (const [key, val] of entry.tagMap) {
+      if (key !== null && !tagIds.includes(key)) {
+        unclassifiedBalance += val;
+      }
+    }
+    tagBreakdown.push({
+      tagId: null,
+      tagName: null,
+      netBalance: unclassifiedBalance,
+    });
+
+    const totalBalance = tagBreakdown.reduce((sum, t) => sum + t.netBalance, 0);
+
+    return {
+      accountId: entry.accountId,
+      accountNumber: entry.accountNumber,
+      accountName: entry.accountName,
+      accountType: entry.accountType as AccountType,
+      netBalance: totalBalance,
+      tagBreakdown,
+      totalBalance,
+    };
+  };
+
+  const allRows = Array.from(accountMap.values()).map(buildRow);
+  const incomeRows = allRows.filter((r) => r.accountType === 'INCOME');
+  const expenseRows = allRows.filter((r) => r.accountType === 'EXPENSE');
+
+  const totalIncome = incomeRows.reduce((sum, r) => sum + r.totalBalance, 0);
+  const totalExpenses = expenseRows.reduce((sum, r) => sum + r.totalBalance, 0);
+  const netIncome = totalIncome - totalExpenses;
+
+  return {
+    incomeRows,
+    expenseRows,
+    totalIncome,
+    totalExpenses,
+    netIncome,
+    tags: allTags,
+  };
+}
+
+/**
+ * Base (non-dimensioned) income statement query.
+ */
+async function getIncomeStatementBase(
   entityId: string,
   startDate: Date,
   endDate: Date,
