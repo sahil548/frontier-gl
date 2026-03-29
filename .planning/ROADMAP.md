@@ -126,7 +126,7 @@ Plans:
 ---
 
 ### Phase 8: Family Office I — Multi-Entity Consolidation
-**Goal:** Accountants can generate a single consolidated P&L and Balance Sheet across multiple entities with intercompany eliminations — the core family office reporting capability QBO cannot deliver
+**Goal:** Accountants can generate consolidated P&L, Balance Sheet, and Cash Flow across multiple entities with intercompany eliminations -- the core family office reporting capability QBO cannot deliver
 **Depends on:** Phase 7
 **Requirements:** CONS-01–05
 **Success Criteria:**
@@ -136,7 +136,13 @@ Plans:
 4. Consolidated reports are exportable as CSV
 5. Consolidation respects each entity's fiscal year end when filtering periods
 
-**Plans:** TBD
+**Plans:** 4 plans
+
+Plans:
+- [ ] 08-01-PLAN.md — EliminationRule schema, consolidated TypeScript types, Wave 0 test stubs
+- [ ] 08-02-PLAN.md — Consolidated report query functions (P&L, BS, CF) with elimination logic and API routes
+- [ ] 08-03-PLAN.md — Elimination rules CRUD API and Settings > Intercompany Eliminations page
+- [ ] 08-04-PLAN.md — Reports page consolidated mode: entity chips, expandable rows, elimination section, CSV export
 
 ---
 
