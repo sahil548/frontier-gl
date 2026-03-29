@@ -90,7 +90,12 @@ Frontier GL delivers a multi-entity general ledger that replaces QuickBooks Onli
 4. Trial balance can be filtered to show only transactions tagged with a specific class
 5. Schema migration is additive — class field nullable, no data loss on existing entries
 
-**Plans:** TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Schema, dimension/tag CRUD API, and /dimensions management page with accordion layout
+- [ ] 06-02-PLAN.md — JE form integration with dimension tag combobox columns and split assistant
+- [ ] 06-03-PLAN.md — Income Statement column-per-tag view and Trial Balance dimension filtering
 
 ---
 
