@@ -113,7 +113,7 @@
 ### UI & Responsiveness
 
 - [x] **UI-01**: Application uses shadcn/ui + Tailwind CSS consistently
-- [ ] **UI-02**: Layout is fully responsive and usable on tablet and mobile screens
+- [x] **UI-02**: Layout is fully responsive and usable on tablet and mobile screens
 - [x] **UI-03**: Data tables use TanStack Table with sorting, filtering, and pagination
 
 ### API
@@ -132,7 +132,7 @@
 
 ### Mobile
 
-- [ ] **UI-02**: All pages are responsive and usable on tablet and mobile screens (sidebar collapses, tables horizontally scroll, forms stack vertically)
+- [x] **UI-02**: All pages are responsive and usable on tablet and mobile screens (sidebar collapses, tables horizontally scroll, forms stack vertically)
 
 ### Audit Trail UI
 
@@ -240,7 +240,7 @@
 | TMPL-01–05 | Phase 4 | Complete |
 | ACC-01–02 | Phase 4 | Complete |
 | DASH-03 | Phase 5 | Complete |
-| UI-02 | Phase 5 | Pending |
+| UI-02 | Phase 5 | Complete |
 | AUDT-01–02 | Phase 5 | Pending |
 | ATTCH-01–03 | Phase 5 | Pending |
 | RECR-01–05 | Phase 5 | Pending |
