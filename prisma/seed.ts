@@ -302,7 +302,11 @@ async function main() {
   await prisma.$executeRawUnsafe(`DROP TRIGGER IF EXISTS trg_validate_je_balance ON journal_entry_lines`);
   await prisma.$executeRawUnsafe(`DROP TRIGGER IF EXISTS trg_check_closed_period ON journal_entries`);
 
-  // Delete in dependency order
+  // Delete in dependency order (leaves → roots)
+  await prisma.bankReconciliationLine.deleteMany();
+  await prisma.bankReconciliation.deleteMany();
+  await prisma.position.deleteMany();
+  await prisma.subledgerItem.deleteMany();
   await prisma.journalEntryAudit.deleteMany();
   await prisma.journalEntryLine.deleteMany();
   await prisma.journalEntry.deleteMany();
@@ -311,6 +315,7 @@ async function main() {
   await prisma.periodClose.deleteMany();
   await prisma.accountBalance.deleteMany();
   await prisma.account.deleteMany();
+  await prisma.entityAccess.deleteMany();
   await prisma.entity.deleteMany();
   await prisma.user.deleteMany();
 
@@ -341,6 +346,11 @@ async function main() {
         fiscalYearEnd: entityDef.fiscalYearEnd,
         createdById: user.id,
       },
+    });
+
+    // Grant OWNER access to the creator
+    await prisma.entityAccess.create({
+      data: { entityId: entity.id, userId: user.id, role: "OWNER" },
     });
 
     // Create COA
