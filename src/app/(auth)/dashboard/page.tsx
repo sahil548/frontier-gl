@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import {
   DollarSign,
@@ -114,7 +114,9 @@ export default function DashboardPage() {
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [period, setPeriod] = useState<PeriodKey>("this-month");
 
-  const periodRange = getPeriodRange(period);
+  const periodRange = useMemo(() => getPeriodRange(period), [period]);
+  const incomeStartStr = periodRange.start.toISOString().split("T")[0];
+  const incomeEndStr = periodRange.end.toISOString().split("T")[0];
 
   const fetchDashboard = useCallback(async () => {
     if (entities.length === 0) return;
@@ -125,8 +127,8 @@ export default function DashboardPage() {
       const targetEntityId = isConsolidated ? entities[0].id : currentEntityId;
       const params = new URLSearchParams();
       if (isConsolidated) params.set("consolidated", "true");
-      params.set("incomeStart", periodRange.start.toISOString().split("T")[0]);
-      params.set("incomeEnd", periodRange.end.toISOString().split("T")[0]);
+      params.set("incomeStart", incomeStartStr);
+      params.set("incomeEnd", incomeEndStr);
       const res = await fetch(
         `/api/entities/${targetEntityId}/dashboard?${params}`
       );
@@ -139,7 +141,7 @@ export default function DashboardPage() {
     } finally {
       setDashboardLoading(false);
     }
-  }, [entities, currentEntityId, periodRange.start, periodRange.end]);
+  }, [entities, currentEntityId, incomeStartStr, incomeEndStr]);
 
   useEffect(() => {
     if (!isLoading && entities.length > 0) {
