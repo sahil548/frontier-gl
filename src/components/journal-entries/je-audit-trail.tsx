@@ -22,10 +22,32 @@ const ACTION_LABELS: Record<string, string> = {
   APPROVED: "Approved",
   POSTED: "Posted",
   REVERSAL_CREATED: "Reversal Created",
+  RECURRING_GENERATED: "Generated from Recurring",
+};
+
+type FieldDiff = {
+  field: string;
+  old: string;
+  new: string;
 };
 
 /**
- * Format a changes object into a readable summary.
+ * Parse a changes object into structured field-level diffs.
+ * Expects Record<string, { old: string; new: string }>
+ */
+function formatFieldDiffs(changes: unknown): FieldDiff[] | null {
+  if (!changes || typeof changes !== "object") return null;
+  const entries = Object.entries(changes as Record<string, { old: string; new: string }>);
+  if (entries.length === 0) return null;
+  return entries.map(([key, val]) => ({
+    field: key,
+    old: String(val.old ?? ""),
+    new: String(val.new ?? ""),
+  }));
+}
+
+/**
+ * Format a changes object into a readable summary (backward compatibility).
  */
 function formatChanges(changes: unknown): string | null {
   if (!changes || typeof changes !== "object") return null;
@@ -39,6 +61,7 @@ function formatChanges(changes: unknown): string | null {
 /**
  * Timeline-style audit trail display for a journal entry.
  * Collapsible section below the JE form.
+ * Shows field-level diffs for EDITED actions with styled highlighting.
  */
 export function JEAuditTrail({ entries }: JEAuditTrailProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -67,7 +90,10 @@ export function JEAuditTrail({ entries }: JEAuditTrailProps) {
       {isExpanded && (
         <div className="px-4 pb-4 space-y-3">
           {entries.map((entry) => {
-            const changesSummary = formatChanges(entry.changes);
+            const isEdited = entry.action === "EDITED";
+            const diffs = isEdited ? formatFieldDiffs(entry.changes) : null;
+            const changesSummary = !isEdited ? formatChanges(entry.changes) : null;
+
             return (
               <div
                 key={entry.id}
@@ -82,6 +108,26 @@ export function JEAuditTrail({ entries }: JEAuditTrailProps) {
                       {new Date(entry.createdAt).toLocaleString()}
                     </span>
                   </div>
+                  {/* Field-level diffs for EDITED actions */}
+                  {diffs && diffs.length > 0 && (
+                    <div className="text-xs space-y-0.5 mt-1">
+                      {diffs.map((diff, idx) => (
+                        <div key={idx} className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-medium text-muted-foreground">
+                            {diff.field}:
+                          </span>
+                          <span className="line-through text-red-500/70">
+                            {diff.old}
+                          </span>
+                          <span className="text-muted-foreground">&rarr;</span>
+                          <span className="text-green-600">
+                            {diff.new}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {/* Non-EDITED fallback summary */}
                   {changesSummary && (
                     <p className="text-xs text-muted-foreground">
                       {changesSummary}

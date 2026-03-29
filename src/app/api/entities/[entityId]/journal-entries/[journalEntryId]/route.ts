@@ -147,7 +147,14 @@ export async function PUT(
   // Verify the entry exists and belongs to entity
   const existing = await prisma.journalEntry.findFirst({
     where: { id: journalEntryId, entityId },
-    include: { lineItems: true },
+    include: {
+      lineItems: {
+        include: {
+          account: { select: { id: true, number: true, name: true } },
+        },
+        orderBy: { sortOrder: "asc" },
+      },
+    },
   });
 
   if (!existing) {
@@ -206,19 +213,70 @@ export async function PUT(
     );
   }
 
-  // Build changes diff for audit trail
+  // Build changes diff for audit trail with field-level detail
   const changes: Record<string, { old: string; new: string }> = {};
-  if (existing.date.toISOString() !== new Date(date).toISOString()) {
-    changes.date = { old: existing.date.toISOString(), new: date };
+
+  const existingDateStr = existing.date.toISOString().split("T")[0];
+  const newDateStr = new Date(date).toISOString().split("T")[0];
+  if (existingDateStr !== newDateStr) {
+    changes.date = { old: existingDateStr, new: newDateStr };
   }
   if (existing.description !== description) {
     changes.description = { old: existing.description, new: description };
   }
-  // Always record lineItems changed (they are fully replaced)
-  changes.lineItems = {
-    old: existing.lineItems.length + " lines",
-    new: lineItems.length + " lines",
-  };
+
+  // Detailed line item diffs
+  const oldLines = existing.lineItems;
+  const maxLines = Math.max(oldLines.length, lineItems.length);
+  let linesChanged = false;
+  for (let i = 0; i < maxLines; i++) {
+    const oldLine = oldLines[i];
+    const newLine = lineItems[i];
+    if (!oldLine && newLine) {
+      changes[`Line ${i + 1} (added)`] = {
+        old: "(none)",
+        new: `debit ${newLine.debit || "0"} / credit ${newLine.credit || "0"}`,
+      };
+      linesChanged = true;
+    } else if (oldLine && !newLine) {
+      const acctLabel = oldLine.account ? `${oldLine.account.number} ${oldLine.account.name}` : oldLine.accountId;
+      changes[`Line ${i + 1} (removed)`] = {
+        old: `${acctLabel} debit ${oldLine.debit} / credit ${oldLine.credit}`,
+        new: "(removed)",
+      };
+      linesChanged = true;
+    } else if (oldLine && newLine) {
+      const oldAcctLabel = oldLine.account ? `${oldLine.account.number} ${oldLine.account.name}` : oldLine.accountId;
+      const oldDebit = String(oldLine.debit);
+      const oldCredit = String(oldLine.credit);
+      const newDebit = newLine.debit || "0";
+      const newCredit = newLine.credit || "0";
+
+      if (oldLine.accountId !== newLine.accountId) {
+        changes[`Line ${i + 1} account`] = { old: oldAcctLabel, new: newLine.accountId };
+        linesChanged = true;
+      }
+      if (oldDebit !== newDebit) {
+        changes[`Line ${i + 1} debit`] = { old: oldDebit, new: newDebit };
+        linesChanged = true;
+      }
+      if (oldCredit !== newCredit) {
+        changes[`Line ${i + 1} credit`] = { old: oldCredit, new: newCredit };
+        linesChanged = true;
+      }
+      if ((oldLine.memo || "") !== (newLine.memo || "")) {
+        changes[`Line ${i + 1} memo`] = { old: oldLine.memo || "", new: newLine.memo || "" };
+        linesChanged = true;
+      }
+    }
+  }
+  // Fallback if line count changed but no per-field diff captured
+  if (!linesChanged && oldLines.length !== lineItems.length) {
+    changes.lineItems = {
+      old: oldLines.length + " lines",
+      new: lineItems.length + " lines",
+    };
+  }
 
   // Update within transaction: replace header + all line items
   const updated = await prisma.$transaction(async (tx) => {
