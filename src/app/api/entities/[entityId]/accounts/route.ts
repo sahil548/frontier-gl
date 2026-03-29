@@ -4,37 +4,7 @@ import { createAccountSchema } from "@/lib/validators/account";
 import { successResponse, errorResponse } from "@/lib/validators/api-response";
 import { serializeDecimal } from "@/lib/utils/serialization";
 import Decimal from "decimal.js";
-
-/**
- * Find the internal user and verify entity ownership.
- * Returns the entity or null if not found / not owned.
- */
-async function findOwnedEntity(entityId: string, clerkUserId: string) {
-  const user = await prisma.user.findUnique({
-    where: { clerkId: clerkUserId },
-  });
-  if (!user) return null;
-
-  return prisma.entity.findFirst({
-    where: { id: entityId, createdById: user.id, isActive: true },
-  });
-}
-
-/**
- * Get all entity IDs for a user (for "all" entity scope).
- */
-async function getUserEntityIds(clerkUserId: string): Promise<string[]> {
-  const user = await prisma.user.findUnique({
-    where: { clerkId: clerkUserId },
-  });
-  if (!user) return [];
-
-  const entities = await prisma.entity.findMany({
-    where: { createdById: user.id, isActive: true },
-    select: { id: true },
-  });
-  return entities.map((e) => e.id);
-}
+import { findAccessibleEntity, getAccessibleEntityIds } from "@/lib/db/entity-access";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function aggregateBalance(node: any): Decimal {
@@ -95,9 +65,9 @@ export async function GET(
 
   let entityIds: string[];
   if (entityId === "all") {
-    entityIds = await getUserEntityIds(userId);
+    entityIds = await getAccessibleEntityIds(userId);
   } else {
-    const entity = await findOwnedEntity(entityId, userId);
+    const entity = await findAccessibleEntity(entityId, userId);
     if (!entity) {
       return errorResponse("Entity not found", 404);
     }
@@ -150,7 +120,7 @@ export async function POST(
   }
 
   const { entityId } = await params;
-  const entity = await findOwnedEntity(entityId, userId);
+  const entity = await findAccessibleEntity(entityId, userId);
   if (!entity) {
     return errorResponse("Entity not found", 404);
   }

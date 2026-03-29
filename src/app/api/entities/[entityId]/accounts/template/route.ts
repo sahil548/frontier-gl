@@ -1,21 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/db/prisma";
 import { applyTemplate } from "@/lib/accounts/template";
 import { successResponse, errorResponse } from "@/lib/validators/api-response";
-
-/**
- * Find the internal user and verify entity ownership.
- */
-async function findOwnedEntity(entityId: string, clerkUserId: string) {
-  const user = await prisma.user.findUnique({
-    where: { clerkId: clerkUserId },
-  });
-  if (!user) return null;
-
-  return prisma.entity.findFirst({
-    where: { id: entityId, createdById: user.id, isActive: true },
-  });
-}
+import { findAccessibleEntity } from "@/lib/db/entity-access";
 
 /**
  * POST /api/entities/:entityId/accounts/template
@@ -34,7 +20,7 @@ export async function POST(
   }
 
   const { entityId } = await params;
-  const entity = await findOwnedEntity(entityId, userId);
+  const entity = await findAccessibleEntity(entityId, userId);
   if (!entity) {
     return errorResponse("Entity not found", 404);
   }

@@ -11,13 +11,14 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  clerkId   String   @unique
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  entities  Entity[]
+  id           String         @id @default(cuid())
+  clerkId      String         @unique
+  email        String         @unique
+  name         String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  entities     Entity[]
+  entityAccess EntityAccess[]
 }
 
 model Entity {
@@ -37,6 +38,7 @@ model Entity {
   periodCloses   PeriodClose[]
   templates      JournalEntryTemplate[]
   subledgerItems SubledgerItem[]
+  access         EntityAccess[]
 
   @@index([createdById])
   @@index([isActive])
@@ -341,4 +343,25 @@ enum PositionType {
   REAL_PROPERTY
   ACCUMULATED_DEPRECIATION
   OTHER
+}
+
+model EntityAccess {
+  id        String           @id @default(cuid())
+  entityId  String
+  userId    String
+  role      EntityAccessRole @default(EDITOR)
+  createdAt DateTime         @default(now())
+  entity    Entity           @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([entityId, userId])
+  @@index([entityId])
+  @@index([userId])
+  @@map("entity_access")
+}
+
+enum EntityAccessRole {
+  OWNER
+  EDITOR
+  VIEWER
 }

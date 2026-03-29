@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db/prisma";
 import { successResponse, errorResponse } from "@/lib/validators/api-response";
+import { findAccessibleEntity } from "@/lib/db/entity-access";
 
 const VALID_TYPES = ["ASSET", "LIABILITY", "EQUITY", "INCOME", "EXPENSE"] as const;
 
@@ -78,15 +79,8 @@ export async function POST(
 
   const { entityId } = await params;
 
-  // Verify entity ownership
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  });
-  if (!user) return errorResponse("Unauthorized", 401);
-
-  const entity = await prisma.entity.findFirst({
-    where: { id: entityId, createdById: user.id, isActive: true },
-  });
+  // Verify entity access
+  const entity = await findAccessibleEntity(entityId, userId);
   if (!entity) return errorResponse("Entity not found", 404);
 
   let body: { csv: string };

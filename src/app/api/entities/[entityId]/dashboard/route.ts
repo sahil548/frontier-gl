@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import { successResponse, errorResponse } from "@/lib/validators/api-response";
+import { getAccessibleEntityIds } from "@/lib/db/entity-access";
 
 // ─── Helpers ────────────────────────────────────────────
 
@@ -40,17 +41,7 @@ export async function GET(
     let entityIds: string[];
 
     if (consolidated) {
-      const user = await prisma.user.findUnique({
-        where: { clerkId: userId },
-      });
-      if (!user) {
-        return errorResponse("User not found", 404);
-      }
-      const entities = await prisma.entity.findMany({
-        where: { createdById: user.id, isActive: true },
-        select: { id: true },
-      });
-      entityIds = entities.map((e) => e.id);
+      entityIds = await getAccessibleEntityIds(userId);
       if (entityIds.length === 0) {
         return successResponse({
           summary: {

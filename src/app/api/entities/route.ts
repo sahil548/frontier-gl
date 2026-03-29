@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db/prisma";
 import { createEntitySchema } from "@/lib/validators/entity";
 import { successResponse, errorResponse } from "@/lib/validators/api-response";
 import { serializeEntity } from "@/lib/utils/serialization";
+import { getAccessibleEntityIds } from "@/lib/db/entity-access";
 
 /**
  * Entity management API routes.
@@ -46,20 +47,22 @@ export async function GET() {
     return errorResponse("Unauthorized", 401);
   }
 
-  // Fast path: look up user by clerkId without the expensive currentUser() call.
-  // The user record is created on first entity creation (POST), so if it doesn't
-  // exist yet, just return an empty list (triggers onboarding).
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  });
+  // Fast path: look up accessible entity IDs.
+  // If the user doesn't exist yet, just return an empty list (triggers onboarding).
+  const entityIds = await getAccessibleEntityIds(userId);
 
-  if (!user) {
+  if (entityIds.length === 0) {
+    // Check if the user record simply hasn't been created yet
+    const user = await prisma.user.findUnique({ where: { clerkId: userId } });
+    if (!user) {
+      return successResponse([]);
+    }
     return successResponse([]);
   }
 
   const entities = await prisma.entity.findMany({
     where: {
-      createdById: user.id,
+      id: { in: entityIds },
       isActive: true,
     },
     orderBy: { name: "asc" },
@@ -102,6 +105,10 @@ export async function POST(request: Request) {
       ...result.data,
       createdById: user.id,
     },
+  });
+
+  await prisma.entityAccess.create({
+    data: { entityId: entity.id, userId: user.id, role: "OWNER" },
   });
 
   return successResponse(serializeEntity(entity), 201);

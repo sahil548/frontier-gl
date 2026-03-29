@@ -4,20 +4,7 @@ import { updateAccountSchema } from "@/lib/validators/account";
 import { successResponse, errorResponse } from "@/lib/validators/api-response";
 import { serializeDecimal } from "@/lib/utils/serialization";
 import Decimal from "decimal.js";
-
-/**
- * Find the internal user and verify entity ownership.
- */
-async function findOwnedEntity(entityId: string, clerkUserId: string) {
-  const user = await prisma.user.findUnique({
-    where: { clerkId: clerkUserId },
-  });
-  if (!user) return null;
-
-  return prisma.entity.findFirst({
-    where: { id: entityId, createdById: user.id, isActive: true },
-  });
-}
+import { findAccessibleEntity } from "@/lib/db/entity-access";
 
 /**
  * Serialize an account with balance for JSON transport.
@@ -97,7 +84,7 @@ export async function GET(
   }
 
   const { entityId, accountId } = await params;
-  const entity = await findOwnedEntity(entityId, userId);
+  const entity = await findAccessibleEntity(entityId, userId);
   if (!entity) {
     return errorResponse("Entity not found", 404);
   }
@@ -136,7 +123,7 @@ export async function PUT(
   }
 
   const { entityId, accountId } = await params;
-  const entity = await findOwnedEntity(entityId, userId);
+  const entity = await findAccessibleEntity(entityId, userId);
   if (!entity) {
     return errorResponse("Entity not found", 404);
   }

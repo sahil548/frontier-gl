@@ -1,11 +1,11 @@
 import { auth } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/db/prisma";
 import { z } from "zod";
 import { successResponse, errorResponse } from "@/lib/validators/api-response";
 import {
   getTrialBalance,
   getConsolidatedTrialBalance,
 } from "@/lib/queries/trial-balance-queries";
+import { getAccessibleEntityIds } from "@/lib/db/entity-access";
 
 // ─── Validation ─────────────────────────────────────────
 
@@ -58,18 +58,7 @@ export async function GET(
   try {
     if (consolidated) {
       // Get all entity IDs the user has access to
-      const user = await prisma.user.findUnique({
-        where: { clerkId: userId },
-      });
-      if (!user) {
-        return errorResponse("User not found", 404);
-      }
-
-      const entities = await prisma.entity.findMany({
-        where: { createdById: user.id, isActive: true },
-        select: { id: true },
-      });
-      const entityIds = entities.map((e) => e.id);
+      const entityIds = await getAccessibleEntityIds(userId);
 
       const rows = await getConsolidatedTrialBalance(entityIds, asOfDateObj);
       const totalDebits = rows.reduce((sum, r) => sum + r.totalDebits, 0);

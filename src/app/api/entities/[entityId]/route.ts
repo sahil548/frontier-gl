@@ -3,36 +3,18 @@ import { prisma } from "@/lib/db/prisma";
 import { updateEntitySchema } from "@/lib/validators/entity";
 import { successResponse, errorResponse } from "@/lib/validators/api-response";
 import { serializeEntity } from "@/lib/utils/serialization";
+import { findAccessibleEntity } from "@/lib/db/entity-access";
 
 /**
  * Single entity management API routes.
  *
  * These routes operate on a specific entity by ID.
- * Ownership is verified: the entity must belong to the authenticated user.
+ * Access is verified: the entity must be accessible to the authenticated user.
  *
  * Note: This is /api/entities/:entityId (entity management).
  * The /api/entities/:entityId/ scoping for financial data within an entity
  * (accounts, journal entries) is a separate pattern for Phase 2.
  */
-
-/**
- * Find an entity by ID and verify it belongs to the user.
- * Returns the entity or null if not found / not owned.
- */
-async function findOwnedEntity(entityId: string, userId: string) {
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  });
-
-  if (!user) return null;
-
-  return prisma.entity.findFirst({
-    where: {
-      id: entityId,
-      createdById: user.id,
-    },
-  });
-}
 
 /**
  * GET /api/entities/:entityId
@@ -51,7 +33,7 @@ export async function GET(
   }
 
   const { entityId } = await params;
-  const entity = await findOwnedEntity(entityId, userId);
+  const entity = await findAccessibleEntity(entityId, userId);
 
   if (!entity) {
     return errorResponse("Entity not found", 404);
@@ -91,7 +73,7 @@ export async function PUT(
   }
 
   const { entityId } = await params;
-  const entity = await findOwnedEntity(entityId, userId);
+  const entity = await findAccessibleEntity(entityId, userId);
 
   if (!entity) {
     return errorResponse("Entity not found", 404);
