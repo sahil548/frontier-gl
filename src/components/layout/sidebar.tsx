@@ -40,7 +40,7 @@ const navItems = [
   { href: "/trial-balance", label: "Trial Balance", icon: Scale },
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/period-close", label: "Period Close", icon: Lock },
-  { href: "/import", label: "Import", icon: Import },
+  { href: "/import", label: "Data", icon: Import },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

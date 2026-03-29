@@ -7,6 +7,7 @@ import { useEntityContext } from "@/providers/entity-provider";
 import { Button } from "@/components/ui/button";
 import { JEList } from "@/components/journal-entries/je-list";
 import { CsvImportDialog } from "@/components/journal-entries/csv-import-dialog";
+import { RecurringManager } from "@/components/journal-entries/recurring-manager";
 
 /**
  * Journal Entries list page.
@@ -78,6 +79,12 @@ export default function JournalEntriesPage() {
           </Button>
         </div>
       </div>
+
+      {/* Recurring entries manager */}
+      <RecurringManager
+        entityId={currentEntityId}
+        onEntriesGenerated={() => listRef.current?.refresh()}
+      />
 
       {/* JE List with tabs */}
       <JEList entityId={currentEntityId} />

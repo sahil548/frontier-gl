@@ -139,12 +139,17 @@ model JournalEntryTemplate {
   name        String
   description String?
   createdBy   String
+  isRecurring Boolean                    @default(false)
+  frequency   String?                    // "monthly" | "quarterly" | "annually"
+  nextRunDate DateTime?                  @db.Date
+  lastRunDate DateTime?                  @db.Date
   createdAt   DateTime                   @default(now())
   updatedAt   DateTime                   @updatedAt
   entity      Entity                     @relation(fields: [entityId], references: [id])
   lines       JournalEntryTemplateLine[]
 
   @@unique([entityId, name])
+  @@index([isRecurring, nextRunDate])
   @@map("journal_entry_templates")
 }
 
