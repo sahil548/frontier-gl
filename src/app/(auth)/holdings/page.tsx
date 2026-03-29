@@ -742,7 +742,7 @@ export default function HoldingsPage() {
         </div>
         <div className="space-y-2">
           <Label>GL Account</Label>
-          <Select value={formAccountId || null} onValueChange={(v) => setFormAccountId(v as string)}>
+          <Select value={formAccountId || undefined} onValueChange={(v) => setFormAccountId(v as string)}>
             <SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger>
             <SelectContent>
               {accounts.map((a) => (
