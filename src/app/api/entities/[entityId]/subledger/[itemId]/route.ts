@@ -40,7 +40,7 @@ function serialize(item: any) {
     account: item.account
       ? { id: item.account.id, number: item.account.number, name: item.account.name, type: item.account.type }
       : undefined,
-    reconciliations: item.reconciliations?.map((r: any) => ({
+    reconciliations: item.reconciliations?.map((r: { id: string; statementDate: Date; statementBalance: { toString(): string }; glBalance: { toString(): string }; difference: { toString(): string }; status: string; reconciledAt: Date | null }) => ({
       id: r.id,
       statementDate: r.statementDate.toISOString(),
       statementBalance: r.statementBalance.toString(),

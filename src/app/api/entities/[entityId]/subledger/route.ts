@@ -77,7 +77,8 @@ export async function GET(
       entityId,
       isActive: true,
       ...(accountId ? { accountId } : {}),
-      ...(itemType ? { itemType: itemType as import("@prisma/client").SubledgerItemType } : {}),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...(itemType ? { itemType: itemType as any } : {}),
     },
     include: {
       account: { select: { id: true, number: true, name: true, type: true } },
