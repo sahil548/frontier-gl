@@ -199,7 +199,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Net Income - Current Month
+              Net Income
             </CardTitle>
             <TrendingUp
               className={`h-4 w-4 ${

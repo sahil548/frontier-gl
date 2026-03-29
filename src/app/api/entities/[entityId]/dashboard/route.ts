@@ -69,7 +69,10 @@ export async function GET(
       entityIds = [entityId];
     }
 
-    // ── Summary: aggregate balances by account type (posted entries only) ──
+    const now = new Date();
+
+    // ── Summary: aggregate all-time balances by account type ──
+    // Uses INNER JOIN so only posted JE lines are included
 
     const summaryRows = await prisma.$queryRaw<
       { account_type: string; net_balance: unknown }[]
@@ -85,8 +88,8 @@ export async function GET(
             END
           ), 0) AS net_balance
         FROM accounts a
-        LEFT JOIN journal_entry_lines jel ON jel."accountId" = a.id
-        LEFT JOIN journal_entries je ON je.id = jel."journalEntryId"
+        JOIN journal_entry_lines jel ON jel."accountId" = a.id
+        JOIN journal_entries je ON je.id = jel."journalEntryId"
           AND je.status = 'POSTED'
         WHERE a."entityId" IN (${Prisma.join(entityIds)})
           AND a."isActive" = true
@@ -103,46 +106,12 @@ export async function GET(
     const totalLiabilities = balanceByType["LIABILITY"] ?? 0;
     const totalEquity = balanceByType["EQUITY"] ?? 0;
 
-    // ── Net Income: current month only (income - expenses) ──
+    // ── Net Income: all-time (income - expenses) ──
+    // This makes the accounting equation hold: Assets = Liabilities + Equity + Net Income
 
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-    const incomeExpenseRows = await prisma.$queryRaw<
-      { account_type: string; net_balance: unknown }[]
-    >(
-      Prisma.sql`
-        SELECT
-          a.type::text AS account_type,
-          COALESCE(SUM(
-            CASE
-              WHEN a.type = 'INCOME'
-                THEN jel.credit - jel.debit
-              ELSE jel.debit - jel.credit
-            END
-          ), 0) AS net_balance
-        FROM accounts a
-        JOIN journal_entry_lines jel ON jel."accountId" = a.id
-        JOIN journal_entries je ON je.id = jel."journalEntryId"
-          AND je.status = 'POSTED'
-          AND je.date >= ${monthStart}
-          AND je.date <= ${monthEnd}
-        WHERE a."entityId" IN (${Prisma.join(entityIds)})
-          AND a."isActive" = true
-          AND a.type IN ('INCOME', 'EXPENSE')
-        GROUP BY a.type
-      `
-    );
-
-    let netIncome = 0;
-    for (const row of incomeExpenseRows) {
-      if (row.account_type === "INCOME") {
-        netIncome += toNum(row.net_balance);
-      } else if (row.account_type === "EXPENSE") {
-        netIncome -= toNum(row.net_balance);
-      }
-    }
+    const totalIncome = balanceByType["INCOME"] ?? 0;
+    const totalExpenses = balanceByType["EXPENSE"] ?? 0;
+    const netIncome = totalIncome - totalExpenses;
 
     // ── Recent Entries: last 5 journal entries (any status) ──
 
