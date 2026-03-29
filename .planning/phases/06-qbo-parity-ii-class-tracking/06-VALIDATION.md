@@ -38,13 +38,13 @@ created: 2026-03-29
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 06-01-01 | 01 | 1 | CLASS-01 | unit | `npx vitest run src/lib/validators/dimension.test.ts -x` | ❌ W0 | ⬜ pending |
-| 06-02-01 | 02 | 1 | CLASS-02 | unit | `npx vitest run tests/dimensions/je-dimension-tags.test.ts -x` | ❌ W0 | ⬜ pending |
-| 06-03-01 | 03 | 2 | CLASS-03 | unit | `npx vitest run tests/dimensions/income-statement-by-dimension.test.ts -x` | ❌ W0 | ⬜ pending |
-| 06-04-01 | 04 | 2 | CLASS-04 | unit | `npx vitest run tests/dimensions/tb-dimension-filter.test.ts -x` | ❌ W0 | ⬜ pending |
-| 06-05-01 | 05 | 2 | CLASS-05 | unit | `npx vitest run tests/dimensions/unclassified-entries.test.ts -x` | ❌ W0 | ⬜ pending |
+| 06-01-01 | 01 | 1 | CLASS-01 | unit | `npx vitest run src/lib/validators/dimension.test.ts -x` | W0 | pending |
+| 06-02-02 | 02 | 2 | CLASS-02 | unit | `npx vitest run tests/dimensions/je-dimension-tags.test.ts -x` | W0 | pending |
+| 06-03-01 | 03 | 2 | CLASS-03 | unit | `npx vitest run tests/dimensions/income-statement-by-dimension.test.ts -x` | W0 | pending |
+| 06-03-02 | 03 | 2 | CLASS-04 | unit | `npx vitest run tests/dimensions/tb-dimension-filter.test.ts -x` | W0 | pending |
+| 06-03-02 | 03 | 2 | CLASS-05 | unit | `npx vitest run tests/dimensions/unclassified-entries.test.ts -x` | W0 | pending |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+*Status: pending / green / red / flaky*
 
 ---
 
