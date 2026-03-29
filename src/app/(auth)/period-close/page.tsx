@@ -8,7 +8,11 @@ import {
   ChevronRight,
   Loader2,
   BookCheck,
+  ArrowLeft,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { useEntityContext } from "@/providers/entity-provider";
 import { Button } from "@/components/ui/button";
@@ -36,6 +40,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { formatCurrency } from "@/lib/utils/accounting";
 import { cn } from "@/lib/utils";
 
 // ─── Constants ──────────────────────────────────────────
@@ -56,19 +69,19 @@ const MONTH_NAMES = [
 ] as const;
 
 const MONTH_SHORT = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ] as const;
+
+const TYPE_LABELS: Record<string, string> = {
+  BANK_ACCOUNT: "Bank Account",
+  INVESTMENT: "Investment",
+  REAL_ESTATE: "Real Estate",
+  LOAN: "Loan",
+  PRIVATE_EQUITY: "Private Equity",
+  RECEIVABLE: "Receivable",
+  OTHER: "Other",
+};
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -81,7 +94,33 @@ interface ClosedPeriod {
   closedAt: string;
 }
 
-// ─── Loading skeleton ───────────────────────────────────
+interface ReconItem {
+  id: string;
+  name: string;
+  itemType: string;
+  accountId: string;
+  currentBalance: string;
+  account: { id: string; number: string; name: string };
+  periodRecon: {
+    id: string;
+    statementBalance: string;
+    glBalance: string;
+    difference: string;
+    status: string;
+    statementDate: string;
+  } | null;
+  latestRecon: {
+    id: string;
+    statementBalance: string;
+    glBalance: string;
+    difference: string;
+    status: string;
+    statementDate: string;
+  } | null;
+  lastReconciledPeriod: { year: number; month: number } | null;
+}
+
+// ─── Skeleton ────────────────────────────────────────────
 
 function PeriodCloseSkeleton() {
   return (
@@ -93,7 +132,17 @@ function PeriodCloseSkeleton() {
   );
 }
 
-// ─── Main page component ────────────────────────────────
+function ReconTableSkeleton() {
+  return (
+    <div className="space-y-2 animate-pulse">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="h-12 rounded-md bg-muted" />
+      ))}
+    </div>
+  );
+}
+
+// ─── Main page ───────────────────────────────────────────
 
 export default function PeriodClosePage() {
   const {
@@ -110,8 +159,20 @@ export default function PeriodClosePage() {
   const [bulkLoading, setBulkLoading] = useState(false);
   const [yecOpen, setYecOpen] = useState(false);
   const [yecLoading, setYecLoading] = useState(false);
-  const [equityAccounts, setEquityAccounts] = useState<Array<{ id: string; number: string; name: string }>>([]);
+  const [equityAccounts, setEquityAccounts] = useState<
+    Array<{ id: string; number: string; name: string }>
+  >([]);
   const [selectedREAccount, setSelectedREAccount] = useState<string>("");
+
+  // Detail view
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [reconItems, setReconItems] = useState<ReconItem[]>([]);
+  const [reconLoading, setReconLoading] = useState(false);
+
+  // Recon summary counts per month (grid view)
+  const [monthReconSummary, setMonthReconSummary] = useState<
+    Record<number, { reconciled: number; total: number }>
+  >({});
 
   const isAllEntities = currentEntityId === "all";
 
@@ -146,7 +207,69 @@ export default function PeriodClosePage() {
     fetchPeriods();
   }, [fetchPeriods]);
 
-  // ─── Helpers ───────────────────────────────────────────
+  // ─── Fetch recon summary for all months ───────────────
+
+  const fetchMonthReconSummary = useCallback(async () => {
+    if (!currentEntityId || isAllEntities) return;
+    const summary: Record<number, { reconciled: number; total: number }> = {};
+    // Fetch for each month in parallel — use current year
+    await Promise.all(
+      Array.from({ length: 12 }, (_, i) => i + 1).map(async (m) => {
+        try {
+          const res = await fetch(
+            `/api/entities/${currentEntityId}/period-close/recon-status?year=${year}&month=${m}`
+          );
+          if (res.ok) {
+            const json = await res.json();
+            if (json.success && Array.isArray(json.data)) {
+              const total = json.data.length;
+              const reconciled = json.data.filter(
+                (item: ReconItem) =>
+                  item.periodRecon?.status === "COMPLETED"
+              ).length;
+              summary[m] = { reconciled, total };
+            }
+          }
+        } catch { /* ignore */ }
+      })
+    );
+    setMonthReconSummary(summary);
+  }, [currentEntityId, isAllEntities, year]);
+
+  useEffect(() => {
+    fetchMonthReconSummary();
+  }, [fetchMonthReconSummary]);
+
+  // ─── Fetch recon status for selected month ────────────
+
+  const fetchReconStatus = useCallback(
+    async (month: number) => {
+      if (!currentEntityId) return;
+      setReconLoading(true);
+      try {
+        const res = await fetch(
+          `/api/entities/${currentEntityId}/period-close/recon-status?year=${year}&month=${month}`
+        );
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success) setReconItems(json.data);
+        }
+      } catch {
+        toast.error("Failed to load reconciliation status");
+      } finally {
+        setReconLoading(false);
+      }
+    },
+    [currentEntityId, year]
+  );
+
+  useEffect(() => {
+    if (selectedMonth !== null) {
+      fetchReconStatus(selectedMonth);
+    }
+  }, [selectedMonth, fetchReconStatus]);
+
+  // ─── Helpers ──────────────────────────────────────────
 
   function isMonthClosed(month: number): boolean {
     return closedPeriods.some((p) => p.year === year && p.month === month);
@@ -156,7 +279,7 @@ export default function PeriodClosePage() {
     return closedPeriods.find((p) => p.year === year && p.month === month);
   }
 
-  // ─── Close a period ────────────────────────────────────
+  // ─── Close a period ───────────────────────────────────
 
   async function closePeriod(month: number, force = false) {
     setActionLoading(month);
@@ -173,15 +296,18 @@ export default function PeriodClosePage() {
       if (res.ok && json.success) {
         toast.success(`${MONTH_NAMES[month - 1]} ${year} closed`);
         await fetchPeriods();
+        if (selectedMonth === month) {
+          await fetchReconStatus(month);
+        }
       } else if (res.status === 422 && json.unreconciledAccounts) {
-        // Unreconciled accounts — ask to force
         const names = json.unreconciledAccounts
           .slice(0, 3)
           .map((a: { name: string }) => a.name)
           .join(", ");
-        const more = json.unreconciledAccounts.length > 3
-          ? ` and ${json.unreconciledAccounts.length - 3} more`
-          : "";
+        const more =
+          json.unreconciledAccounts.length > 3
+            ? ` and ${json.unreconciledAccounts.length - 3} more`
+            : "";
         toast.error(
           `${json.unreconciledAccounts.length} unreconciled: ${names}${more}`,
           {
@@ -229,7 +355,7 @@ export default function PeriodClosePage() {
     }
   }
 
-  // ─── Close all through a month ─────────────────────────
+  // ─── Close all through ────────────────────────────────
 
   async function closeAllThrough() {
     if (bulkMonth < 1) return;
@@ -262,17 +388,21 @@ export default function PeriodClosePage() {
     }
 
     if (successCount > 0) {
-      toast.success(`Closed ${successCount} period${successCount > 1 ? "s" : ""}`);
+      toast.success(
+        `Closed ${successCount} period${successCount > 1 ? "s" : ""}`
+      );
     }
     if (errorCount > 0) {
-      toast.error(`Failed to close ${errorCount} period${errorCount > 1 ? "s" : ""}`);
+      toast.error(
+        `Failed to close ${errorCount} period${errorCount > 1 ? "s" : ""}`
+      );
     }
 
     await fetchPeriods();
     setBulkLoading(false);
   }
 
-  // ─── Year-End Close ──────────────────────────────────
+  // ─── Year-End Close ───────────────────────────────────
 
   async function fetchEquityAccounts() {
     try {
@@ -281,11 +411,10 @@ export default function PeriodClosePage() {
         const json = await res.json();
         if (json.success) {
           const equity = json.data.filter(
-            (a: { type: string; parentId: string | null; isActive: boolean }) =>
+            (a: { type: string; isActive: boolean }) =>
               a.type === "EQUITY" && a.isActive
           );
           setEquityAccounts(equity);
-          // Auto-select "Retained Earnings" if it exists
           const re = equity.find((a: { name: string }) =>
             a.name.toLowerCase().includes("retained earnings")
           );
@@ -348,9 +477,7 @@ export default function PeriodClosePage() {
   if (entities.length === 0) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Period Close
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Period Close</h1>
         <p className="text-muted-foreground">
           Create an entity first to manage period close.
         </p>
@@ -361,9 +488,7 @@ export default function PeriodClosePage() {
   if (isAllEntities) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Period Close
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Period Close</h1>
         <div className="rounded-md border py-12 text-center">
           <p className="text-muted-foreground">
             Select a specific entity to manage period close.
@@ -375,7 +500,233 @@ export default function PeriodClosePage() {
 
   const currentEntity = entities.find((e) => e.id === currentEntityId);
 
-  // ─── Render ───────────────────────────────────────────
+  // ─── Detail view ──────────────────────────────────────
+
+  if (selectedMonth !== null) {
+    const closed = isMonthClosed(selectedMonth);
+    const closedPeriod = getClosedPeriod(selectedMonth);
+    const isActioning = actionLoading === selectedMonth;
+    const totalItems = reconItems.length;
+    const reconciledItems = reconItems.filter(
+      (item) => item.periodRecon?.status === "COMPLETED"
+    ).length;
+    const allReconciled = totalItems > 0 && reconciledItems === totalItems;
+
+    return (
+      <div className="space-y-6">
+        {/* Back + header */}
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-2"
+            onClick={() => setSelectedMonth(null)}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Calendar
+          </Button>
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-semibold">
+              {MONTH_NAMES[selectedMonth - 1]} {year}
+            </h2>
+            <Badge
+              variant={closed ? "default" : "outline"}
+              className={cn(
+                "gap-1",
+                closed
+                  ? "bg-green-600 text-white dark:bg-green-700"
+                  : ""
+              )}
+            >
+              {closed ? (
+                <>
+                  <Lock className="h-3 w-3" /> Closed
+                </>
+              ) : (
+                <>
+                  <Unlock className="h-3 w-3" /> Open
+                </>
+              )}
+            </Badge>
+            {closedPeriod && (
+              <span className="text-sm text-muted-foreground">
+                Closed {new Date(closedPeriod.closedAt).toLocaleDateString()}
+              </span>
+            )}
+          </div>
+          <Button
+            variant={closed ? "outline" : "default"}
+            size="sm"
+            disabled={isActioning}
+            onClick={() =>
+              closed ? reopenPeriod(selectedMonth) : closePeriod(selectedMonth)
+            }
+          >
+            {isActioning ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : null}
+            {closed ? "Reopen Period" : "Close Period"}
+          </Button>
+        </div>
+
+        {/* All reconciled banner */}
+        {allReconciled && (
+          <div className="flex items-center gap-2 rounded-lg border border-green-500 bg-green-50 px-4 py-3 dark:bg-green-950">
+            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <span className="text-sm font-medium text-green-700 dark:text-green-400">
+              All accounts reconciled — ready to close
+            </span>
+          </div>
+        )}
+
+        {/* Recon status table */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Reconciliation Status
+              {!reconLoading && totalItems > 0 && (
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                  — {reconciledItems} of {totalItems} accounts reconciled
+                </span>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {reconLoading ? (
+              <div className="p-4">
+                <ReconTableSkeleton />
+              </div>
+            ) : totalItems === 0 ? (
+              <div className="py-10 text-center text-muted-foreground">
+                <p>No subledger accounts to reconcile.</p>
+                <p className="text-sm mt-1">
+                  Add holdings in the{" "}
+                  <Link href="/holdings" className="text-primary underline">
+                    Holdings
+                  </Link>{" "}
+                  page.
+                </p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Account</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Last Reconciled</TableHead>
+                    <TableHead className="text-right">Statement Bal</TableHead>
+                    <TableHead className="text-right">GL Balance</TableHead>
+                    <TableHead className="text-right">Diff</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {reconItems.map((item) => {
+                    const isPeriodReconciled =
+                      item.periodRecon?.status === "COMPLETED";
+                    const diff = item.periodRecon
+                      ? parseFloat(item.periodRecon.difference)
+                      : null;
+
+                    let lastReconLabel = "—";
+                    if (item.lastReconciledPeriod) {
+                      lastReconLabel = `${MONTH_NAMES[item.lastReconciledPeriod.month - 1].slice(0, 3)} ${item.lastReconciledPeriod.year}`;
+                    } else if (item.latestRecon) {
+                      lastReconLabel = new Date(
+                        item.latestRecon.statementDate
+                      ).toLocaleDateString();
+                    }
+
+                    return (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          <div className="font-medium text-sm">
+                            {item.account.number} {item.account.name}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {item.name}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-xs text-muted-foreground">
+                            {TYPE_LABELS[item.itemType] ?? item.itemType}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {lastReconLabel}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-sm">
+                          {item.periodRecon
+                            ? formatCurrency(
+                                parseFloat(item.periodRecon.statementBalance)
+                              )
+                            : "—"}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-sm">
+                          {item.periodRecon
+                            ? formatCurrency(
+                                parseFloat(item.periodRecon.glBalance)
+                              )
+                            : formatCurrency(parseFloat(item.currentBalance))}
+                        </TableCell>
+                        <TableCell
+                          className={cn(
+                            "text-right font-mono text-sm",
+                            diff === null
+                              ? "text-muted-foreground"
+                              : Math.abs(diff) < 0.005
+                                ? "text-green-600"
+                                : "text-red-600"
+                          )}
+                        >
+                          {diff !== null ? formatCurrency(diff) : "—"}
+                        </TableCell>
+                        <TableCell>
+                          {isPeriodReconciled ? (
+                            <Badge
+                              variant="secondary"
+                              className="gap-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                            >
+                              <CheckCircle2 className="h-3 w-3" />
+                              Reconciled
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="gap-1 text-xs"
+                            >
+                              <AlertCircle className="h-3 w-3" />
+                              Not done
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant={isPeriodReconciled ? "ghost" : "outline"}
+                            size="sm"
+                            className="h-7 text-xs"
+                            render={<Link href={`/reconcile/${item.id}`} />}
+                          >
+                            {isPeriodReconciled ? "View" : "Reconcile"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // ─── Grid view ────────────────────────────────────────
 
   return (
     <div className="space-y-6">
@@ -409,14 +760,9 @@ export default function PeriodClosePage() {
         </div>
         <div className="flex items-center gap-2">
           {currentEntity && (
-            <p className="text-sm text-muted-foreground">
-              {currentEntity.name}
-            </p>
+            <p className="text-sm text-muted-foreground">{currentEntity.name}</p>
           )}
-          <Badge
-            variant="secondary"
-            className="ml-2"
-          >
+          <Badge variant="secondary" className="ml-2">
             {closedCount}/12 closed
           </Badge>
         </div>
@@ -470,17 +816,19 @@ export default function PeriodClosePage() {
             const closed = isMonthClosed(month);
             const closedPeriod = getClosedPeriod(month);
             const isActioning = actionLoading === month;
+            const summary = monthReconSummary[month];
 
             return (
               <Card
                 key={month}
                 size="sm"
                 className={cn(
-                  "transition-colors",
+                  "transition-colors cursor-pointer hover:ring-2 hover:ring-primary/30",
                   closed
                     ? "bg-muted/50 ring-green-500/20"
                     : "ring-foreground/10"
                 )}
+                onClick={() => setSelectedMonth(month)}
               >
                 <CardContent className="flex flex-col items-center gap-2 px-3 py-4">
                   <span className="text-sm font-medium">
@@ -507,6 +855,18 @@ export default function PeriodClosePage() {
                       </>
                     )}
                   </Badge>
+                  {summary && summary.total > 0 && (
+                    <span
+                      className={cn(
+                        "text-[10px]",
+                        summary.reconciled === summary.total
+                          ? "text-green-600"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      {summary.reconciled}/{summary.total} reconciled
+                    </span>
+                  )}
                   {closedPeriod && (
                     <span className="text-[10px] text-muted-foreground">
                       {new Date(closedPeriod.closedAt).toLocaleDateString()}
@@ -517,9 +877,10 @@ export default function PeriodClosePage() {
                     size="sm"
                     className="mt-1 h-7 w-full text-xs"
                     disabled={isActioning}
-                    onClick={() =>
-                      closed ? reopenPeriod(month) : closePeriod(month)
-                    }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      closed ? reopenPeriod(month) : closePeriod(month);
+                    }}
                   >
                     {isActioning ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -583,7 +944,9 @@ export default function PeriodClosePage() {
                   </label>
                   <Select
                     value={selectedREAccount || null}
-                    onValueChange={(val) => setSelectedREAccount(val as string)}
+                    onValueChange={(val) =>
+                      setSelectedREAccount(val as string)
+                    }
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select equity account" />

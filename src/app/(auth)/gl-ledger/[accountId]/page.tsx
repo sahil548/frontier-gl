@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { useParams } from "next/navigation"
+import Link from "next/link"
 import { startOfMonth, format } from "date-fns"
 import type { DateRange } from "react-day-picker"
 
@@ -16,6 +17,8 @@ import type { AccountType } from "@/lib/utils/accounting"
 import { SubledgerSection } from "@/components/gl-ledger/subledger-section"
 import type { LedgerRow } from "@/lib/queries/ledger-queries"
 import { TableCell, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 
 interface LedgerApiResponse {
   account: {
@@ -42,6 +45,16 @@ interface LedgerApiResponse {
   }>
 }
 
+interface SubledgerItem {
+  id: string
+  name: string
+  reconciliations?: Array<{
+    id: string
+    statementDate: string
+    status: string
+  }>
+}
+
 /**
  * Account-specific GL Ledger page.
  * Shows account summary, filters, export, and data table
@@ -54,6 +67,7 @@ export default function AccountLedgerPage() {
 
   const [data, setData] = useState<LedgerApiResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [subledgerItem, setSubledgerItem] = useState<SubledgerItem | null | undefined>(undefined)
   const [filters, setFilters] = useState<LedgerFilterValues>({
     dateRange: { from: startOfMonth(new Date()), to: new Date() },
     memoSearch: "",
@@ -102,6 +116,19 @@ export default function AccountLedgerPage() {
   useEffect(() => {
     fetchLedger()
   }, [fetchLedger])
+
+  // Fetch subledger item for this account (if any)
+  useEffect(() => {
+    if (!currentEntityId || currentEntityId === "all" || !accountId) return
+    fetch(`/api/entities/${currentEntityId}/subledger?accountId=${accountId}`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data)) {
+          setSubledgerItem(json.data[0] ?? null)
+        }
+      })
+      .catch(() => setSubledgerItem(null))
+  }, [currentEntityId, accountId])
 
   // Compute totals
   const totals = useMemo(() => {
@@ -215,6 +242,29 @@ export default function AccountLedgerPage() {
         }}
         summary={data.summary}
       />
+
+      {/* Reconciliation status (only if a subledger item is linked) */}
+      {subledgerItem !== undefined && subledgerItem !== null && (
+        <div className="flex items-center gap-3">
+          {subledgerItem.reconciliations && subledgerItem.reconciliations.length > 0 ? (
+            <>
+              <Badge variant="secondary" className="gap-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                Last reconciled:{" "}
+                {new Date(
+                  subledgerItem.reconciliations[0].statementDate
+                ).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+              </Badge>
+            </>
+          ) : (
+            <Badge variant="outline" className="text-xs">
+              Not yet reconciled
+            </Badge>
+          )}
+          <Button variant="outline" size="sm" render={<Link href={`/reconcile/${subledgerItem.id}`} />}>
+            Reconcile
+          </Button>
+        </div>
+      )}
 
       {/* Filters */}
       <LedgerFilters

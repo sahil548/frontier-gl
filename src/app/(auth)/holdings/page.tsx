@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   Landmark,
@@ -532,6 +533,7 @@ function PositionsRow({ entityId, item, onBalanceUpdated }: PositionsRowProps) {
 
 export default function HoldingsPage() {
   const { currentEntityId, entities, isLoading } = useEntityContext();
+  const router = useRouter();
   const [items, setItems] = useState<HoldingItem[]>([]);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -541,7 +543,6 @@ export default function HoldingsPage() {
   // Dialog state
   const [addOpen, setAddOpen] = useState(false);
   const [editItem, setEditItem] = useState<HoldingItem | null>(null);
-  const [reconItem, setReconItem] = useState<HoldingItem | null>(null);
 
   // Form state
   const [formName, setFormName] = useState("");
@@ -553,16 +554,6 @@ export default function HoldingsPage() {
   const [formCostBasis, setFormCostBasis] = useState("");
   const [formNotes, setFormNotes] = useState("");
   const [saving, setSaving] = useState(false);
-
-  // Recon form
-  const [reconDate, setReconDate] = useState(new Date().toISOString().split("T")[0]);
-  const [reconBalance, setReconBalance] = useState("");
-  const [reconSaving, setReconSaving] = useState(false);
-  const [reconResult, setReconResult] = useState<{
-    glBalance: string;
-    difference: string;
-    status: string;
-  } | null>(null);
 
   const fetchItems = useCallback(async () => {
     if (!currentEntityId || currentEntityId === "all") return;
@@ -665,46 +656,6 @@ export default function HoldingsPage() {
       toast.error("Failed to save");
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function handleReconcile() {
-    if (!reconItem || !reconBalance) return;
-    setReconSaving(true);
-    setReconResult(null);
-    try {
-      const res = await fetch(
-        `/api/entities/${currentEntityId}/subledger/${reconItem.id}/reconcile`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            statementDate: reconDate,
-            statementBalance: parseFloat(reconBalance),
-          }),
-        }
-      );
-      const json = await res.json();
-      if (res.ok && json.success) {
-        setReconResult({
-          glBalance: json.data.glBalance,
-          difference: json.data.difference,
-          status: json.data.status,
-        });
-        const diff = parseFloat(json.data.difference);
-        if (Math.abs(diff) < 0.005) {
-          toast.success("Reconciled — GL matches statement");
-        } else {
-          toast.warning(`Difference of ${formatCurrency(diff)}`);
-        }
-        fetchItems();
-      } else {
-        toast.error(json.error ?? "Reconciliation failed");
-      }
-    } catch {
-      toast.error("Reconciliation failed");
-    } finally {
-      setReconSaving(false);
     }
   }
 
@@ -1024,11 +975,7 @@ export default function HoldingsPage() {
                           <Button
                             variant="outline"
                             size="xs"
-                            onClick={() => {
-                              setReconItem(item);
-                              setReconBalance("");
-                              setReconResult(null);
-                            }}
+                            onClick={() => router.push(`/reconcile/${item.id}`)}
                           >
                             Reconcile
                           </Button>
@@ -1067,55 +1014,6 @@ export default function HoldingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Reconcile dialog */}
-      <Dialog open={!!reconItem} onOpenChange={(open) => { if (!open) { setReconItem(null); setReconResult(null); } }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reconcile: {reconItem?.name}</DialogTitle>
-            <DialogDescription>Enter the statement balance to compare against the GL.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Statement Date</Label>
-              <Input type="date" value={reconDate} onChange={(e) => setReconDate(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>Statement Balance</Label>
-              <Input type="number" step="0.01" value={reconBalance} onChange={(e) => setReconBalance(e.target.value)} placeholder="Enter balance from statement" />
-            </div>
-            {reconResult && (
-              <Card className={cn(
-                parseFloat(reconResult.difference) === 0
-                  ? "border-green-500 bg-green-50 dark:bg-green-950"
-                  : "border-yellow-500 bg-yellow-50 dark:bg-yellow-950"
-              )}>
-                <CardContent className="py-3 space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span>GL Balance</span>
-                    <span className="font-mono">{formatCurrency(parseFloat(reconResult.glBalance))}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Statement Balance</span>
-                    <span className="font-mono">{formatCurrency(parseFloat(reconBalance))}</span>
-                  </div>
-                  <div className="flex justify-between text-sm font-semibold border-t pt-1">
-                    <span>Difference</span>
-                    <span className="font-mono">{formatCurrency(parseFloat(reconResult.difference))}</span>
-                  </div>
-                  <Badge variant={reconResult.status === "COMPLETED" ? "default" : "secondary"} className="mt-1">
-                    {reconResult.status === "COMPLETED" ? "Reconciled" : "Variance — Review Needed"}
-                  </Badge>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-          <DialogFooter>
-            <Button onClick={handleReconcile} disabled={reconSaving || !reconBalance}>
-              {reconSaving ? "Reconciling..." : "Reconcile"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
