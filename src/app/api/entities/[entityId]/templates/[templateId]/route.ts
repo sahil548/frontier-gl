@@ -29,7 +29,7 @@ function serializeTemplate(template: any) {
     createdBy: template.createdBy,
     createdAt: template.createdAt.toISOString(),
     updatedAt: template.updatedAt.toISOString(),
-    lines: template.lines?.map((l: any, idx: number) => ({
+    lines: template.lines?.map((l: { id: string; accountId: string; debit: unknown; credit: unknown; memo: string | null; sortOrder: number }, idx: number) => ({
       id: l.id,
       accountId: l.accountId,
       debit: l.debit?.toString() ?? "0",

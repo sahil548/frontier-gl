@@ -194,10 +194,37 @@ model SubledgerItem {
   entity          Entity              @relation(fields: [entityId], references: [id])
   account         Account             @relation(fields: [accountId], references: [id])
   reconciliations BankReconciliation[]
+  positions       Position[]
 
   @@index([entityId, accountId])
   @@index([entityId, itemType])
   @@map("subledger_items")
+}
+
+model Position {
+  id              String          @id @default(cuid())
+  subledgerItemId String
+  name            String          // "AAPL", "Cash Sweep", "Land", "Building"
+  positionType    PositionType
+  // Quantities (for securities)
+  quantity        Decimal?        @db.Decimal(19, 6)
+  unitCost        Decimal?        @db.Decimal(19, 6)
+  unitPrice       Decimal?        @db.Decimal(19, 6)
+  // Values
+  costBasis       Decimal?        @db.Decimal(19, 4)
+  marketValue     Decimal         @default(0) @db.Decimal(19, 4)
+  // Metadata
+  ticker          String?
+  assetClass      String?         // "Large Cap", "Fixed Income", "Cash", etc.
+  acquiredDate    DateTime?       @db.Date
+  notes           String?
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  subledgerItem   SubledgerItem   @relation(fields: [subledgerItemId], references: [id], onDelete: Cascade)
+
+  @@index([subledgerItemId])
+  @@map("positions")
 }
 
 model BankReconciliation {
@@ -302,4 +329,16 @@ enum ReconciliationStatus {
 enum MatchStatus {
   MATCHED
   UNMATCHED
+}
+
+enum PositionType {
+  CASH
+  PUBLIC_EQUITY
+  FIXED_INCOME
+  MUTUAL_FUND
+  ETF
+  PRIVATE_EQUITY
+  REAL_PROPERTY
+  ACCUMULATED_DEPRECIATION
+  OTHER
 }

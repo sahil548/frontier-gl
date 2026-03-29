@@ -158,7 +158,7 @@ export default function PeriodClosePage() {
 
   // ─── Close a period ────────────────────────────────────
 
-  async function closePeriod(month: number) {
+  async function closePeriod(month: number, force = false) {
     setActionLoading(month);
     try {
       const res = await fetch(
@@ -166,13 +166,32 @@ export default function PeriodClosePage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ year, month }),
+          body: JSON.stringify({ year, month, force }),
         }
       );
       const json = await res.json();
       if (res.ok && json.success) {
         toast.success(`${MONTH_NAMES[month - 1]} ${year} closed`);
         await fetchPeriods();
+      } else if (res.status === 422 && json.unreconciledAccounts) {
+        // Unreconciled accounts — ask to force
+        const names = json.unreconciledAccounts
+          .slice(0, 3)
+          .map((a: { name: string }) => a.name)
+          .join(", ");
+        const more = json.unreconciledAccounts.length > 3
+          ? ` and ${json.unreconciledAccounts.length - 3} more`
+          : "";
+        toast.error(
+          `${json.unreconciledAccounts.length} unreconciled: ${names}${more}`,
+          {
+            action: {
+              label: "Close Anyway",
+              onClick: () => closePeriod(month, true),
+            },
+            duration: 10000,
+          }
+        );
       } else {
         toast.error(json.error ?? "Failed to close period");
       }
