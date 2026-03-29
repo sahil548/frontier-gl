@@ -73,7 +73,8 @@ export function JELineItems({ entityId, disabled }: JELineItemsProps) {
 
   return (
     <div className="space-y-3">
-      <div className="overflow-x-auto rounded-lg border border-border">
+      {/* Desktop table layout (sm and up) */}
+      <div className="hidden sm:block overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50">
@@ -154,6 +155,92 @@ export function JELineItems({ entityId, disabled }: JELineItemsProps) {
             <JETotalsRow totalDebit={totalDebit} totalCredit={totalCredit} />
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile card layout (below sm) */}
+      <div className="sm:hidden space-y-3">
+        {fields.map((field, index) => (
+          <div
+            key={field.id}
+            className="rounded-lg border border-border p-3 space-y-3"
+          >
+            {/* Account - full width */}
+            <div className="space-y-1">
+              <span className="text-xs font-medium text-muted-foreground">Account</span>
+              <AccountCombobox
+                value={watchedLineItems?.[index]?.accountId ?? ""}
+                onChange={(accountId) =>
+                  setValue(`lineItems.${index}.accountId`, accountId, {
+                    shouldValidate: false,
+                  })
+                }
+                entityId={entityId}
+                disabled={disabled}
+              />
+            </div>
+            {/* Debit / Credit side by side */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <span className="text-xs font-medium text-muted-foreground">Debit</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  className="text-right font-mono h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  {...register(`lineItems.${index}.debit`)}
+                  onChange={(e) => handleDebitChange(index, e.target.value)}
+                  disabled={disabled}
+                />
+              </div>
+              <div className="space-y-1">
+                <span className="text-xs font-medium text-muted-foreground">Credit</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  className="text-right font-mono h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  {...register(`lineItems.${index}.credit`)}
+                  onChange={(e) => handleCreditChange(index, e.target.value)}
+                  disabled={disabled}
+                />
+              </div>
+            </div>
+            {/* Memo - full width */}
+            <div className="space-y-1">
+              <span className="text-xs font-medium text-muted-foreground">Memo</span>
+              <Input
+                className="h-8"
+                placeholder="Optional memo"
+                {...register(`lineItems.${index}.memo`)}
+                disabled={disabled}
+              />
+            </div>
+            {/* Remove button */}
+            {!disabled && (
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => remove(index)}
+                  disabled={fields.length <= 2}
+                >
+                  <X className="mr-1 h-3.5 w-3.5" />
+                  Remove
+                </Button>
+              </div>
+            )}
+          </div>
+        ))}
+        {/* Mobile totals */}
+        <div className="flex justify-between rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm font-medium">
+          <span>Totals</span>
+          <div className="flex gap-4 font-mono">
+            <span>Dr {totalDebit.toFixed(2)}</span>
+            <span>Cr {totalCredit.toFixed(2)}</span>
+          </div>
+        </div>
       </div>
 
       {!disabled && (
