@@ -97,7 +97,7 @@ Plans:
 4. Trial balance can be filtered to show only transactions tagged with a specific class
 5. Schema migration is additive — class field nullable, no data loss on existing entries
 
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 - [ ] 06-01-PLAN.md — Schema, dimension/tag CRUD API, and /dimensions management page with accordion layout
@@ -187,7 +187,7 @@ Plans:
 | 3. Ledger & Trial Balance | LED, TB, UI-03 | ✓ Complete | 2026-03-27 |
 | 4. Platform | DASH (partial), PC, RPT, HOLD, TMPL, ACC | ✓ Complete | 2026-03-29 |
 | 5. QBO Parity I | 5/5 | Complete    | 2026-03-29 |
-| 6. QBO Parity II | CLASS | ○ Not started | — |
+| 6. QBO Parity II | 1/3 | In Progress|  |
 | 7. QBO Parity III | BUDG | ○ Not started | — |
 | 8. Family Office I | CONS | ○ Not started | — |
 | 9. Family Office II | CAP | ○ Not started | — |

@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Completed 05-04-PLAN.md
-last_updated: "2026-03-29T11:17:07.925Z"
-last_activity: 2026-03-29 -- Completed 05-04-PLAN.md
+status: in_progress
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-03-29T11:44:50Z"
+last_activity: 2026-03-29 -- Completed 06-01-PLAN.md
 progress:
   total_phases: 10
   completed_phases: 3
   total_plans: 29
-  completed_plans: 17
+  completed_plans: 18
   percent: 62
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Accountants can view, manage, and close books across all family office entities in one fast, purpose-built GL -- eliminating the per-entity cost and friction of QuickBooks Online.
-**Current focus:** Phase 5: QBO Parity I
+**Current focus:** Phase 6: QBO Parity II - Class Tracking
 
 ## Current Position
 
-Phase: 5 of 10 (QBO Parity I) -- COMPLETE
-Plan: 5 of 5 in current phase (Plans 00, 01, 02, 03, 04 complete)
-Status: Phase Complete
-Last activity: 2026-03-29 -- Completed 05-04-PLAN.md
+Phase: 6 of 10 (QBO Parity II - Class Tracking)
+Plan: 1 of 3 in current phase (Plan 01 complete)
+Status: In Progress
+Last activity: 2026-03-29 -- Completed 06-01-PLAN.md
 
 Progress: [██████░░░░] 62%
 
@@ -66,6 +66,7 @@ Progress: [██████░░░░] 62%
 | Phase 05 P02 | 6min | 2 tasks | 5 files |
 | Phase 05 P03 | 7min | 2 tasks | 10 files |
 | Phase 05 P04 | 12min | 3 tasks | 15 files |
+| Phase 06 P01 | 5min | 2 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -115,6 +116,8 @@ Recent decisions affecting current work:
 - [Phase 05-03]: Detailed per-field line item diffs in audit (Line N account/debit/credit/memo) rather than generic summary
 - [Phase 05-03]: State-driven line editing in RecurringEditDialog (no react-hook-form) for template line simplicity
 - [Phase 05-03]: Computed status field (active/overdue/stopped) derived at query time rather than stored in DB
+- [Phase 06-01]: Soft-delete cascade -- deactivating a dimension also deactivates all its tags via transaction
+- [Phase 06-01]: Accordion layout for dimensions page; Sheet slide-over forms matching existing account-form pattern
 
 ### Pending Todos
 
@@ -127,6 +130,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-29T10:55:41Z
-Stopped at: Completed 05-04-PLAN.md
+Last session: 2026-03-29T11:44:50Z
+Stopped at: Completed 06-01-PLAN.md
 Resume file: None
