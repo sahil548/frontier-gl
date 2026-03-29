@@ -1,10 +1,11 @@
 ---
 phase: 5
 slug: qbo-parity-i
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: complete
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-03-29
+validated: 2026-03-29
 ---
 
 # Phase 5 — Validation Strategy
@@ -38,16 +39,16 @@ created: 2026-03-29
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 05-00-01 | 00 | 0 | DASH-03 | unit | `npx vitest run tests/dashboard/chart-data.test.ts` | ❌ W0 | ⬜ pending |
-| 05-00-02 | 00 | 0 | AUDT-02 | unit | `npx vitest run tests/audit/field-diff.test.ts` | ❌ W0 | ⬜ pending |
-| 05-00-03 | 00 | 0 | ATTCH-01 | unit | `npx vitest run tests/attachments/upload.test.ts` | ❌ W0 | ⬜ pending |
-| 05-00-04 | 00 | 0 | ATTCH-02 | unit | `npx vitest run tests/attachments/list.test.ts` | ❌ W0 | ⬜ pending |
-| 05-00-05 | 00 | 0 | ATTCH-03 | unit | `npx vitest run tests/attachments/blob-storage.test.ts` | ❌ W0 | ⬜ pending |
-| 05-00-06 | 00 | 0 | RECR-01 | unit | `npx vitest run tests/recurring/setup.test.ts` | ❌ W0 | ⬜ pending |
-| 05-00-07 | 00 | 0 | RECR-02 | unit | `npx vitest run tests/recurring/list.test.ts` | ❌ W0 | ⬜ pending |
-| 05-00-08 | 00 | 0 | RECR-03 | unit | `npx vitest run tests/recurring/generate.test.ts` | ❌ W0 | ⬜ pending |
-| 05-00-09 | 00 | 0 | RECR-04 | unit | `npx vitest run tests/recurring/edit-stop.test.ts` | ❌ W0 | ⬜ pending |
-| 05-00-10 | 00 | 0 | RECR-05 | unit | `npx vitest run tests/recurring/generated-link.test.ts` | ❌ W0 | ⬜ pending |
+| 05-00-01 | 00 | 0 | DASH-03 | unit | `npx vitest run tests/dashboard/chart-data.test.ts` | ✅ | ✅ green |
+| 05-00-02 | 00 | 0 | AUDT-02 | unit | `npx vitest run tests/audit/field-diff.test.ts` | ✅ | ✅ green |
+| 05-00-03 | 00 | 0 | ATTCH-01 | unit | `npx vitest run tests/attachments/upload.test.ts` | ✅ | ✅ green |
+| 05-00-04 | 00 | 0 | ATTCH-02 | unit | `npx vitest run tests/attachments/list.test.ts` | ✅ | ✅ green |
+| 05-00-05 | 00 | 0 | ATTCH-03 | unit | `npx vitest run tests/attachments/blob-storage.test.ts` | ✅ | ✅ green |
+| 05-00-06 | 00 | 0 | RECR-01 | unit | `npx vitest run tests/recurring/setup.test.ts` | ✅ | ✅ green |
+| 05-00-07 | 00 | 0 | RECR-02 | unit | `npx vitest run tests/recurring/list.test.ts` | ✅ | ✅ green |
+| 05-00-08 | 00 | 0 | RECR-03 | unit | `npx vitest run tests/recurring/generate.test.ts` | ✅ | ✅ green |
+| 05-00-09 | 00 | 0 | RECR-04 | unit | `npx vitest run tests/recurring/edit-stop.test.ts` | ✅ | ✅ green |
+| 05-00-10 | 00 | 0 | RECR-05 | unit | `npx vitest run tests/recurring/generated-link.test.ts` | ✅ | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -55,16 +56,18 @@ created: 2026-03-29
 
 ## Wave 0 Requirements
 
-- [ ] `tests/dashboard/chart-data.test.ts` — stubs for DASH-03 chart data API
-- [ ] `tests/audit/field-diff.test.ts` — stubs for AUDT-02 field-level diffs
-- [ ] `tests/attachments/upload.test.ts` — stubs for ATTCH-01 upload flow
-- [ ] `tests/attachments/list.test.ts` — stubs for ATTCH-02 listing
-- [ ] `tests/attachments/blob-storage.test.ts` — stubs for ATTCH-03 Vercel Blob integration (mock)
-- [ ] `tests/recurring/setup.test.ts` — stubs for RECR-01
-- [ ] `tests/recurring/list.test.ts` — stubs for RECR-02
-- [ ] `tests/recurring/generate.test.ts` — stubs for RECR-03
-- [ ] `tests/recurring/edit-stop.test.ts` — stubs for RECR-04
-- [ ] `tests/recurring/generated-link.test.ts` — stubs for RECR-05
+- [x] `tests/dashboard/chart-data.test.ts` — DASH-03 chart data transformation (3 tests)
+- [x] `tests/audit/field-diff.test.ts` — AUDT-02 formatFieldDiffs logic (3 tests)
+- [x] `tests/attachments/upload.test.ts` — ATTCH-01 upload validation (4 tests)
+- [x] `tests/attachments/list.test.ts` — ATTCH-02 ordering and empty state (2 tests)
+- [x] `tests/attachments/blob-storage.test.ts` — ATTCH-03 Vercel Blob put/del (2 tests)
+- [x] `tests/recurring/setup.test.ts` — RECR-01 setup schema validation (1 test)
+- [x] `tests/recurring/list.test.ts` — RECR-02 status computation (2 tests)
+- [x] `tests/recurring/generate.test.ts` — RECR-03 date advancement and JE payload (2 tests)
+- [x] `tests/recurring/edit-stop.test.ts` — RECR-04 patch schema and stop payload (3 tests)
+- [x] `tests/recurring/generated-link.test.ts` — RECR-05 templateId and description marker (2 tests)
+
+**Total: 24 tests across 10 files — all green**
 
 ---
 
@@ -80,11 +83,11 @@ created: 2026-03-29
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 15s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 15s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** complete — 10/10 gaps filled, 24/24 tests green
