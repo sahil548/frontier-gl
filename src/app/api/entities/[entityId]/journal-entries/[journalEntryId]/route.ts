@@ -7,7 +7,7 @@ import { Prisma } from "@/generated/prisma/client";
 /**
  * Single journal entry API routes.
  *
- * GET    /api/entities/:entityId/journal-entries/:journalEntryId — Read with line items + audit
+ * GET    /api/entities/:entityId/journal-entries/:journalEntryId — Read with line items + audit + dimension tags
  * PUT    /api/entities/:entityId/journal-entries/:journalEntryId — Edit (DRAFT only)
  * DELETE /api/entities/:entityId/journal-entries/:journalEntryId — Delete (DRAFT only)
  */
@@ -44,6 +44,17 @@ function serializeJournalEntry(je: Record<string, unknown>) {
       memo: string | null;
       sortOrder: number;
       account?: { id: string; number: string; name: string; type: string };
+      dimensionTags?: Array<{
+        id: string;
+        dimensionTagId: string;
+        dimensionTag?: {
+          id: string;
+          dimensionId: string;
+          code: string;
+          name: string;
+          dimension?: { id: string; name: string };
+        };
+      }>;
     }>;
     auditEntries?: Array<{
       id: string;
@@ -69,23 +80,36 @@ function serializeJournalEntry(je: Record<string, unknown>) {
     postedAt: entry.postedAt?.toISOString() ?? null,
     updatedAt: entry.updatedAt.toISOString(),
     reversalOfId: entry.reversalOfId,
-    lineItems: entry.lineItems?.map((li) => ({
-      id: li.id,
-      journalEntryId: li.journalEntryId,
-      accountId: li.accountId,
-      debit: serializeDecimal(li.debit),
-      credit: serializeDecimal(li.credit),
-      memo: li.memo,
-      sortOrder: li.sortOrder,
-      account: li.account
-        ? {
-            id: li.account.id,
-            number: li.account.number,
-            name: li.account.name,
-            type: li.account.type,
+    lineItems: entry.lineItems?.map((li) => {
+      // Serialize dimension tags to { dimensionId: tagId } format
+      const dimensionTags: Record<string, string> = {};
+      if (li.dimensionTags) {
+        for (const dt of li.dimensionTags) {
+          const dimId = dt.dimensionTag?.dimensionId ?? dt.dimensionTag?.dimension?.id;
+          if (dimId) {
+            dimensionTags[dimId] = dt.dimensionTagId;
           }
-        : undefined,
-    })),
+        }
+      }
+      return {
+        id: li.id,
+        journalEntryId: li.journalEntryId,
+        accountId: li.accountId,
+        debit: serializeDecimal(li.debit),
+        credit: serializeDecimal(li.credit),
+        memo: li.memo,
+        sortOrder: li.sortOrder,
+        account: li.account
+          ? {
+              id: li.account.id,
+              number: li.account.number,
+              name: li.account.name,
+              type: li.account.type,
+            }
+          : undefined,
+        dimensionTags,
+      };
+    }),
     auditEntries: entry.auditEntries?.map((a) => ({
       id: a.id,
       action: a.action,
@@ -95,6 +119,18 @@ function serializeJournalEntry(je: Record<string, unknown>) {
     })),
   };
 }
+
+// ─── Dimension tags include fragment ─────────────────────
+
+const dimensionTagsInclude = {
+  dimensionTags: {
+    include: {
+      dimensionTag: {
+        include: { dimension: { select: { id: true, name: true } } },
+      },
+    },
+  },
+} as const;
 
 // ─── GET: Read single journal entry ──────────────────────
 
@@ -115,6 +151,7 @@ export async function GET(
       lineItems: {
         include: {
           account: { select: { id: true, number: true, name: true, type: true } },
+          ...dimensionTagsInclude,
         },
         orderBy: { sortOrder: "asc" },
       },
@@ -278,14 +315,14 @@ export async function PUT(
     };
   }
 
-  // Update within transaction: replace header + all line items
+  // Update within transaction: replace header + all line items + dimension tags
   const updated = await prisma.$transaction(async (tx) => {
-    // Delete old line items
+    // Delete old line items (cascade deletes dimension tag junctions too)
     await tx.journalEntryLine.deleteMany({
       where: { journalEntryId },
     });
 
-    // Update header and create new line items
+    // Update header and create new line items with dimension tags
     const je = await tx.journalEntry.update({
       where: { id: journalEntryId },
       data: {
@@ -298,6 +335,11 @@ export async function PUT(
             credit: new Prisma.Decimal(li.credit || "0"),
             memo: li.memo || null,
             sortOrder: index,
+            dimensionTags: {
+              create: Object.values(li.dimensionTags ?? {})
+                .filter(Boolean)
+                .map((tagId) => ({ dimensionTagId: tagId })),
+            },
           })),
         },
       },
@@ -305,6 +347,7 @@ export async function PUT(
         lineItems: {
           include: {
             account: { select: { id: true, number: true, name: true, type: true } },
+            ...dimensionTagsInclude,
           },
           orderBy: { sortOrder: "asc" },
         },
@@ -368,7 +411,8 @@ export async function DELETE(
       where: { journalEntryId },
     });
 
-    // Delete JE (lineItems cascade-deleted via onDelete: Cascade)
+    // Delete JE (lineItems cascade-deleted via onDelete: Cascade,
+    // which also cascades to dimension tag junctions)
     await tx.journalEntry.delete({
       where: { id: journalEntryId },
     });

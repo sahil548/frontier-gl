@@ -45,6 +45,17 @@ function serializeJournalEntry(je: Record<string, unknown>) {
       memo: string | null;
       sortOrder: number;
       account?: { id: string; number: string; name: string; type: string };
+      dimensionTags?: Array<{
+        id: string;
+        dimensionTagId: string;
+        dimensionTag?: {
+          id: string;
+          dimensionId: string;
+          code: string;
+          name: string;
+          dimension?: { id: string; name: string };
+        };
+      }>;
     }>;
   };
 
@@ -64,23 +75,36 @@ function serializeJournalEntry(je: Record<string, unknown>) {
     updatedAt: entry.updatedAt.toISOString(),
     reversalOfId: entry.reversalOfId,
     templateId: entry.templateId ?? null,
-    lineItems: entry.lineItems?.map((li) => ({
-      id: li.id,
-      journalEntryId: li.journalEntryId,
-      accountId: li.accountId,
-      debit: serializeDecimal(li.debit),
-      credit: serializeDecimal(li.credit),
-      memo: li.memo,
-      sortOrder: li.sortOrder,
-      account: li.account
-        ? {
-            id: li.account.id,
-            number: li.account.number,
-            name: li.account.name,
-            type: li.account.type,
+    lineItems: entry.lineItems?.map((li) => {
+      // Serialize dimension tags to { dimensionId: tagId } format for form consumption
+      const dimensionTags: Record<string, string> = {};
+      if (li.dimensionTags) {
+        for (const dt of li.dimensionTags) {
+          const dimId = dt.dimensionTag?.dimensionId ?? dt.dimensionTag?.dimension?.id;
+          if (dimId) {
+            dimensionTags[dimId] = dt.dimensionTagId;
           }
-        : undefined,
-    })),
+        }
+      }
+      return {
+        id: li.id,
+        journalEntryId: li.journalEntryId,
+        accountId: li.accountId,
+        debit: serializeDecimal(li.debit),
+        credit: serializeDecimal(li.credit),
+        memo: li.memo,
+        sortOrder: li.sortOrder,
+        account: li.account
+          ? {
+              id: li.account.id,
+              number: li.account.number,
+              name: li.account.name,
+              type: li.account.type,
+            }
+          : undefined,
+        dimensionTags,
+      };
+    }),
   };
 }
 
@@ -118,6 +142,13 @@ export async function GET(
         lineItems: {
           include: {
             account: { select: { id: true, number: true, name: true, type: true } },
+            dimensionTags: {
+              include: {
+                dimensionTag: {
+                  include: { dimension: { select: { id: true, name: true } } },
+                },
+              },
+            },
           },
           orderBy: { sortOrder: "asc" },
         },
@@ -211,6 +242,11 @@ export async function POST(
             credit: new Prisma.Decimal(li.credit || "0"),
             memo: li.memo || null,
             sortOrder: index,
+            dimensionTags: {
+              create: Object.values(li.dimensionTags ?? {})
+                .filter(Boolean)
+                .map((tagId) => ({ dimensionTagId: tagId })),
+            },
           })),
         },
       },
@@ -218,6 +254,13 @@ export async function POST(
         lineItems: {
           include: {
             account: { select: { id: true, number: true, name: true, type: true } },
+            dimensionTags: {
+              include: {
+                dimensionTag: {
+                  include: { dimension: { select: { id: true, name: true } } },
+                },
+              },
+            },
           },
           orderBy: { sortOrder: "asc" },
         },
