@@ -105,7 +105,12 @@ Frontier GL delivers a multi-entity general ledger that replaces QuickBooks Onli
 4. Budget data is entity-scoped; switching entities shows that entity's budgets
 5. Report is exportable as CSV
 
-**Plans:** TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Budget model, fiscal year utility, validators, CRUD + CSV import API
+- [ ] 07-02-PLAN.md — Budget grid page UI with spreadsheet entry, copy-from-prior-year, sidebar nav
+- [ ] 07-03-PLAN.md — Budget vs Actual report tab on Reports page with variance display and CSV export
 
 ---
 
