@@ -186,7 +186,7 @@ Plans:
 | 2. Accounting Engine | COA, JE, DI-03–05 | ✓ Complete | 2026-03-27 |
 | 3. Ledger & Trial Balance | LED, TB, UI-03 | ✓ Complete | 2026-03-27 |
 | 4. Platform | DASH (partial), PC, RPT, HOLD, TMPL, ACC | ✓ Complete | 2026-03-29 |
-| 5. QBO Parity I | 5/5 | Complete   | 2026-03-29 |
+| 5. QBO Parity I | 5/5 | Complete    | 2026-03-29 |
 | 6. QBO Parity II | CLASS | ○ Not started | — |
 | 7. QBO Parity III | BUDG | ○ Not started | — |
 | 8. Family Office I | CONS | ○ Not started | — |
