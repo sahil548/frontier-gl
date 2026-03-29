@@ -39,6 +39,7 @@ model Entity {
   templates      JournalEntryTemplate[]
   subledgerItems SubledgerItem[]
   access         EntityAccess[]
+  dimensions     Dimension[]
 
   @@index([createdById])
   @@index([isActive])
@@ -122,6 +123,7 @@ model JournalEntryLine {
   account        Account      @relation(fields: [accountId], references: [id])
   journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
   reconciliationLines BankReconciliationLine[]
+  dimensionTags       JournalEntryLineDimensionTag[]
 
   @@index([journalEntryId])
   @@index([accountId])
@@ -284,6 +286,54 @@ model PeriodClose {
 
   @@unique([entityId, year, month])
   @@map("period_closes")
+}
+
+model Dimension {
+  id        String         @id @default(cuid())
+  entityId  String
+  name      String
+  sortOrder Int            @default(0)
+  isActive  Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  entity    Entity         @relation(fields: [entityId], references: [id])
+  tags      DimensionTag[]
+
+  @@unique([entityId, name])
+  @@index([entityId, isActive])
+  @@map("dimensions")
+}
+
+model DimensionTag {
+  id              String                        @id @default(cuid())
+  dimensionId     String
+  code            String
+  name            String
+  description     String?
+  isActive        Boolean                       @default(true)
+  sortOrder       Int                           @default(0)
+  createdAt       DateTime                      @default(now())
+  updatedAt       DateTime                      @updatedAt
+  dimension       Dimension                     @relation(fields: [dimensionId], references: [id], onDelete: Cascade)
+  lineAssignments JournalEntryLineDimensionTag[]
+
+  @@unique([dimensionId, code])
+  @@unique([dimensionId, name])
+  @@index([dimensionId, isActive])
+  @@map("dimension_tags")
+}
+
+model JournalEntryLineDimensionTag {
+  id                 String           @id @default(cuid())
+  journalEntryLineId String
+  dimensionTagId     String
+  journalEntryLine   JournalEntryLine @relation(fields: [journalEntryLineId], references: [id], onDelete: Cascade)
+  dimensionTag       DimensionTag     @relation(fields: [dimensionTagId], references: [id])
+
+  @@unique([journalEntryLineId, dimensionTagId])
+  @@index([journalEntryLineId])
+  @@index([dimensionTagId])
+  @@map("journal_entry_line_dimension_tags")
 }
 
 enum EntityType {
