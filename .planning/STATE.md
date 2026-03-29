@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-00-PLAN.md
-last_updated: "2026-03-29T10:40:09.184Z"
-last_activity: 2026-03-27 -- Completed 03-03-PLAN.md
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-03-29T10:43:21.982Z"
+last_activity: 2026-03-29 -- Completed 05-01-PLAN.md
 progress:
   total_phases: 10
   completed_phases: 2
   total_plans: 29
-  completed_plans: 13
-  percent: 85
+  completed_plans: 14
+  percent: 45
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 5 of 10 (QBO Parity I) -- EXECUTING
-Plan: 1 of 5 in current phase (Plan 00 complete)
+Plan: 2 of 5 in current phase (Plans 00, 01 complete)
 Status: Executing
-Last activity: 2026-03-29 -- Completed 05-00-PLAN.md
+Last activity: 2026-03-29 -- Completed 05-01-PLAN.md
 
 Progress: [█████░░░░░] 45%
 
@@ -62,6 +62,7 @@ Progress: [█████░░░░░] 45%
 | Phase 03 P04 | 9min | 2 tasks | 7 files |
 | Phase 03 P03 | 10min | 3 tasks | 9 files |
 | Phase 05 P00 | 1min | 1 tasks | 10 files |
+| Phase 05 P01 | 5min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -103,6 +104,9 @@ Recent decisions affecting current work:
 - [Phase 03-03]: Pages under (auth) route group matching project convention
 - [Phase 03-03]: Beginning balance as synthetic DataTable row with _isBeginningBalance flag
 - [Phase 03-03]: GL Ledger sidebar nav uses BookText icon between COA and Trial Balance
+- [Phase 05]: Used INCOME enum (not REVENUE) matching Prisma schema; display label is Revenue in UI
+- [Phase 05]: Recharts chart components as Card-wrapped 'use client' with empty state and teal palette
+- [Phase 05]: Equity trend uses self-join CTE for cumulative sums instead of window function
 
 ### Pending Todos
 
@@ -115,6 +119,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-29T10:40:09.150Z
-Stopped at: Completed 05-00-PLAN.md
+Last session: 2026-03-29T10:43:21.972Z
+Stopped at: Completed 05-01-PLAN.md
 Resume file: None
