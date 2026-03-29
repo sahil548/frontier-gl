@@ -75,7 +75,13 @@ Frontier GL delivers a multi-entity general ledger that replaces QuickBooks Onli
 4. User can attach a PDF or image to a journal entry and view the attachment on the detail page
 5. User can create a recurring template (set frequency + start date), view all recurring templates in a list, trigger "generate due entries", and stop recurrence — generated entries appear as drafts in the JE list
 
-**Plans:** TBD
+**Plans:** 4 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Dashboard charts with Recharts (asset pie, income/expense bar, equity trend area)
+- [ ] 05-02-PLAN.md — File attachments on journal entries with Vercel Blob storage
+- [ ] 05-03-PLAN.md — Audit trail field-level diffs and recurring JE management page
+- [ ] 05-04-PLAN.md — Mobile responsiveness pass across all pages (375px minimum)
 
 ---
 
