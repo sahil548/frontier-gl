@@ -159,8 +159,8 @@
 
 - [x] **CLASS-01**: User can define classes (e.g., Fund, Property, Department) per entity
 - [x] **CLASS-02**: User can tag individual JE line items with a class
-- [ ] **CLASS-03**: Income Statement can be filtered and segmented by class (column per class or filtered view)
-- [ ] **CLASS-04**: Trial balance can be filtered by class
+- [x] **CLASS-03**: Income Statement can be filtered and segmented by class (column per class or filtered view)
+- [x] **CLASS-04**: Trial balance can be filtered by class
 - [x] **CLASS-05**: Class field is optional — unclassified entries continue to work normally
 
 ---

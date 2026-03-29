@@ -11,7 +11,7 @@ Frontier GL delivers a multi-entity general ledger that replaces QuickBooks Onli
 - [x] **Phase 3: Ledger & Trial Balance** — GL ledger, trial balance, filtering, export (complete 2026-03-27)
 - [x] **Phase 4: Platform** — Dashboard, financial statements, period close, holdings, reconciliation, templates, access control (complete 2026-03-29)
 - [x] **Phase 5: QBO Parity I** — Dashboard charts, mobile layout, audit trail UI, attachments, recurring JE UI (completed 2026-03-29)
-- [ ] **Phase 6: QBO Parity II** — Class/location tracking with segmented P&L
+- [x] **Phase 6: QBO Parity II** — Class/location tracking with segmented P&L (completed 2026-03-29)
 - [ ] **Phase 7: QBO Parity III** — Budget vs Actual
 - [ ] **Phase 8: Family Office I** — Multi-entity consolidation with eliminations
 - [ ] **Phase 9: Family Office II** — Capital account statements for LP/partnership entities
@@ -97,7 +97,7 @@ Plans:
 4. Trial balance can be filtered to show only transactions tagged with a specific class
 5. Schema migration is additive — class field nullable, no data loss on existing entries
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 06-01-PLAN.md — Schema, dimension/tag CRUD API, and /dimensions management page with accordion layout
@@ -187,7 +187,7 @@ Plans:
 | 3. Ledger & Trial Balance | LED, TB, UI-03 | ✓ Complete | 2026-03-27 |
 | 4. Platform | DASH (partial), PC, RPT, HOLD, TMPL, ACC | ✓ Complete | 2026-03-29 |
 | 5. QBO Parity I | 5/5 | Complete    | 2026-03-29 |
-| 6. QBO Parity II | 2/3 | In Progress|  |
+| 6. QBO Parity II | 3/3 | Complete   | 2026-03-29 |
 | 7. QBO Parity III | BUDG | ○ Not started | — |
 | 8. Family Office I | CONS | ○ Not started | — |
 | 9. Family Office II | CAP | ○ Not started | — |
