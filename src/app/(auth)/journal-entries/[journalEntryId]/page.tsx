@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useEntityContext } from "@/providers/entity-provider";
 import { JEForm } from "@/components/journal-entries/je-form";
 import { JEAuditTrail } from "@/components/journal-entries/je-audit-trail";
+import { JEAttachments } from "@/components/journal-entries/je-attachments";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -133,6 +134,12 @@ export default function JournalEntryDetailPage() {
         mode="edit"
         entityId={entry.entityId}
         entry={entry}
+      />
+
+      {/* Attachments */}
+      <JEAttachments
+        entityId={entry.entityId}
+        journalEntryId={entry.id}
       />
 
       {/* Audit trail */}
