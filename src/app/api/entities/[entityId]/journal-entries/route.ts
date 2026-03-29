@@ -35,6 +35,7 @@ function serializeJournalEntry(je: Record<string, unknown>) {
     postedAt: Date | null;
     updatedAt: Date;
     reversalOfId: string | null;
+    templateId: string | null;
     lineItems?: Array<{
       id: string;
       journalEntryId: string;
@@ -62,6 +63,7 @@ function serializeJournalEntry(je: Record<string, unknown>) {
     postedAt: entry.postedAt?.toISOString() ?? null,
     updatedAt: entry.updatedAt.toISOString(),
     reversalOfId: entry.reversalOfId,
+    templateId: entry.templateId ?? null,
     lineItems: entry.lineItems?.map((li) => ({
       id: li.id,
       journalEntryId: li.journalEntryId,

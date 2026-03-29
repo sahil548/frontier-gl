@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Decimal from "decimal.js";
@@ -11,6 +12,7 @@ import {
   Send,
   RotateCcw,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 import {
   Table,
@@ -47,6 +49,7 @@ type SerializedJournalEntry = {
   date: string;
   description: string;
   status: string;
+  templateId?: string | null;
   lineItems?: SerializedLineItem[];
 };
 
@@ -355,7 +358,23 @@ export function JEList({ entityId }: JEListProps) {
                   {computeTotalAmount(entry.lineItems)}
                 </TableCell>
                 <TableCell>
-                  <JEStatusBadge status={entry.status} />
+                  <div className="flex items-center gap-1.5">
+                    <JEStatusBadge status={entry.status} />
+                    {entry.templateId && (
+                      <Link
+                        href="/recurring"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] h-5 px-1.5 gap-1 cursor-pointer hover:bg-accent"
+                        >
+                          <RefreshCw className="h-2.5 w-2.5" />
+                          Recurring
+                        </Badge>
+                      </Link>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-1">

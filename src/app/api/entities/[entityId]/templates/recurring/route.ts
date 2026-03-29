@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db/prisma";
 import { z } from "zod";
 import { successResponse, errorResponse } from "@/lib/validators/api-response";
 import { generateNextEntryNumber } from "@/lib/journal-entries/auto-number";
+import { Prisma } from "@/generated/prisma/client";
 
 const setupSchema = z.object({
   templateId: z.string().min(1),
@@ -12,11 +13,200 @@ const setupSchema = z.object({
   }),
 });
 
+const patchSchema = z.object({
+  templateId: z.string().min(1),
+  name: z.string().min(1).optional(),
+  description: z.string().optional(),
+  frequency: z.enum(["monthly", "quarterly", "annually"]).optional(),
+  nextRunDate: z
+    .string()
+    .refine((s) => !isNaN(Date.parse(s)), {
+      message: "nextRunDate must be a valid date",
+    })
+    .optional(),
+  lines: z
+    .array(
+      z.object({
+        accountId: z.string().min(1),
+        debit: z.union([z.string(), z.number()]).transform((v) => String(v)),
+        credit: z.union([z.string(), z.number()]).transform((v) => String(v)),
+        memo: z.string().optional().default(""),
+      })
+    )
+    .optional(),
+});
+
+function serializeDecimal(val: Prisma.Decimal | null): string {
+  if (val === null) return "0";
+  return val.toString();
+}
+
+/**
+ * GET /api/entities/:entityId/templates/recurring
+ *
+ * Returns all recurring templates for the entity with computed status.
+ */
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ entityId: string }> }
+) {
+  const { userId } = await auth();
+  if (!userId) return errorResponse("Unauthorized", 401);
+  const { entityId } = await params;
+
+  const templates = await prisma.journalEntryTemplate.findMany({
+    where: { entityId, isRecurring: true },
+    include: {
+      lines: {
+        include: {
+          account: { select: { id: true, number: true, name: true } },
+        },
+        orderBy: { sortOrder: "asc" },
+      },
+    },
+    orderBy: { name: "asc" },
+  });
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const serialized = templates.map((t) => {
+    let status: "active" | "stopped" | "overdue" = "active";
+    if (!t.nextRunDate) {
+      status = "stopped";
+    } else if (t.nextRunDate <= today) {
+      status = "overdue";
+    }
+
+    return {
+      id: t.id,
+      name: t.name,
+      description: t.description,
+      frequency: t.frequency,
+      isRecurring: t.isRecurring,
+      nextRunDate: t.nextRunDate?.toISOString() ?? null,
+      lastRunDate: t.lastRunDate?.toISOString() ?? null,
+      status,
+      lines: t.lines.map((l) => ({
+        id: l.id,
+        accountId: l.accountId,
+        accountName: l.account?.name ?? "",
+        accountNumber: l.account?.number ?? "",
+        debit: serializeDecimal(l.debit),
+        credit: serializeDecimal(l.credit),
+        memo: l.memo ?? "",
+        sortOrder: l.sortOrder,
+      })),
+    };
+  });
+
+  return successResponse(serialized);
+}
+
+/**
+ * PATCH /api/entities/:entityId/templates/recurring
+ *
+ * Edit an active recurring template's fields and/or lines.
+ */
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ entityId: string }> }
+) {
+  const { userId } = await auth();
+  if (!userId) return errorResponse("Unauthorized", 401);
+  const { entityId } = await params;
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return errorResponse("Invalid JSON", 400);
+  }
+
+  const result = patchSchema.safeParse(body);
+  if (!result.success) return errorResponse("Validation failed", 400, result.error);
+
+  const { templateId, name, description, frequency, nextRunDate, lines } = result.data;
+
+  const template = await prisma.journalEntryTemplate.findFirst({
+    where: { id: templateId, entityId, isRecurring: true },
+  });
+  if (!template) return errorResponse("Active recurring template not found", 404);
+
+  const updated = await prisma.$transaction(async (tx) => {
+    // Update template fields
+    const updateData: Record<string, unknown> = {};
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (frequency !== undefined) updateData.frequency = frequency;
+    if (nextRunDate !== undefined) updateData.nextRunDate = new Date(nextRunDate);
+
+    const tpl = await tx.journalEntryTemplate.update({
+      where: { id: templateId },
+      data: updateData,
+    });
+
+    // Replace lines if provided
+    if (lines !== undefined) {
+      await tx.journalEntryTemplateLine.deleteMany({
+        where: { templateId },
+      });
+      if (lines.length > 0) {
+        await tx.journalEntryTemplateLine.createMany({
+          data: lines.map((l, idx) => ({
+            templateId,
+            accountId: l.accountId,
+            debit: new Prisma.Decimal(l.debit || "0"),
+            credit: new Prisma.Decimal(l.credit || "0"),
+            memo: l.memo || null,
+            sortOrder: idx,
+          })),
+        });
+      }
+    }
+
+    // Re-fetch with lines
+    return tx.journalEntryTemplate.findUnique({
+      where: { id: templateId },
+      include: {
+        lines: {
+          include: {
+            account: { select: { id: true, number: true, name: true } },
+          },
+          orderBy: { sortOrder: "asc" },
+        },
+      },
+    });
+  });
+
+  if (!updated) return errorResponse("Template not found after update", 500);
+
+  return successResponse({
+    id: updated.id,
+    name: updated.name,
+    description: updated.description,
+    frequency: updated.frequency,
+    nextRunDate: updated.nextRunDate?.toISOString() ?? null,
+    lastRunDate: updated.lastRunDate?.toISOString() ?? null,
+    isRecurring: updated.isRecurring,
+    lines: updated.lines.map((l) => ({
+      id: l.id,
+      accountId: l.accountId,
+      accountName: l.account?.name ?? "",
+      accountNumber: l.account?.number ?? "",
+      debit: serializeDecimal(l.debit),
+      credit: serializeDecimal(l.credit),
+      memo: l.memo ?? "",
+      sortOrder: l.sortOrder,
+    })),
+  });
+}
+
 /**
  * POST /api/entities/:entityId/templates/recurring
  *
- * Either sets up a template as recurring, or generates pending recurring JEs.
- * Action determined by body: { action: "setup", ... } or { action: "generate" }
+ * Either sets up a template as recurring, stops it, or generates pending recurring JEs.
+ * Action determined by body: { action: "setup" | "stop" | "generate" }
  */
 export async function POST(
   request: Request,
@@ -35,7 +225,7 @@ export async function POST(
 
   const action = body.action as string;
 
-  // ── Setup: make a template recurring ──
+  // -- Setup: make a template recurring --
   if (action === "setup") {
     const result = setupSchema.safeParse(body);
     if (!result.success) return errorResponse("Validation failed", 400, result.error);
@@ -65,7 +255,7 @@ export async function POST(
     });
   }
 
-  // ── Stop: disable recurring ──
+  // -- Stop: disable recurring --
   if (action === "stop") {
     const templateId = body.templateId as string;
     if (!templateId) return errorResponse("templateId required", 400);
@@ -78,7 +268,7 @@ export async function POST(
     return successResponse({ message: "Recurring stopped" });
   }
 
-  // ── Generate: create draft JEs for all due recurring templates ──
+  // -- Generate: create draft JEs for all due recurring templates --
   if (action === "generate") {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -108,7 +298,7 @@ export async function POST(
     for (const template of dueTemplates) {
       if (template.lines.length === 0) continue;
 
-      const entryNumber = await prisma.$transaction(async (tx) => {
+      const entryResult = await prisma.$transaction(async (tx) => {
         const num = await generateNextEntryNumber(tx, entityId);
 
         const je = await tx.journalEntry.create({
@@ -119,6 +309,7 @@ export async function POST(
             description: `${template.name} (recurring)`,
             status: "DRAFT",
             createdBy: userId,
+            templateId: template.id,
             lineItems: {
               create: template.lines.map((line, idx) => ({
                 accountId: line.accountId,
@@ -165,7 +356,7 @@ export async function POST(
       });
 
       entries.push({
-        ...entryNumber,
+        ...entryResult,
         templateName: template.name,
         date: template.nextRunDate!.toISOString(),
       });
