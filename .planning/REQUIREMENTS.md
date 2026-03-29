@@ -136,7 +136,7 @@
 
 ### Audit Trail UI
 
-- [ ] **AUDT-01**: User can view full audit trail on any JE detail page — who created, approved, posted, with timestamps
+- [x] **AUDT-01**: User can view full audit trail on any JE detail page — who created, approved, posted, with timestamps
 - [x] **AUDT-02**: Audit trail shows field-level diff for any edits made before posting
 
 ### Attachments
