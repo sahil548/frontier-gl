@@ -99,8 +99,11 @@ model JournalEntry {
   entity       Entity              @relation(fields: [entityId], references: [id])
   reversalOf   JournalEntry?       @relation("Reversal", fields: [reversalOfId], references: [id])
   reversedBy   JournalEntry?       @relation("Reversal")
+  templateId   String?
+  template     JournalEntryTemplate? @relation(fields: [templateId], references: [id])
   auditEntries JournalEntryAudit[]
   lineItems    JournalEntryLine[]
+  attachments  Attachment[]
 
   @@unique([entityId, entryNumber])
   @@index([entityId, status])
@@ -150,8 +153,9 @@ model JournalEntryTemplate {
   lastRunDate DateTime?                  @db.Date
   createdAt   DateTime                   @default(now())
   updatedAt   DateTime                   @updatedAt
-  entity      Entity                     @relation(fields: [entityId], references: [id])
-  lines       JournalEntryTemplateLine[]
+  entity           Entity                     @relation(fields: [entityId], references: [id])
+  lines            JournalEntryTemplateLine[]
+  generatedEntries JournalEntry[]
 
   @@unique([entityId, name])
   @@index([isRecurring, nextRunDate])
@@ -358,6 +362,21 @@ model EntityAccess {
   @@index([entityId])
   @@index([userId])
   @@map("entity_access")
+}
+
+model Attachment {
+  id             String       @id @default(cuid())
+  journalEntryId String
+  fileName       String
+  fileType       String       // MIME type: "image/png", "application/pdf", etc.
+  fileSize       Int          // bytes
+  url            String       // Vercel Blob URL
+  uploadedBy     String
+  createdAt      DateTime     @default(now())
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+
+  @@index([journalEntryId])
+  @@map("attachments")
 }
 
 enum EntityAccessRole {
