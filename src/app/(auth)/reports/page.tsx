@@ -554,8 +554,8 @@ export default function ReportsPage() {
       </div>
 
       {/* Tab buttons + basis toggle */}
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="flex gap-1 rounded-lg bg-muted p-1 w-fit">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex gap-1 rounded-lg bg-muted p-1 w-fit overflow-x-auto">
           <button
             onClick={() => setActiveTab("income-statement")}
             className={cn(
@@ -705,8 +705,8 @@ export default function ReportsPage() {
               {/* Table */}
               {(isData.incomeRows.length > 0 ||
                 isData.expenseRows.length > 0) && (
-                <div className="rounded-md border">
-                  <Table>
+                <div className="overflow-x-auto rounded-md border">
+                  <Table className="w-max min-w-full">
                     <TableHeader>
                       <TableRow>
                         <TableHead>Account Number</TableHead>
@@ -829,8 +829,8 @@ export default function ReportsPage() {
               {(bsData.assetRows.length > 0 ||
                 bsData.liabilityRows.length > 0 ||
                 bsData.equityRows.length > 0) && (
-                <div className="rounded-md border">
-                  <Table>
+                <div className="overflow-x-auto rounded-md border">
+                  <Table className="w-max min-w-full">
                     <TableHeader>
                       <TableRow>
                         <TableHead>Account Number</TableHead>
@@ -1023,8 +1023,8 @@ export default function ReportsPage() {
               {(cfData.operating.items.length > 0 ||
                 cfData.investing.items.length > 0 ||
                 cfData.financing.items.length > 0) && (
-                <div className="rounded-md border">
-                  <Table>
+                <div className="overflow-x-auto rounded-md border">
+                  <Table className="w-max min-w-full">
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-[70%]">Description</TableHead>

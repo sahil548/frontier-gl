@@ -611,7 +611,8 @@ export default function PeriodClosePage() {
                 </p>
               </div>
             ) : (
-              <Table>
+              <div className="overflow-x-auto">
+              <Table className="w-max min-w-full">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Account</TableHead>
@@ -719,6 +720,7 @@ export default function PeriodClosePage() {
                   })}
                 </TableBody>
               </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -776,7 +778,7 @@ export default function PeriodClosePage() {
             Close all open periods from January through the selected month.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex items-center gap-3">
+        <CardContent className="flex flex-wrap items-center gap-3">
           <Select
             value={bulkMonth || null}
             onValueChange={(val) => setBulkMonth(val as number)}

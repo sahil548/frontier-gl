@@ -792,7 +792,7 @@ export default function HoldingsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Holdings & Accounts</h1>
           <p className="text-muted-foreground text-sm">{currentEntity?.name}</p>
@@ -818,7 +818,7 @@ export default function HoldingsPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Bank Accounts</CardTitle>
@@ -862,7 +862,7 @@ export default function HoldingsPage() {
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-1 border-b">
+      <div className="flex gap-1 border-b overflow-x-auto">
         {FILTER_TABS.map((tab) => (
           <button
             key={tab.value}
@@ -900,12 +900,12 @@ export default function HoldingsPage() {
           <p className="text-muted-foreground">No holdings found. Add one to get started.</p>
         </div>
       ) : (
-        <div className="rounded-md border">
-          <Table>
+        <div className="overflow-x-auto rounded-md border">
+          <Table className="w-max min-w-full">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-8" />
-                <TableHead>Name</TableHead>
+                <TableHead className="sticky left-0 z-10 bg-background">Name</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>GL Account</TableHead>
                 <TableHead>Counterparty</TableHead>

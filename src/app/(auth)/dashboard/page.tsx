@@ -318,6 +318,7 @@ export default function DashboardPage() {
               No journal entries yet.
             </p>
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -370,13 +371,14 @@ export default function DashboardPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
 
       {/* Period Status */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="flex items-center gap-2">
             {periodStatus.isClosed ? (
               <Lock className="h-5 w-5 text-muted-foreground" />
@@ -385,7 +387,7 @@ export default function DashboardPage() {
             )}
             Current Period: {monthLabel}
           </CardTitle>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Badge variant={periodStatus.isClosed ? "default" : "secondary"}>
               {periodStatus.isClosed ? "Closed" : "Open"}
             </Badge>

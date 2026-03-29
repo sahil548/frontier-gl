@@ -58,7 +58,7 @@ export default function NewJournalEntryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">
           New Journal Entry
         </h1>

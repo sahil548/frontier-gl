@@ -47,7 +47,7 @@ export default function EntitiesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Entities</h1>
           <p className="text-muted-foreground">
@@ -69,7 +69,7 @@ export default function EntitiesPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {entities.map((entity) => (
             <Link key={entity.id} href={`/entities/${entity.id}`}>
               <Card className="transition-colors hover:bg-accent/50 cursor-pointer">

@@ -217,7 +217,7 @@ export default function TrialBalancePage() {
     <div className="space-y-6">
       {/* Page header with as-of date picker */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">
             Trial Balance
           </h1>
@@ -291,8 +291,8 @@ export default function TrialBalancePage() {
 
           {/* Consolidated tree view */}
           {tbData.rows.length > 0 && tbData.consolidated && (
-            <div className="rounded-md border">
-              <Table>
+            <div className="overflow-x-auto rounded-md border">
+              <Table className="w-max min-w-full">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Account Number</TableHead>
@@ -337,11 +337,11 @@ function SingleEntityView({
   const groups = groupByAccountType(rows);
 
   return (
-    <div className="rounded-md border">
-      <Table>
+    <div className="overflow-x-auto rounded-md border">
+      <Table className="w-max min-w-full">
         <TableHeader>
           <TableRow>
-            <TableHead>Account Number</TableHead>
+            <TableHead className="sticky left-0 z-10 bg-background">Account Number</TableHead>
             <TableHead>Account Name</TableHead>
             <TableHead>Type</TableHead>
             <TableHead className="text-right">Debit Balance</TableHead>
@@ -355,7 +355,7 @@ function SingleEntityView({
 
           {/* Grand total row */}
           <TableRow className="bg-muted/50 font-bold">
-            <TableCell />
+            <TableCell className="sticky left-0 z-10 bg-muted/50" />
             <TableCell className="font-bold">Grand Total</TableCell>
             <TableCell />
             <TableCell className="text-right font-mono font-bold">
