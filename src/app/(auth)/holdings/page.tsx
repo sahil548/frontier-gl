@@ -742,8 +742,14 @@ export default function HoldingsPage() {
         </div>
         <div className="space-y-2">
           <Label>GL Account</Label>
-          <Select value={formAccountId || undefined} onValueChange={(v) => setFormAccountId(v as string)}>
-            <SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger>
+          <Select value={formAccountId} onValueChange={(v) => setFormAccountId(v as string)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select account">
+                {formAccountId
+                  ? (() => { const a = accounts.find(acc => acc.id === formAccountId); return a ? `${a.number} — ${a.name}` : "Select account"; })()
+                  : undefined}
+              </SelectValue>
+            </SelectTrigger>
             <SelectContent>
               {accounts.map((a) => (
                 <SelectItem key={a.id} value={a.id}>{a.number} — {a.name}</SelectItem>
