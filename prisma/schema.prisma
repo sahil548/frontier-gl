@@ -36,6 +36,7 @@ model Entity {
   journalEntries JournalEntry[]
   periodCloses   PeriodClose[]
   templates      JournalEntryTemplate[]
+  subledgerItems SubledgerItem[]
 
   @@index([createdById])
   @@index([isActive])
@@ -58,6 +59,7 @@ model Account {
   children    Account[]          @relation("AccountHierarchy")
   lineItems      JournalEntryLine[]
   templateLines  JournalEntryTemplateLine[]
+  subledgerItems SubledgerItem[]
 
   @@unique([entityId, number])
   @@index([entityId, isActive])
@@ -114,6 +116,7 @@ model JournalEntryLine {
   sortOrder      Int          @default(0)
   account        Account      @relation(fields: [accountId], references: [id])
   journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  reconciliationLines BankReconciliationLine[]
 
   @@index([journalEntryId])
   @@index([accountId])
@@ -168,6 +171,75 @@ model JournalEntryTemplateLine {
   @@map("journal_entry_template_lines")
 }
 
+model SubledgerItem {
+  id              String              @id @default(cuid())
+  entityId        String
+  accountId       String
+  name            String              // "Chase Operating #4421", "Fund III - ABC Capital"
+  itemType        SubledgerItemType
+  // Financial
+  costBasis       Decimal?            @db.Decimal(19, 4)
+  fairMarketValue Decimal?            @db.Decimal(19, 4)
+  currentBalance  Decimal             @default(0) @db.Decimal(19, 4)
+  // Metadata
+  counterparty    String?             // "Chase Bank", "ABC Capital Partners"
+  referenceNumber String?             // account #, loan #, parcel #
+  acquiredDate    DateTime?           @db.Date
+  maturityDate    DateTime?           @db.Date
+  interestRate    Decimal?            @db.Decimal(5, 4)
+  notes           String?
+  isActive        Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  entity          Entity              @relation(fields: [entityId], references: [id])
+  account         Account             @relation(fields: [accountId], references: [id])
+  reconciliations BankReconciliation[]
+
+  @@index([entityId, accountId])
+  @@index([entityId, itemType])
+  @@map("subledger_items")
+}
+
+model BankReconciliation {
+  id              String              @id @default(cuid())
+  subledgerItemId String
+  statementDate   DateTime            @db.Date
+  statementBalance Decimal            @db.Decimal(19, 4)
+  glBalance       Decimal             @db.Decimal(19, 4)
+  difference      Decimal             @db.Decimal(19, 4)
+  status          ReconciliationStatus @default(IN_PROGRESS)
+  reconciledBy    String?
+  reconciledAt    DateTime?
+  notes           String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  subledgerItem   SubledgerItem       @relation(fields: [subledgerItemId], references: [id])
+  lines           BankReconciliationLine[]
+
+  @@index([subledgerItemId])
+  @@map("bank_reconciliations")
+}
+
+model BankReconciliationLine {
+  id               String             @id @default(cuid())
+  reconciliationId String
+  // GL side (from journal entry lines)
+  journalEntryLineId String?
+  // Statement side (from uploaded bank statement)
+  statementDate    DateTime?          @db.Date
+  statementDesc    String?
+  statementAmount  Decimal?           @db.Decimal(19, 4)
+  statementRef     String?
+  // Matching
+  matchStatus      MatchStatus        @default(UNMATCHED)
+  createdAt        DateTime           @default(now())
+  reconciliation   BankReconciliation @relation(fields: [reconciliationId], references: [id], onDelete: Cascade)
+  journalEntryLine JournalEntryLine?  @relation(fields: [journalEntryLineId], references: [id])
+
+  @@index([reconciliationId])
+  @@map("bank_reconciliation_lines")
+}
+
 model PeriodClose {
   id       String   @id @default(cuid())
   entityId String
@@ -210,4 +282,24 @@ enum JournalEntryStatus {
   DRAFT
   APPROVED
   POSTED
+}
+
+enum SubledgerItemType {
+  BANK_ACCOUNT
+  INVESTMENT
+  REAL_ESTATE
+  LOAN
+  PRIVATE_EQUITY
+  RECEIVABLE
+  OTHER
+}
+
+enum ReconciliationStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum MatchStatus {
+  MATCHED
+  UNMATCHED
 }

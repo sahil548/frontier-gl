@@ -13,6 +13,7 @@ import { LedgerExport } from "@/components/gl-ledger/ledger-export"
 import { ledgerColumns, type LedgerRowData } from "@/components/gl-ledger/ledger-columns"
 import { formatCurrency } from "@/lib/utils/accounting"
 import type { AccountType } from "@/lib/utils/accounting"
+import { SubledgerSection } from "@/components/gl-ledger/subledger-section"
 import type { LedgerRow } from "@/lib/queries/ledger-queries"
 import { TableCell, TableRow } from "@/components/ui/table"
 
@@ -260,6 +261,13 @@ export default function AccountLedgerPage() {
           />
         )}
       </div>
+
+      {/* Subledger / Holdings */}
+      <SubledgerSection
+        entityId={currentEntityId}
+        accountId={accountId}
+        accountType={data.account.type}
+      />
     </div>
   )
 }
