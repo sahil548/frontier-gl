@@ -199,7 +199,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Net Income
+              Net Income - Current Month
             </CardTitle>
             <TrendingUp
               className={`h-4 w-4 ${
@@ -250,7 +250,11 @@ export default function DashboardPage() {
               </TableHeader>
               <TableBody>
                 {recentEntries.map((entry) => (
-                  <TableRow key={entry.id}>
+                  <TableRow
+                    key={entry.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => window.location.href = `/journal-entries/${entry.id}`}
+                  >
                     <TableCell>
                       <Link
                         href={`/journal-entries/${entry.id}`}
