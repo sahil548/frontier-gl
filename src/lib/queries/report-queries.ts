@@ -73,8 +73,25 @@ function toNum(val: unknown): number {
 export async function getIncomeStatement(
   entityId: string,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  basis: 'accrual' | 'cash' = 'accrual'
 ): Promise<IncomeStatementData> {
+  const cashFilter = basis === 'cash'
+    ? Prisma.sql`AND je.id IN (
+        SELECT DISTINCT jel2."journalEntryId"
+        FROM journal_entry_lines jel2
+        JOIN accounts a2 ON a2.id = jel2."accountId"
+        WHERE a2."entityId" = ${entityId}
+          AND a2.type = 'ASSET'
+          AND (
+            LOWER(a2.name) LIKE '%cash%'
+            OR LOWER(a2.name) LIKE '%bank%'
+            OR LOWER(a2.name) LIKE '%checking%'
+            OR LOWER(a2.name) LIKE '%savings%'
+          )
+      )`
+    : Prisma.sql``;
+
   const rows = await prisma.$queryRaw<
     {
       account_id: string;
@@ -104,6 +121,7 @@ export async function getIncomeStatement(
           AND je.status = 'POSTED'
           AND je.date >= ${startDate}
           AND je.date <= ${endDate}
+          ${cashFilter}
       ) ON jel."accountId" = a.id
       WHERE a."entityId" = ${entityId}
         AND a."isActive" = true
@@ -143,8 +161,25 @@ export async function getIncomeStatement(
  */
 export async function getBalanceSheet(
   entityId: string,
-  asOfDate: Date
+  asOfDate: Date,
+  basis: 'accrual' | 'cash' = 'accrual'
 ): Promise<BalanceSheetData> {
+  const cashFilter = basis === 'cash'
+    ? Prisma.sql`AND je.id IN (
+        SELECT DISTINCT jel2."journalEntryId"
+        FROM journal_entry_lines jel2
+        JOIN accounts a2 ON a2.id = jel2."accountId"
+        WHERE a2."entityId" = ${entityId}
+          AND a2.type = 'ASSET'
+          AND (
+            LOWER(a2.name) LIKE '%cash%'
+            OR LOWER(a2.name) LIKE '%bank%'
+            OR LOWER(a2.name) LIKE '%checking%'
+            OR LOWER(a2.name) LIKE '%savings%'
+          )
+      )`
+    : Prisma.sql``;
+
   const rows = await prisma.$queryRaw<
     {
       account_id: string;
@@ -173,6 +208,7 @@ export async function getBalanceSheet(
         JOIN journal_entries je ON je.id = jel."journalEntryId"
           AND je.status = 'POSTED'
           AND je.date <= ${asOfDate}
+          ${cashFilter}
       ) ON jel."accountId" = a.id
       WHERE a."entityId" = ${entityId}
         AND a."isActive" = true

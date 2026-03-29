@@ -453,7 +453,234 @@ async function main() {
       });
     }
 
-    console.log(`  ✅ ${entityDef.name} complete: ${COA.length} accounts, ${transactions.length} JEs`);
+    // ─── Subledger Items (Holdings) ───────────────────────────
+    console.log(`  💼 Creating subledger items...`);
+
+    interface HoldingDef {
+      name: string;
+      itemType: "BANK_ACCOUNT" | "INVESTMENT" | "REAL_ESTATE" | "LOAN" | "PRIVATE_EQUITY";
+      accountNumber: string;
+      currentBalance: number;
+      costBasis?: number;
+      fairMarketValue?: number;
+      counterparty?: string;
+      interestRate?: number;
+      maturityDate?: string;
+    }
+
+    interface PositionDef {
+      holdingName: string;
+      name: string;
+      positionType: "CASH" | "PUBLIC_EQUITY" | "ETF" | "MUTUAL_FUND" | "REAL_PROPERTY";
+      quantity?: number;
+      unitCost?: number;
+      unitPrice?: number;
+      costBasis?: number;
+      marketValue?: number;
+      ticker?: string;
+      assetClass?: string;
+    }
+
+    let holdingDefs: HoldingDef[] = [];
+    let positionDefs: PositionDef[] = [];
+    let cashBalancesByMonth: { jan: number; feb: number } = { jan: 0, feb: 0 };
+
+    if (entityDef.name === "Blue Paw, LLC") {
+      holdingDefs = [
+        { name: "Chase Operating #8844", itemType: "BANK_ACCOUNT", accountNumber: "10100", currentBalance: 334075 },
+        { name: "Schwab Brokerage", itemType: "INVESTMENT", accountNumber: "10200", currentBalance: 122000 },
+        { name: "Fund III — ABC Capital", itemType: "PRIVATE_EQUITY", accountNumber: "10600", costBasis: 200000, currentBalance: 200000 },
+      ];
+      positionDefs = [
+        { holdingName: "Schwab Brokerage", name: "AAPL", positionType: "PUBLIC_EQUITY", quantity: 200, unitCost: 185, unitPrice: 195, ticker: "AAPL", assetClass: "Large Cap" },
+        { holdingName: "Schwab Brokerage", name: "MSFT", positionType: "PUBLIC_EQUITY", quantity: 150, unitCost: 380, unitPrice: 410, ticker: "MSFT", assetClass: "Large Cap" },
+        { holdingName: "Schwab Brokerage", name: "Cash Sweep", positionType: "CASH", marketValue: 3000 },
+      ];
+      cashBalancesByMonth = { jan: 316500, feb: 345150 };
+    } else if (entityDef.name === "The Better Company, Inc.") {
+      holdingDefs = [
+        { name: "Chase Operating #4421", itemType: "BANK_ACCOUNT", accountNumber: "10100", currentBalance: 160700 },
+        { name: "Fidelity Portfolio", itemType: "INVESTMENT", accountNumber: "10200", currentBalance: 150000 },
+      ];
+      positionDefs = [
+        { holdingName: "Fidelity Portfolio", name: "VOO", positionType: "ETF", quantity: 250, unitCost: 420, unitPrice: 445, ticker: "VOO", assetClass: "US Equity" },
+        { holdingName: "Fidelity Portfolio", name: "BND", positionType: "ETF", quantity: 300, unitCost: 72, unitPrice: 74, ticker: "BND", assetClass: "Fixed Income" },
+        { holdingName: "Fidelity Portfolio", name: "Cash", positionType: "CASH", marketValue: 21400 },
+      ];
+      cashBalancesByMonth = { jan: 90100, feb: 133600 };
+    } else {
+      // Starlake Trust
+      holdingDefs = [
+        { name: "Wells Fargo Trust #6677", itemType: "BANK_ACCOUNT", accountNumber: "10100", currentBalance: 630500 },
+        { name: "123 Main St Property", itemType: "REAL_ESTATE", accountNumber: "10500", costBasis: 450000, fairMarketValue: 475000, currentBalance: 475000 },
+        { name: "Vanguard Index Fund", itemType: "INVESTMENT", accountNumber: "10200", currentBalance: 200000 },
+        { name: "Property Mortgage", itemType: "LOAN", accountNumber: "20200", currentBalance: 300000, interestRate: 0.065, maturityDate: "2056-01-15", counterparty: "Wells Fargo" },
+      ];
+      positionDefs = [
+        { holdingName: "Vanguard Index Fund", name: "VTSAX", positionType: "MUTUAL_FUND", quantity: 500, unitCost: 380, unitPrice: 400, ticker: "VTSAX", assetClass: "US Total Market" },
+        { holdingName: "123 Main St Property", name: "Land", positionType: "REAL_PROPERTY", costBasis: 150000, marketValue: 165000 },
+        { holdingName: "123 Main St Property", name: "Building", positionType: "REAL_PROPERTY", costBasis: 300000, marketValue: 310000 },
+      ];
+      cashBalancesByMonth = { jan: 846500, feb: 651800 };
+    }
+
+    // Create subledger items and collect references
+    const holdingMap = new Map<string, string>(); // name -> id
+    let bankItemId: string | null = null;
+
+    for (const h of holdingDefs) {
+      const item = await prisma.subledgerItem.create({
+        data: {
+          entityId: entity.id,
+          accountId: numberToId.get(h.accountNumber)!,
+          name: h.name,
+          itemType: h.itemType,
+          currentBalance: h.currentBalance,
+          costBasis: h.costBasis ?? null,
+          fairMarketValue: h.fairMarketValue ?? null,
+          counterparty: h.counterparty ?? null,
+          interestRate: h.interestRate ?? null,
+          maturityDate: h.maturityDate ? new Date(h.maturityDate) : null,
+        },
+      });
+      holdingMap.set(h.name, item.id);
+      if (h.itemType === "BANK_ACCOUNT") {
+        bankItemId = item.id;
+      }
+    }
+
+    // ─── Positions ────────────────────────────────────────────
+    console.log(`  📈 Creating positions...`);
+
+    for (const p of positionDefs) {
+      const subledgerItemId = holdingMap.get(p.holdingName)!;
+      const computedCostBasis = p.costBasis ?? (p.quantity && p.unitCost ? p.quantity * p.unitCost : null);
+      const computedMarketValue = p.marketValue ?? (p.quantity && p.unitPrice ? p.quantity * p.unitPrice : 0);
+
+      await prisma.position.create({
+        data: {
+          subledgerItemId,
+          name: p.name,
+          positionType: p.positionType,
+          quantity: p.quantity ?? null,
+          unitCost: p.unitCost ?? null,
+          unitPrice: p.unitPrice ?? null,
+          costBasis: computedCostBasis,
+          marketValue: computedMarketValue,
+          ticker: p.ticker ?? null,
+          assetClass: p.assetClass ?? null,
+        },
+      });
+    }
+
+    // ─── Bank Reconciliations ─────────────────────────────────
+    if (bankItemId) {
+      console.log(`  🏦 Creating bank reconciliations...`);
+
+      // January reconciliation
+      await prisma.bankReconciliation.create({
+        data: {
+          subledgerItemId: bankItemId,
+          statementDate: new Date("2026-01-31"),
+          statementBalance: cashBalancesByMonth.jan,
+          glBalance: cashBalancesByMonth.jan,
+          difference: 0,
+          status: "COMPLETED",
+          reconciledBy: CLERK_USER_ID,
+          reconciledAt: new Date("2026-02-05"),
+        },
+      });
+
+      // February reconciliation
+      await prisma.bankReconciliation.create({
+        data: {
+          subledgerItemId: bankItemId,
+          statementDate: new Date("2026-02-28"),
+          statementBalance: cashBalancesByMonth.feb,
+          glBalance: cashBalancesByMonth.feb,
+          difference: 0,
+          status: "COMPLETED",
+          reconciledBy: CLERK_USER_ID,
+          reconciledAt: new Date("2026-03-05"),
+        },
+      });
+    }
+
+    // ─── JE Templates ─────────────────────────────────────────
+    console.log(`  📋 Creating JE template...`);
+
+    interface TemplateDef {
+      name: string;
+      lines: { accountNumber: string; debit: number; credit: number; memo?: string }[];
+      frequency: string;
+      nextRunDate: string;
+      lastRunDate: string;
+    }
+
+    let templateDef: TemplateDef;
+
+    if (entityDef.name === "Blue Paw, LLC") {
+      templateDef = {
+        name: "Monthly Management Fee",
+        lines: [
+          { accountNumber: "10100", debit: 25000, credit: 0, memo: "Cash receipt" },
+          { accountNumber: "40100", debit: 0, credit: 25000, memo: "Management fee income" },
+        ],
+        frequency: "monthly",
+        nextRunDate: "2026-04-15",
+        lastRunDate: "2026-03-15",
+      };
+    } else if (entityDef.name === "The Better Company, Inc.") {
+      templateDef = {
+        name: "Monthly Office Lease",
+        lines: [
+          { accountNumber: "50500", debit: 4500, credit: 0, memo: "Office lease payment" },
+          { accountNumber: "10100", debit: 0, credit: 4500, memo: "Cash payment" },
+        ],
+        frequency: "monthly",
+        nextRunDate: "2026-04-01",
+        lastRunDate: "2026-03-31",
+      };
+    } else {
+      templateDef = {
+        name: "Monthly Trust Distribution",
+        lines: [
+          { accountNumber: "30300", debit: 15000, credit: 0, memo: "Beneficiary distribution" },
+          { accountNumber: "10100", debit: 0, credit: 15000, memo: "Cash disbursement" },
+        ],
+        frequency: "monthly",
+        nextRunDate: "2026-04-10",
+        lastRunDate: "2026-03-10",
+      };
+    }
+
+    const template = await prisma.journalEntryTemplate.create({
+      data: {
+        entityId: entity.id,
+        name: templateDef.name,
+        createdBy: CLERK_USER_ID,
+        isRecurring: true,
+        frequency: templateDef.frequency,
+        nextRunDate: new Date(templateDef.nextRunDate),
+        lastRunDate: new Date(templateDef.lastRunDate),
+      },
+    });
+
+    for (let i = 0; i < templateDef.lines.length; i++) {
+      const line = templateDef.lines[i];
+      await prisma.journalEntryTemplateLine.create({
+        data: {
+          templateId: template.id,
+          accountId: numberToId.get(line.accountNumber)!,
+          debit: line.debit,
+          credit: line.credit,
+          memo: line.memo ?? null,
+          sortOrder: i,
+        },
+      });
+    }
+
+    console.log(`  ✅ ${entityDef.name} complete: ${COA.length} accounts, ${transactions.length} JEs, ${holdingDefs.length} holdings, ${positionDefs.length} positions`);
   }
 
   // Re-apply triggers

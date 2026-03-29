@@ -205,6 +205,7 @@ export default function ReportsPage() {
   } = useEntityContext();
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("income-statement");
+  const [basis, setBasis] = useState<'accrual' | 'cash'>('accrual');
 
   // Income statement state
   const [startDate, setStartDate] = useState<Date>(getFirstOfMonth());
@@ -243,6 +244,7 @@ export default function ReportsPage() {
       const params = new URLSearchParams({
         startDate: toISODateString(startDate),
         endDate: toISODateString(endDate),
+        basis,
       });
 
       const res = await fetch(
@@ -259,7 +261,7 @@ export default function ReportsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [resolvedEntityId, startDate, endDate, entities.length]);
+  }, [resolvedEntityId, startDate, endDate, basis, entities.length]);
 
   // ─── Fetch balance sheet ────────────────────────────
 
@@ -270,6 +272,7 @@ export default function ReportsPage() {
     try {
       const params = new URLSearchParams({
         asOfDate: toISODateString(asOfDate),
+        basis,
       });
 
       const res = await fetch(
@@ -286,7 +289,7 @@ export default function ReportsPage() {
     } finally {
       setBsLoading(false);
     }
-  }, [resolvedEntityId, asOfDate, entities.length]);
+  }, [resolvedEntityId, asOfDate, basis, entities.length]);
 
   // ─── Fetch cash flow statement ────────────────────
 
@@ -550,41 +553,62 @@ export default function ReportsPage() {
         )}
       </div>
 
-      {/* Tab buttons */}
-      <div className="flex gap-1 rounded-lg bg-muted p-1 w-fit">
-        <button
-          onClick={() => setActiveTab("income-statement")}
-          className={cn(
-            "rounded-md px-4 py-2 text-sm font-medium transition-colors",
-            activeTab === "income-statement"
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          Income Statement
-        </button>
-        <button
-          onClick={() => setActiveTab("balance-sheet")}
-          className={cn(
-            "rounded-md px-4 py-2 text-sm font-medium transition-colors",
-            activeTab === "balance-sheet"
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          Balance Sheet
-        </button>
-        <button
-          onClick={() => setActiveTab("cash-flow")}
-          className={cn(
-            "rounded-md px-4 py-2 text-sm font-medium transition-colors",
-            activeTab === "cash-flow"
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          Cash Flow
-        </button>
+      {/* Tab buttons + basis toggle */}
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex gap-1 rounded-lg bg-muted p-1 w-fit">
+          <button
+            onClick={() => setActiveTab("income-statement")}
+            className={cn(
+              "rounded-md px-4 py-2 text-sm font-medium transition-colors",
+              activeTab === "income-statement"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Income Statement
+          </button>
+          <button
+            onClick={() => setActiveTab("balance-sheet")}
+            className={cn(
+              "rounded-md px-4 py-2 text-sm font-medium transition-colors",
+              activeTab === "balance-sheet"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Balance Sheet
+          </button>
+          <button
+            onClick={() => setActiveTab("cash-flow")}
+            className={cn(
+              "rounded-md px-4 py-2 text-sm font-medium transition-colors",
+              activeTab === "cash-flow"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Cash Flow
+          </button>
+        </div>
+
+        {activeTab !== 'cash-flow' && (
+          <div className="flex gap-1 rounded-lg bg-muted p-1 w-fit">
+            {(['accrual', 'cash'] as const).map((b) => (
+              <button
+                key={b}
+                onClick={() => setBasis(b)}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-sm font-medium transition-colors capitalize",
+                  basis === b
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {b === 'accrual' ? 'Accrual' : 'Cash'}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ─── Income Statement Tab ─────────────────────── */}

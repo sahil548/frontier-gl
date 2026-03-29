@@ -12,6 +12,7 @@ const querySchema = z.object({
   endDate: z.string().refine((s) => !isNaN(Date.parse(s)), {
     message: "endDate must be a valid date string",
   }),
+  basis: z.enum(['accrual', 'cash']).optional(),
 });
 
 // ─── GET: Income Statement ──────────────────────────────
@@ -41,6 +42,7 @@ export async function GET(
   const parsed = querySchema.safeParse({
     startDate: url.searchParams.get("startDate"),
     endDate: url.searchParams.get("endDate"),
+    basis: url.searchParams.get("basis") ?? undefined,
   });
 
   if (!parsed.success) {
@@ -53,7 +55,8 @@ export async function GET(
     const data = await getIncomeStatement(
       entityId,
       new Date(startDate),
-      new Date(endDate)
+      new Date(endDate),
+      parsed.data.basis ?? 'accrual'
     );
 
     return successResponse(data);

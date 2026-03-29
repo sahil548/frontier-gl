@@ -9,6 +9,7 @@ const querySchema = z.object({
   asOfDate: z.string().refine((s) => !isNaN(Date.parse(s)), {
     message: "asOfDate must be a valid date string",
   }),
+  basis: z.enum(['accrual', 'cash']).optional(),
 });
 
 // ─── GET: Balance Sheet ─────────────────────────────────
@@ -36,6 +37,7 @@ export async function GET(
   const url = new URL(request.url);
   const parsed = querySchema.safeParse({
     asOfDate: url.searchParams.get("asOfDate"),
+    basis: url.searchParams.get("basis") ?? undefined,
   });
 
   if (!parsed.success) {
@@ -45,7 +47,7 @@ export async function GET(
   const { asOfDate } = parsed.data;
 
   try {
-    const data = await getBalanceSheet(entityId, new Date(asOfDate));
+    const data = await getBalanceSheet(entityId, new Date(asOfDate), parsed.data.basis ?? 'accrual');
 
     return successResponse(data);
   } catch (error) {

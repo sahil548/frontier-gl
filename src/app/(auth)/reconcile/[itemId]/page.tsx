@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Plus,
   Trash2,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useEntityContext } from "@/providers/entity-provider";
@@ -114,6 +115,131 @@ const TYPE_COLORS: Record<string, string> = {
   OTHER: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
 };
 
+// ─── CSV helpers ────────────────────────────────────────
+
+function cleanAmount(raw: string): number | null {
+  // Treat parentheses as negative, e.g. (1,234.56) -> -1234.56
+  let s = raw.trim();
+  const isNeg = s.startsWith("(") && s.endsWith(")");
+  s = s.replace(/[()$,\s]/g, "");
+  const n = parseFloat(s);
+  if (isNaN(n)) return null;
+  return isNeg ? -Math.abs(n) : n;
+}
+
+function parseCsv(text: string): StatementLine[] {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim() !== "");
+  if (lines.length < 2) return [];
+
+  // Detect separator
+  const first = lines[0];
+  const sep =
+    (first.match(/\t/g) || []).length > (first.match(/,/g) || []).length
+      ? "\t"
+      : (first.match(/;/g) || []).length > (first.match(/,/g) || []).length
+        ? ";"
+        : ",";
+
+  const headers = first.split(sep).map((h) => h.trim().replace(/^"|"$/g, "").toLowerCase());
+
+  // Detect column indices
+  const dateIdx = headers.findIndex((h) => h.includes("date"));
+  const descIdx = headers.findIndex((h) =>
+    ["desc", "memo", "narr", "ref", "payee", "merchant", "detail"].some((k) =>
+      h.includes(k)
+    )
+  );
+  const amtIdx = headers.findIndex((h) =>
+    ["amount", "amt", "value", "net"].some((k) => h.includes(k))
+  );
+  const debitIdx = headers.findIndex(
+    (h) =>
+      ["debit", "dr", "withdrawal", "out"].some((k) => h.includes(k)) &&
+      !h.includes("credit")
+  );
+  const creditIdx = headers.findIndex(
+    (h) =>
+      ["credit", "cr", "deposit", "in"].some((k) => h.includes(k)) &&
+      !h.includes("debit")
+  );
+
+  const result: StatementLine[] = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(sep).map((c) => c.trim().replace(/^"|"$/g, ""));
+
+    let amount: number | null = null;
+
+    if (debitIdx >= 0 && creditIdx >= 0) {
+      const debit = debitIdx < cols.length ? cleanAmount(cols[debitIdx]) : null;
+      const credit = creditIdx < cols.length ? cleanAmount(cols[creditIdx]) : null;
+      const d = debit ?? 0;
+      const c = credit ?? 0;
+      // positive = inflow (credit to bank), negative = outflow (debit from bank)
+      amount = c - d;
+    } else if (amtIdx >= 0 && amtIdx < cols.length) {
+      amount = cleanAmount(cols[amtIdx]);
+    }
+
+    if (amount === null || amount === 0) continue;
+
+    const date = dateIdx >= 0 && dateIdx < cols.length ? cols[dateIdx] : "";
+    const description =
+      descIdx >= 0 && descIdx < cols.length ? cols[descIdx] : cols[0] ?? "";
+
+    result.push({
+      id: crypto.randomUUID(),
+      date,
+      description,
+      amount: String(amount),
+    });
+  }
+
+  return result;
+}
+
+function computeMatches(
+  stmtLines: StatementLine[],
+  glTxns: LedgerTransaction[]
+): Map<string, string> {
+  const map = new Map<string, string>(); // stmtLineId -> glKey
+  const usedGlKeys = new Set<string>();
+
+  for (const line of stmtLines) {
+    const stmtAmt = parseFloat(line.amount);
+    if (isNaN(stmtAmt)) continue;
+
+    const stmtDate = line.date ? new Date(line.date).getTime() : null;
+
+    for (const txn of glTxns) {
+      const glKey = `${txn.jeId}-${txn.date}`;
+      if (usedGlKeys.has(glKey)) continue;
+
+      // Amount match
+      let amountMatch = false;
+      if (stmtAmt >= 0) {
+        amountMatch = Math.abs(txn.debit - Math.abs(stmtAmt)) <= 0.01;
+      } else {
+        amountMatch = Math.abs(txn.credit - Math.abs(stmtAmt)) <= 0.01;
+      }
+      if (!amountMatch) continue;
+
+      // Date proximity (within 3 days)
+      if (stmtDate !== null) {
+        const txnDate = new Date(txn.date).getTime();
+        const diffDays = Math.abs(txnDate - stmtDate) / (1000 * 60 * 60 * 24);
+        if (diffDays > 3) continue;
+      }
+
+      map.set(line.id, glKey);
+      usedGlKeys.add(glKey);
+      break;
+    }
+  }
+
+  return map;
+}
+
 // ─── Main page ──────────────────────────────────────────
 
 export default function ReconcilePage() {
@@ -152,6 +278,11 @@ export default function ReconcilePage() {
 
   // Saving
   const [saving, setSaving] = useState(false);
+
+  // CSV import & matching
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [matchMap, setMatchMap] = useState<Map<string, string>>(new Map()); // stmtLineId -> glKey
+  const [glMatchKeys, setGlMatchKeys] = useState<Set<string>>(new Set()); // set of matched glKeys
 
   // ─── Fetch item ─────────────────────────────────────
 
@@ -222,6 +353,37 @@ export default function ReconcilePage() {
     const lastDay = new Date(selectedYear, selectedMonth, 0);
     setStatementDate(lastDay.toISOString().split("T")[0]);
   }, [selectedYear, selectedMonth]);
+
+  // Recompute matches whenever stmtLines or ledgerData changes
+  useEffect(() => {
+    if (!ledgerData) return;
+    const map = computeMatches(stmtLines, ledgerData.transactions);
+    setMatchMap(map);
+    setGlMatchKeys(new Set(map.values()));
+  }, [stmtLines, ledgerData]);
+
+  // ─── CSV import ──────────────────────────────────────
+
+  function handleCsvFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      const parsed = parseCsv(text);
+      if (parsed.length === 0) {
+        toast.error(
+          'No valid rows found in CSV. Check column headers include "date", "description", and "amount".'
+        );
+        return;
+      }
+      setStmtLines(parsed);
+      toast.success(`Imported ${parsed.length} lines from CSV`);
+    };
+    reader.readAsText(file);
+    // Reset input so the same file can be re-imported
+    e.target.value = "";
+  }
 
   // ─── Computed values ─────────────────────────────────
 
@@ -464,6 +626,9 @@ export default function ReconcilePage() {
                       <TableHead className="text-right text-xs">Debit</TableHead>
                       <TableHead className="text-right text-xs">Credit</TableHead>
                       <TableHead className="text-right text-xs">Balance</TableHead>
+                      {stmtLines.length > 0 && (
+                        <TableHead className="w-6 text-right text-xs" />
+                      )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -478,44 +643,58 @@ export default function ReconcilePage() {
                       <TableCell className="text-right text-xs font-mono font-semibold">
                         {formatCurrency(openingBalance)}
                       </TableCell>
+                      {stmtLines.length > 0 && <TableCell />}
                     </TableRow>
 
                     {ledgerData && ledgerData.transactions.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={5}
+                          colSpan={stmtLines.length > 0 ? 6 : 5}
                           className="py-6 text-center text-sm text-muted-foreground"
                         >
                           No transactions in this period
                         </TableCell>
                       </TableRow>
                     ) : (
-                      ledgerData?.transactions.map((txn) => (
-                        <TableRow key={txn.jeId + txn.date}>
-                          <TableCell className="text-xs">
-                            {new Date(txn.date).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                            })}
-                          </TableCell>
-                          <TableCell className="text-xs max-w-[140px] truncate">
-                            {txn.lineMemo ?? txn.description}
-                          </TableCell>
-                          <TableCell className="text-right text-xs font-mono">
-                            {txn.debit > 0
-                              ? formatCurrency(txn.debit)
-                              : ""}
-                          </TableCell>
-                          <TableCell className="text-right text-xs font-mono">
-                            {txn.credit > 0
-                              ? formatCurrency(txn.credit)
-                              : ""}
-                          </TableCell>
-                          <TableCell className="text-right text-xs font-mono">
-                            {formatCurrency(txn.runningBalance)}
-                          </TableCell>
-                        </TableRow>
-                      ))
+                      ledgerData?.transactions.map((txn) => {
+                        const glKey = `${txn.jeId}-${txn.date}`;
+                        const isMatched = glMatchKeys.has(glKey);
+                        return (
+                          <TableRow key={txn.jeId + txn.date}>
+                            <TableCell className="text-xs">
+                              {new Date(txn.date).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </TableCell>
+                            <TableCell className="text-xs max-w-[140px] truncate">
+                              {txn.lineMemo ?? txn.description}
+                            </TableCell>
+                            <TableCell className="text-right text-xs font-mono">
+                              {txn.debit > 0
+                                ? formatCurrency(txn.debit)
+                                : ""}
+                            </TableCell>
+                            <TableCell className="text-right text-xs font-mono">
+                              {txn.credit > 0
+                                ? formatCurrency(txn.credit)
+                                : ""}
+                            </TableCell>
+                            <TableCell className="text-right text-xs font-mono">
+                              {formatCurrency(txn.runningBalance)}
+                            </TableCell>
+                            {stmtLines.length > 0 && (
+                              <TableCell className="text-right">
+                                {isMatched ? (
+                                  <CheckCircle2 className="h-3.5 w-3.5 text-green-600 ml-auto" />
+                                ) : (
+                                  <div className="h-3.5 w-3.5 rounded-full border border-muted-foreground/30 ml-auto" />
+                                )}
+                              </TableCell>
+                            )}
+                          </TableRow>
+                        );
+                      })
                     )}
 
                     {/* Closing GL Balance */}
@@ -532,6 +711,7 @@ export default function ReconcilePage() {
                             ? formatCurrency(glBalance)
                             : "—"}
                         </TableCell>
+                        {stmtLines.length > 0 && <TableCell />}
                       </TableRow>
                     )}
                   </TableBody>
@@ -544,9 +724,29 @@ export default function ReconcilePage() {
         {/* Right: Statement */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Statement</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Statement</CardTitle>
+              <div className="flex items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv"
+                  className="hidden"
+                  onChange={handleCsvFile}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 h-8 text-xs"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  Import CSV
+                </Button>
+              </div>
+            </div>
             <p className="text-sm text-muted-foreground">
-              Enter statement details from your bank or custodian
+              Enter statement details or import a CSV from your bank
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -590,29 +790,40 @@ export default function ReconcilePage() {
                         <th className="py-1.5 px-2 text-right font-medium text-muted-foreground">
                           Amount
                         </th>
+                        <th className="w-6 py-1.5 px-2 text-right font-medium text-muted-foreground" />
                         <th className="w-8" />
                       </tr>
                     </thead>
                     <tbody>
-                      {stmtLines.map((line) => (
-                        <tr key={line.id} className="border-b last:border-0">
-                          <td className="py-1.5 px-2 text-muted-foreground">
-                            {line.date || "—"}
-                          </td>
-                          <td className="py-1.5 px-2">{line.description}</td>
-                          <td className="py-1.5 px-2 text-right font-mono">
-                            {formatCurrency(parseFloat(line.amount) || 0)}
-                          </td>
-                          <td className="py-1.5 px-2">
-                            <button
-                              onClick={() => removeStmtLine(line.id)}
-                              className="text-muted-foreground hover:text-destructive"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {stmtLines.map((line) => {
+                        const isMatched = matchMap.has(line.id);
+                        return (
+                          <tr key={line.id} className="border-b last:border-0">
+                            <td className="py-1.5 px-2 text-muted-foreground">
+                              {line.date || "—"}
+                            </td>
+                            <td className="py-1.5 px-2">{line.description}</td>
+                            <td className="py-1.5 px-2 text-right font-mono">
+                              {formatCurrency(parseFloat(line.amount) || 0)}
+                            </td>
+                            <td className="py-1.5 px-2 text-right">
+                              {isMatched ? (
+                                <CheckCircle2 className="h-3.5 w-3.5 text-green-600 ml-auto" />
+                              ) : (
+                                <div className="h-3.5 w-3.5 rounded-full border border-muted-foreground/30 ml-auto" />
+                              )}
+                            </td>
+                            <td className="py-1.5 px-2">
+                              <button
+                                onClick={() => removeStmtLine(line.id)}
+                                className="text-muted-foreground hover:text-destructive"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                       <tr className="bg-muted/30 font-semibold">
                         <td className="py-1.5 px-2" colSpan={2}>
                           Running Total
@@ -620,6 +831,7 @@ export default function ReconcilePage() {
                         <td className="py-1.5 px-2 text-right font-mono">
                           {formatCurrency(stmtTotal)}
                         </td>
+                        <td />
                         <td />
                       </tr>
                     </tbody>

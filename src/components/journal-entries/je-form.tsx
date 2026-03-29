@@ -168,25 +168,36 @@ function JEFormInner({
   ) => {
     setIsSubmitting(action);
     try {
-      // Step 1: Save/create the entry
-      const url = isEdit
-        ? `/api/entities/${entityId}/journal-entries/${entry!.id}`
-        : `/api/entities/${entityId}/journal-entries`;
-      const method = isEdit ? "PUT" : "POST";
+      // When posting an already-approved entry, skip the save step — the entry
+      // is locked and cannot be modified; go straight to the post endpoint.
+      let savedEntry: { id: string } | undefined = entry;
 
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const json = await res.json();
+      if (!(isApproved && action === "post")) {
+        // Step 1: Save/create the entry
+        const url = isEdit
+          ? `/api/entities/${entityId}/journal-entries/${entry!.id}`
+          : `/api/entities/${entityId}/journal-entries`;
+        const method = isEdit ? "PUT" : "POST";
 
-      if (!json.success) {
-        toast.error(json.error || "Failed to save entry");
-        return;
+        const res = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        const json = await res.json();
+
+        if (!json.success) {
+          toast.error(json.error || "Failed to save entry");
+          return;
+        }
+
+        savedEntry = json.data;
       }
 
-      const savedEntry = json.data;
+      if (!savedEntry) {
+        toast.error("Entry not found");
+        return;
+      }
 
       // Step 2: If action is approve or post, call workflow endpoint
       if (action === "approve") {
@@ -197,7 +208,7 @@ function JEFormInner({
         const approveJson = await approveRes.json();
         if (!approveJson.success) {
           toast.error(approveJson.error || "Saved but failed to approve");
-          router.push(`/journal-entries/${savedEntry.id}`);
+          window.location.href = `/journal-entries/${savedEntry.id}`;
           return;
         }
         toast.success("Journal entry approved");
@@ -209,7 +220,7 @@ function JEFormInner({
         const postJson = await postRes.json();
         if (!postJson.success) {
           toast.error(postJson.error || "Saved but failed to post");
-          router.push(`/journal-entries/${savedEntry.id}`);
+          window.location.href = `/journal-entries/${savedEntry.id}`;
           return;
         }
         toast.success("Journal entry posted");
@@ -217,8 +228,8 @@ function JEFormInner({
         toast.success(isEdit ? "Draft updated" : "Draft saved");
       }
 
-      router.push(`/journal-entries/${savedEntry.id}`);
-      router.refresh();
+      // Hard navigate to force server component re-fetch with updated status
+      window.location.href = `/journal-entries/${savedEntry.id}`;
     } catch {
       toast.error("An error occurred while saving");
     } finally {
