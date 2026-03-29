@@ -22,6 +22,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/utils/accounting";
+import { AssetPieChart } from "@/components/dashboard/asset-pie-chart";
+import { IncomeExpenseBar } from "@/components/dashboard/income-expense-bar";
+import { EquityTrendArea } from "@/components/dashboard/equity-trend-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,6 +64,9 @@ interface DashboardData {
     month: number;
     isClosed: boolean;
   };
+  assetBreakdown: { name: string; value: number }[];
+  incomeVsExpense: { category: string; amount: number }[];
+  equityTrend: { month: string; equity: number }[];
 }
 
 // ─── Helpers ────────────────────────────────────────────
@@ -178,7 +184,7 @@ export default function DashboardPage() {
     );
   }
 
-  const { summary, recentEntries, periodStatus } = data;
+  const { summary, recentEntries, periodStatus, assetBreakdown, incomeVsExpense, equityTrend } = data;
   const monthLabel = `${MONTH_NAMES[periodStatus.month - 1]} ${periodStatus.year}`;
 
   return (
@@ -277,6 +283,22 @@ export default function DashboardPage() {
             </p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {assetBreakdown && (
+          <AssetPieChart
+            data={assetBreakdown}
+            entityId={currentEntityId ?? entities[0]?.id ?? ""}
+          />
+        )}
+        {incomeVsExpense && (
+          <IncomeExpenseBar data={incomeVsExpense} />
+        )}
+        {equityTrend && (
+          <EquityTrendArea data={equityTrend} />
+        )}
       </div>
 
       {/* Recent Journal Entries */}
