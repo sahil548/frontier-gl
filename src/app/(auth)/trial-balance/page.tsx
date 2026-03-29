@@ -8,6 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -58,6 +65,12 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 // ─── Types ──────────────────────────────────────────────
+
+interface DimensionWithTags {
+  id: string;
+  name: string;
+  tags: Array<{ id: string; code: string; name: string }>;
+}
 
 interface TrialBalanceData {
   rows: TrialBalanceRow[] | ConsolidatedTrialBalanceRow[];
@@ -147,7 +160,34 @@ export default function TrialBalancePage() {
   const [loading, setLoading] = useState(true);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
+  // Dimension filter state
+  const [dimensions, setDimensions] = useState<DimensionWithTags[]>([]);
+  // Map of dimensionId -> selected tagId (or "all" for no filter)
+  const [dimensionFilterSelections, setDimensionFilterSelections] = useState<Record<string, string>>({});
+
   const isConsolidated = currentEntityId === "all";
+
+  // Fetch dimensions for the current entity
+  useEffect(() => {
+    if (!currentEntityId || currentEntityId === "all" || entities.length === 0) {
+      setDimensions([]);
+      return;
+    }
+    fetch(`/api/entities/${currentEntityId}/dimensions`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data)) {
+          setDimensions(json.data);
+        }
+      })
+      .catch(() => {});
+  }, [currentEntityId, entities.length]);
+
+  // Build active dimension filters from selections
+  const activeDimensionFilters = Object.entries(dimensionFilterSelections)
+    .filter(([, tagId]) => tagId !== "all")
+    .map(([dimensionId, tagId]) => ({ dimensionId, tagId }));
+  const dimensionFiltersKey = JSON.stringify(activeDimensionFilters);
 
   const fetchTrialBalance = useCallback(async () => {
     if (!currentEntityId || entities.length === 0) return;
@@ -163,6 +203,11 @@ export default function TrialBalancePage() {
         ...(isConsolidated ? { consolidated: "true" } : {}),
       });
 
+      // Add dimension filters if any are active
+      if (activeDimensionFilters.length > 0) {
+        params.set("dimensionFilters", JSON.stringify(activeDimensionFilters));
+      }
+
       const res = await fetch(
         `/api/entities/${entityIdForUrl}/trial-balance?${params}`
       );
@@ -177,7 +222,8 @@ export default function TrialBalancePage() {
     } finally {
       setLoading(false);
     }
-  }, [currentEntityId, asOfDate, entities, isConsolidated]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentEntityId, asOfDate, entities, isConsolidated, dimensionFiltersKey]);
 
   useEffect(() => {
     fetchTrialBalance();
@@ -253,6 +299,49 @@ export default function TrialBalancePage() {
           </p>
         )}
       </div>
+
+      {/* Dimension filter dropdowns */}
+      {dimensions.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm text-muted-foreground">Filter by</span>
+          {dimensions.map((dim) => (
+            <div key={dim.id} className="flex items-center gap-1.5">
+              <span className="text-sm font-medium">{dim.name}:</span>
+              <Select
+                value={dimensionFilterSelections[dim.id] ?? "all"}
+                onValueChange={(v) =>
+                  setDimensionFilterSelections((prev) => ({
+                    ...prev,
+                    [dim.id]: v ?? "all",
+                  }))
+                }
+              >
+                <SelectTrigger className="w-[160px] h-8" size="sm">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {dim.tags.map((tag) => (
+                    <SelectItem key={tag.id} value={tag.id}>
+                      {tag.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ))}
+          {activeDimensionFilters.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => setDimensionFilterSelections({})}
+            >
+              Clear filters
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Loading state */}
       {loading && <TrialBalanceSkeleton />}
