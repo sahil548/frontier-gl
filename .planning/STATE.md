@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-01-PLAN.md
-last_updated: "2026-03-29T10:43:21.982Z"
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-03-29T10:45:02.449Z"
 last_activity: 2026-03-29 -- Completed 05-01-PLAN.md
 progress:
   total_phases: 10
   completed_phases: 2
   total_plans: 29
-  completed_plans: 14
+  completed_plans: 15
   percent: 45
 ---
 
@@ -63,6 +63,7 @@ Progress: [█████░░░░░] 45%
 | Phase 03 P03 | 10min | 3 tasks | 9 files |
 | Phase 05 P00 | 1min | 1 tasks | 10 files |
 | Phase 05 P01 | 5min | 2 tasks | 6 files |
+| Phase 05 P02 | 6min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -107,6 +108,8 @@ Recent decisions affecting current work:
 - [Phase 05]: Used INCOME enum (not REVENUE) matching Prisma schema; display label is Revenue in UI
 - [Phase 05]: Recharts chart components as Card-wrapped 'use client' with empty state and teal palette
 - [Phase 05]: Equity trend uses self-join CTE for cumulative sums instead of window function
+- [Phase 05-02]: Anchor tag for download link instead of Button asChild (base-ui lacks asChild)
+- [Phase 05-02]: templateId FK on JournalEntry added proactively for plan 03 recurring entries dependency
 
 ### Pending Todos
 
@@ -119,6 +122,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-29T10:43:21.972Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-03-29T10:45:02.446Z
+Stopped at: Completed 05-02-PLAN.md
 Resume file: None
