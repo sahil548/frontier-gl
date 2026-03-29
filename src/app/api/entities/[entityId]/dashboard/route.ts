@@ -32,6 +32,8 @@ export async function GET(
   const { entityId } = await params;
   const url = new URL(request.url);
   const consolidated = url.searchParams.get("consolidated") === "true";
+  const incomeStartParam = url.searchParams.get("incomeStart");
+  const incomeEndParam = url.searchParams.get("incomeEnd");
 
   try {
     // Resolve entity IDs based on mode
@@ -106,10 +108,14 @@ export async function GET(
     const totalLiabilities = balanceByType["LIABILITY"] ?? 0;
     const totalEquity = balanceByType["EQUITY"] ?? 0;
 
-    // ── Net Income: current month (income - expenses) ──
+    // ── Net Income: filtered by period (defaults to current month) ──
 
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const monthStart = incomeStartParam
+      ? new Date(incomeStartParam)
+      : new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = incomeEndParam
+      ? new Date(incomeEndParam)
+      : new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
     const incomeExpenseRows = await prisma.$queryRaw<
       { account_type: string; net_balance: unknown }[]

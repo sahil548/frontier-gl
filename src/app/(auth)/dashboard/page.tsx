@@ -11,8 +11,16 @@ import {
   Lock,
   Unlock,
 } from "lucide-react";
+import { startOfMonth, endOfMonth, subMonths, startOfQuarter, startOfYear } from "date-fns";
 import { useEntityContext } from "@/providers/entity-provider";
 import { WelcomeScreen } from "@/components/onboarding/welcome-screen";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatCurrency } from "@/lib/utils/accounting";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -75,10 +83,38 @@ function statusVariant(status: string): "default" | "secondary" | "outline" {
 
 // ─── Page Component ─────────────────────────────────────
 
+type PeriodKey = "this-month" | "last-month" | "this-quarter" | "ytd";
+
+const PERIOD_OPTIONS: { value: PeriodKey; label: string }[] = [
+  { value: "this-month", label: "This Month" },
+  { value: "last-month", label: "Last Month" },
+  { value: "this-quarter", label: "This Quarter" },
+  { value: "ytd", label: "Year to Date" },
+];
+
+function getPeriodRange(key: PeriodKey): { start: Date; end: Date; label: string } {
+  const now = new Date();
+  switch (key) {
+    case "this-month":
+      return { start: startOfMonth(now), end: endOfMonth(now), label: "This Month" };
+    case "last-month": {
+      const prev = subMonths(now, 1);
+      return { start: startOfMonth(prev), end: endOfMonth(prev), label: "Last Month" };
+    }
+    case "this-quarter":
+      return { start: startOfQuarter(now), end: endOfMonth(now), label: "This Quarter" };
+    case "ytd":
+      return { start: startOfYear(now), end: endOfMonth(now), label: "Year to Date" };
+  }
+}
+
 export default function DashboardPage() {
   const { entities, isLoading, currentEntityId } = useEntityContext();
   const [data, setData] = useState<DashboardData | null>(null);
   const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [period, setPeriod] = useState<PeriodKey>("this-month");
+
+  const periodRange = getPeriodRange(period);
 
   const fetchDashboard = useCallback(async () => {
     if (entities.length === 0) return;
@@ -87,9 +123,12 @@ export default function DashboardPage() {
     try {
       const isConsolidated = currentEntityId === "all";
       const targetEntityId = isConsolidated ? entities[0].id : currentEntityId;
-      const qs = isConsolidated ? "?consolidated=true" : "";
+      const params = new URLSearchParams();
+      if (isConsolidated) params.set("consolidated", "true");
+      params.set("incomeStart", periodRange.start.toISOString().split("T")[0]);
+      params.set("incomeEnd", periodRange.end.toISOString().split("T")[0]);
       const res = await fetch(
-        `/api/entities/${targetEntityId}/dashboard${qs}`
+        `/api/entities/${targetEntityId}/dashboard?${params}`
       );
       if (res.ok) {
         const json = await res.json();
@@ -100,7 +139,7 @@ export default function DashboardPage() {
     } finally {
       setDashboardLoading(false);
     }
-  }, [entities, currentEntityId]);
+  }, [entities, currentEntityId, periodRange.start, periodRange.end]);
 
   useEffect(() => {
     if (!isLoading && entities.length > 0) {
@@ -143,9 +182,26 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Viewing: {contextLabel}</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">Viewing: {contextLabel}</p>
+        </div>
+        <Select
+          value={period}
+          onValueChange={(val) => setPeriod(val as PeriodKey)}
+        >
+          <SelectTrigger className="w-[160px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PERIOD_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Summary Cards */}
@@ -199,7 +255,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Net Income - Current Month
+              Net Income - {periodRange.label}
             </CardTitle>
             <TrendingUp
               className={`h-4 w-4 ${
