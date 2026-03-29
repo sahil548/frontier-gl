@@ -181,6 +181,109 @@ export async function GET(
       },
     });
 
+    // ── Asset Breakdown: top-level ASSET accounts by balance ──
+
+    const assetBreakdownRows = await prisma.$queryRaw<
+      { name: string; value: unknown }[]
+    >(
+      Prisma.sql`
+        SELECT
+          a.name,
+          ABS(COALESCE(SUM(jel.debit - jel.credit), 0)) AS value
+        FROM accounts a
+        JOIN journal_entry_lines jel ON jel."accountId" = a.id
+        JOIN journal_entries je ON je.id = jel."journalEntryId"
+          AND je.status = 'POSTED'
+          AND je.date >= ${monthStart}
+          AND je.date <= ${monthEnd}
+        WHERE a."entityId" IN (${Prisma.join(entityIds)})
+          AND a."isActive" = true
+          AND a.type = 'ASSET'
+          AND a."parentId" IS NULL
+        GROUP BY a.name
+        HAVING ABS(COALESCE(SUM(jel.debit - jel.credit), 0)) > 0
+        ORDER BY value DESC
+        LIMIT 8
+      `
+    );
+
+    const assetBreakdown = assetBreakdownRows.map((r) => ({
+      name: r.name,
+      value: toNum(r.value),
+    }));
+
+    // ── Income vs Expense totals ──
+
+    const incomeVsExpenseRows = await prisma.$queryRaw<
+      { account_type: string; amount: unknown }[]
+    >(
+      Prisma.sql`
+        SELECT
+          a.type::text AS account_type,
+          COALESCE(SUM(
+            CASE
+              WHEN a.type = 'INCOME' THEN jel.credit - jel.debit
+              ELSE jel.debit - jel.credit
+            END
+          ), 0) AS amount
+        FROM accounts a
+        JOIN journal_entry_lines jel ON jel."accountId" = a.id
+        JOIN journal_entries je ON je.id = jel."journalEntryId"
+          AND je.status = 'POSTED'
+          AND je.date >= ${monthStart}
+          AND je.date <= ${monthEnd}
+        WHERE a."entityId" IN (${Prisma.join(entityIds)})
+          AND a."isActive" = true
+          AND a.type IN ('INCOME', 'EXPENSE')
+        GROUP BY a.type
+      `
+    );
+
+    const incomeVsExpense: { category: string; amount: number }[] = [];
+    for (const row of incomeVsExpenseRows) {
+      incomeVsExpense.push({
+        category: row.account_type === "INCOME" ? "Revenue" : "Expense",
+        amount: toNum(row.amount),
+      });
+    }
+
+    // ── Equity Trend: monthly cumulative equity over last 12 months ──
+
+    const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+
+    const equityTrendRows = await prisma.$queryRaw<
+      { month: string; equity: unknown }[]
+    >(
+      Prisma.sql`
+        WITH monthly AS (
+          SELECT
+            TO_CHAR(DATE_TRUNC('month', je.date), 'YYYY-MM') AS month,
+            SUM(jel.credit - jel.debit) AS monthly_net
+          FROM accounts a
+          JOIN journal_entry_lines jel ON jel."accountId" = a.id
+          JOIN journal_entries je ON je.id = jel."journalEntryId"
+            AND je.status = 'POSTED'
+          WHERE a."entityId" IN (${Prisma.join(entityIds)})
+            AND a."isActive" = true
+            AND a.type = 'EQUITY'
+          GROUP BY DATE_TRUNC('month', je.date)
+        )
+        SELECT
+          m.month,
+          SUM(m2.monthly_net) AS equity
+        FROM monthly m
+        JOIN monthly m2 ON m2.month <= m.month
+        WHERE m.month >= ${twelveMonthsAgo.toISOString().slice(0, 7)}
+        GROUP BY m.month
+        ORDER BY m.month
+      `
+    );
+
+    const equityTrend = equityTrendRows.map((r) => ({
+      month: r.month,
+      equity: toNum(r.equity),
+    }));
+
     return successResponse({
       summary: {
         totalAssets,
@@ -194,6 +297,9 @@ export async function GET(
         month: currentMonth,
         isClosed: !!periodClose,
       },
+      assetBreakdown,
+      incomeVsExpense,
+      equityTrend,
     });
   } catch (error) {
     console.error("Dashboard error:", error);
