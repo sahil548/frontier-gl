@@ -33,6 +33,7 @@ export const lineItemSchema = z
         "Credit must be a non-negative number"
       ),
     memo: z.string().optional(),
+    dimensionTags: z.record(z.string(), z.string()).optional().default({}),
   })
   .refine(
     (line) => {

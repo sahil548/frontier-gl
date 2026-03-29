@@ -6,6 +6,7 @@ import { CheckCircle2, AlertCircle } from "lucide-react";
 type JETotalsRowProps = {
   totalDebit: Decimal;
   totalCredit: Decimal;
+  extraColSpan?: number;
 };
 
 /**
@@ -22,7 +23,7 @@ function formatCurrency(value: Decimal): string {
  * Shows green checkmark when balanced (debit = credit and both > 0).
  * Shows red warning with difference when unbalanced.
  */
-export function JETotalsRow({ totalDebit, totalCredit }: JETotalsRowProps) {
+export function JETotalsRow({ totalDebit, totalCredit, extraColSpan = 0 }: JETotalsRowProps) {
   const isBalanced =
     totalDebit.equals(totalCredit) &&
     !totalDebit.isZero();
@@ -30,8 +31,8 @@ export function JETotalsRow({ totalDebit, totalCredit }: JETotalsRowProps) {
 
   return (
     <tr className="border-t-2 border-border font-medium bg-muted/30">
-      {/* Account column */}
-      <td className="px-3 py-2 text-sm text-right">Totals</td>
+      {/* Account column (+ dimension columns) */}
+      <td className="px-3 py-2 text-sm text-right" colSpan={1 + extraColSpan}>Totals</td>
       {/* Debit total */}
       <td className="px-3 py-2 text-sm font-mono text-right">
         {formatCurrency(totalDebit)}

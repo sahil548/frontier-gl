@@ -17,6 +17,19 @@ import { JELineItems, useIsBalanced } from "./je-line-items";
 import { JEStatusBadge } from "./je-status-badge";
 import Link from "next/link";
 
+type SerializedDimensionTag = {
+  id: string;
+  journalEntryLineId: string;
+  dimensionTagId: string;
+  dimensionTag?: {
+    id: string;
+    dimensionId: string;
+    code: string;
+    name: string;
+    dimension?: { id: string; name: string };
+  };
+};
+
 type SerializedLineItem = {
   id: string;
   accountId: string;
@@ -25,6 +38,7 @@ type SerializedLineItem = {
   memo: string | null;
   sortOrder: number;
   account?: { id: string; number: string; name: string; type: string };
+  dimensionTags?: SerializedDimensionTag[] | Record<string, string>;
 };
 
 type SerializedJournalEntry = {
@@ -79,20 +93,40 @@ export function JEForm({ mode, entityId, entry, initialLines }: JEFormProps) {
   const isEdit = mode === "edit" && entry;
 
   const defaultLineItems =
-    entry?.lineItems?.map((li) => ({
-      accountId: li.accountId,
-      debit: li.debit,
-      credit: li.credit,
-      memo: li.memo ?? "",
-    })) ??
+    entry?.lineItems?.map((li) => {
+      // Map dimension tags: could be array of junction records or already a record
+      let dimTags: Record<string, string> = {};
+      if (li.dimensionTags) {
+        if (Array.isArray(li.dimensionTags)) {
+          // Junction records from API: map to { dimensionId: tagId }
+          for (const dt of li.dimensionTags) {
+            const dimId = dt.dimensionTag?.dimensionId ?? dt.dimensionTag?.dimension?.id;
+            if (dimId) {
+              dimTags[dimId] = dt.dimensionTagId;
+            }
+          }
+        } else {
+          // Already in record format (e.g., from serialized API response)
+          dimTags = li.dimensionTags as Record<string, string>;
+        }
+      }
+      return {
+        accountId: li.accountId,
+        debit: li.debit,
+        credit: li.credit,
+        memo: li.memo ?? "",
+        dimensionTags: dimTags,
+      };
+    }) ??
     initialLines?.map((li) => ({
       accountId: li.accountId,
       debit: li.debit,
       credit: li.credit,
       memo: li.memo ?? "",
+      dimensionTags: {},
     })) ?? [
-      { accountId: "", debit: "0", credit: "0", memo: "" },
-      { accountId: "", debit: "0", credit: "0", memo: "" },
+      { accountId: "", debit: "0", credit: "0", memo: "", dimensionTags: {} },
+      { accountId: "", debit: "0", credit: "0", memo: "", dimensionTags: {} },
     ];
 
   const methods = useForm<JournalEntryFormInput>({
