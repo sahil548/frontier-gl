@@ -69,7 +69,7 @@
 
 - [x] **DASH-01**: User sees summary cards showing Total Assets, Total Liabilities, Total Equity, Net Income
 - [x] **DASH-02**: User can select period for dashboard data (This Month, YTD, Last 12 Months, custom)
-- [ ] **DASH-03**: Dashboard displays mini charts: asset breakdown pie, income vs expense bar, equity trend area
+- [x] **DASH-03**: Dashboard displays mini charts: asset breakdown pie, income vs expense bar, equity trend area
 - [x] **DASH-04**: Dashboard provides quick navigation to COA, GL Ledger, Trial Balance
 - [x] **DASH-05**: Dashboard works in both single-entity and consolidated mode
 
@@ -128,7 +128,7 @@
 
 ### Dashboard Charts
 
-- [ ] **DASH-03**: Dashboard displays mini charts: asset breakdown pie, income vs expense bar, equity trend area
+- [x] **DASH-03**: Dashboard displays mini charts: asset breakdown pie, income vs expense bar, equity trend area
 
 ### Mobile
 
@@ -137,21 +137,21 @@
 ### Audit Trail UI
 
 - [ ] **AUDT-01**: User can view full audit trail on any JE detail page — who created, approved, posted, with timestamps
-- [ ] **AUDT-02**: Audit trail shows field-level diff for any edits made before posting
+- [x] **AUDT-02**: Audit trail shows field-level diff for any edits made before posting
 
 ### Attachments
 
-- [ ] **ATTCH-01**: User can attach one or more files (PDF, image) to a journal entry
-- [ ] **ATTCH-02**: Attachments are listed and viewable inline on the JE detail page
-- [ ] **ATTCH-03**: Attachment upload uses Box (already connected via MCP) or Vercel Blob for storage
+- [x] **ATTCH-01**: User can attach one or more files (PDF, image) to a journal entry
+- [x] **ATTCH-02**: Attachments are listed and viewable inline on the JE detail page
+- [x] **ATTCH-03**: Attachment upload uses Box (already connected via MCP) or Vercel Blob for storage
 
 ### Recurring JE UI
 
-- [ ] **RECR-01**: User can mark a JE template as recurring with frequency (monthly, quarterly, annually) and start date from the UI
-- [ ] **RECR-02**: User can view all recurring templates in a dedicated list with next run date and frequency
-- [ ] **RECR-03**: User can manually trigger "generate due entries" to create draft JEs for all overdue templates
-- [ ] **RECR-04**: User can edit or stop a recurring template
-- [ ] **RECR-05**: Generated entries appear in the JE list as drafts, linked back to their template
+- [x] **RECR-01**: User can mark a JE template as recurring with frequency (monthly, quarterly, annually) and start date from the UI
+- [x] **RECR-02**: User can view all recurring templates in a dedicated list with next run date and frequency
+- [x] **RECR-03**: User can manually trigger "generate due entries" to create draft JEs for all overdue templates
+- [x] **RECR-04**: User can edit or stop a recurring template
+- [x] **RECR-05**: Generated entries appear in the JE list as drafts, linked back to their template
 
 ---
 
@@ -239,7 +239,7 @@
 | HOLD-01–05 | Phase 4 | Complete |
 | TMPL-01–05 | Phase 4 | Complete |
 | ACC-01–02 | Phase 4 | Complete |
-| DASH-03 | Phase 5 | Pending |
+| DASH-03 | Phase 5 | Complete |
 | UI-02 | Phase 5 | Pending |
 | AUDT-01–02 | Phase 5 | Pending |
 | ATTCH-01–03 | Phase 5 | Pending |

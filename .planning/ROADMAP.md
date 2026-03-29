@@ -75,7 +75,7 @@ Frontier GL delivers a multi-entity general ledger that replaces QuickBooks Onli
 4. User can attach a PDF or image to a journal entry and view the attachment on the detail page
 5. User can create a recurring template (set frequency + start date), view all recurring templates in a list, trigger "generate due entries", and stop recurrence — generated entries appear as drafts in the JE list
 
-**Plans:** 5 plans
+**Plans:** 1/5 plans executed
 
 Plans:
 - [ ] 05-00-PLAN.md — Wave 0 test stubs for all phase requirements (Nyquist compliance)
@@ -186,7 +186,7 @@ Plans:
 | 2. Accounting Engine | COA, JE, DI-03–05 | ✓ Complete | 2026-03-27 |
 | 3. Ledger & Trial Balance | LED, TB, UI-03 | ✓ Complete | 2026-03-27 |
 | 4. Platform | DASH (partial), PC, RPT, HOLD, TMPL, ACC | ✓ Complete | 2026-03-29 |
-| 5. QBO Parity I | DASH-03, UI-02, AUDT, ATTCH, RECR | ○ Not started | — |
+| 5. QBO Parity I | 1/5 | In Progress|  |
 | 6. QBO Parity II | CLASS | ○ Not started | — |
 | 7. QBO Parity III | BUDG | ○ Not started | — |
 | 8. Family Office I | CONS | ○ Not started | — |
