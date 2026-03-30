@@ -92,6 +92,16 @@ export function JEForm({ mode, entityId, entry, initialLines }: JEFormProps) {
   const isReadOnly = isPosted;
   const isEdit = mode === "edit" && entry;
 
+  // Build account labels map from entry data for instant display
+  const accountLabelsMap: Record<string, string> = {};
+  if (entry?.lineItems) {
+    for (const li of entry.lineItems) {
+      if (li.account && li.accountId) {
+        accountLabelsMap[li.accountId] = `${li.account.number} ${li.account.name}`;
+      }
+    }
+  }
+
   const defaultLineItems =
     entry?.lineItems?.map((li) => {
       // Map dimension tags: could be array of junction records or already a record
@@ -160,6 +170,7 @@ export function JEForm({ mode, entityId, entry, initialLines }: JEFormProps) {
         handleSubmit={handleSubmit}
         errors={errors}
         router={router}
+        accountLabels={accountLabelsMap}
       />
     </FormProvider>
   );
@@ -180,6 +191,7 @@ function JEFormInner({
   handleSubmit,
   errors,
   router,
+  accountLabels,
 }: {
   entityId: string;
   mode: "create" | "edit";
@@ -192,6 +204,7 @@ function JEFormInner({
   handleSubmit: ReturnType<typeof useForm<JournalEntryFormInput>>["handleSubmit"];
   errors: ReturnType<typeof useForm<JournalEntryFormInput>>["formState"]["errors"];
   router: ReturnType<typeof useRouter>;
+  accountLabels: Record<string, string>;
 }) {
   const isBalanced = useIsBalanced();
   const [isSubmitting, setIsSubmitting] = useState<string | null>(null);
@@ -363,7 +376,7 @@ function JEFormInner({
         {/* Line items */}
         <div className="space-y-2">
           <Label>Line Items</Label>
-          <JELineItems entityId={entityId} disabled={isReadOnly} />
+          <JELineItems entityId={entityId} disabled={isReadOnly} accountLabels={accountLabels} />
           {errors.lineItems && typeof errors.lineItems.message === "string" && (
             <p className="text-sm text-destructive">
               {errors.lineItems.message}

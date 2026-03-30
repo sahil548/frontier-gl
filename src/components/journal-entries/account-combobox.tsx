@@ -33,6 +33,10 @@ type AccountComboboxProps = {
   onChange: (accountId: string) => void;
   entityId: string;
   disabled?: boolean;
+  /** Pre-fetched accounts list to avoid redundant fetches */
+  accounts?: AccountOption[];
+  /** Label to display immediately while accounts are still loading */
+  accountLabel?: string;
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -57,16 +61,30 @@ export function AccountCombobox({
   onChange,
   entityId,
   disabled,
+  accounts: externalAccounts,
+  accountLabel,
 }: AccountComboboxProps) {
   const [open, setOpen] = useState(false);
+  const hasExternalAccounts = externalAccounts !== undefined;
   const cached = accountsCache.get(entityId);
   const isCacheValid = cached && (Date.now() - cached.fetchedAt) < CACHE_TTL_MS;
   const [accounts, setAccounts] = useState<AccountOption[]>(
-    isCacheValid ? cached.data : []
+    (externalAccounts && externalAccounts.length > 0) ? externalAccounts : (isCacheValid ? cached!.data : [])
   );
-  const [isLoading, setIsLoading] = useState(!isCacheValid);
+  const [isLoading, setIsLoading] = useState(!hasExternalAccounts && !isCacheValid);
+
+  // Sync from external accounts prop when parent finishes loading
+  useEffect(() => {
+    if (externalAccounts && externalAccounts.length > 0) {
+      setAccounts(externalAccounts);
+      setIsLoading(false);
+    }
+  }, [externalAccounts]);
 
   useEffect(() => {
+    // Skip fetch if parent is managing accounts for us
+    if (hasExternalAccounts) return;
+
     const cached = accountsCache.get(entityId);
     const isCacheValid = cached && (Date.now() - cached.fetchedAt) < CACHE_TTL_MS;
     if (isCacheValid) {
@@ -97,7 +115,7 @@ export function AccountCombobox({
     return () => {
       cancelled = true;
     };
-  }, [entityId]);
+  }, [entityId, hasExternalAccounts]);
 
   // Filter: exclude parent accounts (those with children) and inactive accounts
   const selectableAccounts = useMemo(() => {
@@ -125,6 +143,8 @@ export function AccountCombobox({
           <span className="truncate">
             {selectedAccount.number} {selectedAccount.name}
           </span>
+        ) : accountLabel ? (
+          <span className="truncate">{accountLabel}</span>
         ) : (
           <span className="text-muted-foreground">Select account...</span>
         )}

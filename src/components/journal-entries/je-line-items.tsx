@@ -12,6 +12,15 @@ import { SplitAssistant } from "./split-assistant";
 import { JETotalsRow } from "./je-totals-row";
 import type { JournalEntryFormInput } from "@/lib/validators/journal-entry";
 
+type AccountOption = {
+  id: string;
+  number: string;
+  name: string;
+  type: string;
+  parentId: string | null;
+  isActive: boolean;
+};
+
 type Dimension = {
   id: string;
   name: string;
@@ -27,6 +36,8 @@ type Dimension = {
 type JELineItemsProps = {
   entityId: string;
   disabled?: boolean;
+  /** Map of accountId → display label for instant rendering before accounts load */
+  accountLabels?: Record<string, string>;
 };
 
 /**
@@ -35,9 +46,10 @@ type JELineItemsProps = {
  * Live running totals computed with decimal.js.
  * Renders dynamic dimension combobox columns for each active dimension.
  */
-export function JELineItems({ entityId, disabled }: JELineItemsProps) {
+export function JELineItems({ entityId, disabled, accountLabels }: JELineItemsProps) {
   const { control, register, setValue } = useFormContext<JournalEntryFormInput>();
   const [dimensions, setDimensions] = useState<Dimension[]>([]);
+  const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [splitState, setSplitState] = useState<{
     open: boolean;
     lineIndex: number;
@@ -54,23 +66,35 @@ export function JELineItems({ entityId, disabled }: JELineItemsProps) {
     name: "lineItems",
   });
 
-  // Fetch active dimensions for the entity
+  // Fetch accounts and dimensions in parallel on mount
   useEffect(() => {
     let cancelled = false;
-    async function fetchDimensions() {
-      try {
-        const res = await fetch(`/api/entities/${entityId}/dimensions`);
-        if (!res.ok) return;
-        const json = await res.json();
+
+    async function fetchData() {
+      const [accountsRes, dimensionsRes] = await Promise.allSettled([
+        fetch(`/api/entities/${entityId}/accounts`),
+        fetch(`/api/entities/${entityId}/dimensions`),
+      ]);
+
+      if (cancelled) return;
+
+      if (accountsRes.status === "fulfilled" && accountsRes.value.ok) {
+        const json = await accountsRes.value.json();
+        if (json.success && !cancelled) {
+          setAccounts(json.data as AccountOption[]);
+        }
+      }
+
+      if (dimensionsRes.status === "fulfilled" && dimensionsRes.value.ok) {
+        const json = await dimensionsRes.value.json();
         if (json.success && !cancelled) {
           const active = (json.data as Dimension[]).filter((d) => d.isActive);
           setDimensions(active);
         }
-      } catch {
-        // silently fail
       }
     }
-    fetchDimensions();
+
+    fetchData();
     return () => {
       cancelled = true;
     };
@@ -217,6 +241,8 @@ export function JELineItems({ entityId, disabled }: JELineItemsProps) {
                     }
                     entityId={entityId}
                     disabled={disabled}
+                    accounts={accounts}
+                    accountLabel={accountLabels?.[watchedLineItems?.[index]?.accountId ?? ""]}
                   />
                 </td>
                 {/* Dimension columns */}
@@ -235,6 +261,12 @@ export function JELineItems({ entityId, disabled }: JELineItemsProps) {
                           }
                           entityId={entityId}
                           disabled={disabled}
+                          initialTags={dim.tags?.filter(t => t.isActive).map(t => ({
+                            ...t,
+                            dimensionId: dim.id,
+                            description: null,
+                            sortOrder: 0,
+                          }))}
                         />
                       </div>
                       {!disabled && (

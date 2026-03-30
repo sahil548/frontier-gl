@@ -35,6 +35,8 @@ type DimensionComboboxProps = {
   onChange: (tagId: string) => void;
   entityId: string;
   disabled?: boolean;
+  /** Pre-fetched tags from parent dimensions fetch to avoid redundant API calls */
+  initialTags?: TagOption[];
 };
 
 // Module-level cache keyed by dimensionId with TTL (60 seconds)
@@ -52,13 +54,25 @@ export function DimensionCombobox({
   onChange,
   entityId,
   disabled,
+  initialTags,
 }: DimensionComboboxProps) {
   const [open, setOpen] = useState(false);
   const [tagFormOpen, setTagFormOpen] = useState(false);
+  const hasInitialTags = initialTags !== undefined;
   const cached = tagsCache.get(dimensionId);
   const isCacheValid = cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS;
-  const [tags, setTags] = useState<TagOption[]>(isCacheValid ? cached.data : []);
-  const [isLoading, setIsLoading] = useState(!isCacheValid);
+  const [tags, setTags] = useState<TagOption[]>(
+    (initialTags && initialTags.length > 0) ? initialTags : (isCacheValid ? cached!.data : [])
+  );
+  const [isLoading, setIsLoading] = useState(!hasInitialTags && !isCacheValid);
+
+  // Sync from initial tags prop when parent finishes loading
+  useEffect(() => {
+    if (initialTags && initialTags.length > 0) {
+      setTags(initialTags);
+      setIsLoading(false);
+    }
+  }, [initialTags]);
 
   const fetchTags = useCallback(async () => {
     try {
@@ -80,6 +94,9 @@ export function DimensionCombobox({
   }, [entityId, dimensionId]);
 
   useEffect(() => {
+    // Skip fetch if parent provided tags
+    if (hasInitialTags) return;
+
     const cached = tagsCache.get(dimensionId);
     const isCacheValid = cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS;
     if (isCacheValid) {
@@ -89,7 +106,7 @@ export function DimensionCombobox({
     }
 
     fetchTags();
-  }, [dimensionId, fetchTags]);
+  }, [dimensionId, fetchTags, hasInitialTags]);
 
   const selectedTag = useMemo(
     () => tags.find((t) => t.id === value),
