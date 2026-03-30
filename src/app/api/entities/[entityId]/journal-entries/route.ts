@@ -195,7 +195,6 @@ export async function POST(
   }
 
   const { date, description, lineItems } = result.data;
-  console.log("JE POST validated payload:", JSON.stringify({ date, description, lineItemCount: lineItems.length, lineItems: lineItems.map((li, i) => ({ i, accountId: li.accountId.slice(-6), debit: li.debit, credit: li.credit, dimTags: li.dimensionTags })) }));
 
   // Validate all accountIds exist and belong to this entity
   const accountIds = lineItems.map((li) => li.accountId);
@@ -310,7 +309,6 @@ export async function POST(
     );
   } catch (err) {
     console.error("JE create error:", err);
-    console.error("JE create lineItems with tags:", JSON.stringify(lineItems.map(li => li.dimensionTags)));
     return errorResponse("Failed to create journal entry", 500);
   }
 }

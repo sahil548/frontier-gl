@@ -316,61 +316,88 @@ export async function PUT(
   }
 
   // Update within transaction: replace header + all line items + dimension tags
-  const updated = await prisma.$transaction(async (tx) => {
-    // Delete old line items (cascade deletes dimension tag junctions too)
-    await tx.journalEntryLine.deleteMany({
-      where: { journalEntryId },
-    });
+  try {
+    const updated = await prisma.$transaction(async (tx) => {
+      // Delete old line items (cascade deletes dimension tag junctions too)
+      await tx.journalEntryLine.deleteMany({
+        where: { journalEntryId },
+      });
 
-    // Update header and create new line items with dimension tags
-    const je = await tx.journalEntry.update({
-      where: { id: journalEntryId },
-      data: {
-        date: new Date(date),
-        description,
-        lineItems: {
-          create: lineItems.map((li, index) => ({
-            accountId: li.accountId,
-            debit: new Prisma.Decimal(li.debit || "0"),
-            credit: new Prisma.Decimal(li.credit || "0"),
-            memo: li.memo || null,
-            sortOrder: index,
-            dimensionTags: {
-              create: Object.values(li.dimensionTags ?? {})
-                .filter(Boolean)
-                .map((tagId) => ({ dimensionTagId: tagId })),
-            },
-          })),
-        },
-      },
-      include: {
-        lineItems: {
-          include: {
-            account: { select: { id: true, number: true, name: true, type: true } },
-            ...dimensionTagsInclude,
+      // Step 1: Update header and create new line items (no dimension tags yet)
+      const je = await tx.journalEntry.update({
+        where: { id: journalEntryId },
+        data: {
+          date: new Date(date),
+          description,
+          lineItems: {
+            create: lineItems.map((li, index) => ({
+              accountId: li.accountId,
+              debit: new Prisma.Decimal(li.debit || "0"),
+              credit: new Prisma.Decimal(li.credit || "0"),
+              memo: li.memo || null,
+              sortOrder: index,
+            })),
           },
-          orderBy: { sortOrder: "asc" },
         },
-        auditEntries: {
-          orderBy: { createdAt: "desc" },
+        include: {
+          lineItems: {
+            orderBy: { sortOrder: "asc" },
+          },
         },
-      },
+      });
+
+      // Step 2: Create dimension tag junction records
+      const tagCreates: Array<{ journalEntryLineId: string; dimensionTagId: string }> = [];
+      for (let i = 0; i < je.lineItems.length; i++) {
+        const li = lineItems[i];
+        const lineId = je.lineItems[i].id;
+        if (li.dimensionTags) {
+          for (const tagId of Object.values(li.dimensionTags)) {
+            if (tagId) {
+              tagCreates.push({ journalEntryLineId: lineId, dimensionTagId: tagId });
+            }
+          }
+        }
+      }
+      if (tagCreates.length > 0) {
+        await tx.journalEntryLineDimensionTag.createMany({ data: tagCreates });
+      }
+
+      // Step 3: Create audit entry
+      await tx.journalEntryAudit.create({
+        data: {
+          journalEntryId,
+          action: "EDITED",
+          userId,
+          changes,
+        },
+      });
+
+      // Step 4: Re-fetch with full includes for response
+      const full = await tx.journalEntry.findUniqueOrThrow({
+        where: { id: journalEntryId },
+        include: {
+          lineItems: {
+            include: {
+              account: { select: { id: true, number: true, name: true, type: true } },
+              ...dimensionTagsInclude,
+            },
+            orderBy: { sortOrder: "asc" },
+          },
+          auditEntries: {
+            orderBy: { createdAt: "desc" },
+          },
+        },
+      });
+
+      return full;
     });
 
-    // Create audit entry
-    await tx.journalEntryAudit.create({
-      data: {
-        journalEntryId,
-        action: "EDITED",
-        userId,
-        changes,
-      },
-    });
-
-    return je;
-  });
-
-  return successResponse(serializeJournalEntry(updated as unknown as Record<string, unknown>));
+    return successResponse(serializeJournalEntry(updated as unknown as Record<string, unknown>));
+  } catch (err) {
+    console.error("JE update error:", err);
+    return errorResponse("Failed to update journal entry", 500);
+  }
 }
 
 // ─── DELETE: Delete journal entry (DRAFT only) ───────────
