@@ -18,7 +18,7 @@ export default function AuthLayout({
         <Sidebar />
 
         {/* Main content area */}
-        <div className="flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col overflow-y-auto h-screen">
           <Header />
           <main className="flex-1 px-4 py-4 sm:px-6 sm:py-6">{children}</main>
         </div>
