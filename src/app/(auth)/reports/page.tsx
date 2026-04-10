@@ -6,6 +6,12 @@ import { CalendarIcon, Download } from "lucide-react";
 import { useEntityContext } from "@/providers/entity-provider";
 import { Button } from "@/components/ui/button";
 import { IncomeStatementView } from "@/components/reports/income-statement-view";
+import { useConsolidatedReport } from "@/hooks/use-consolidated-report";
+import { EntityFilterChips } from "@/components/reports/entity-filter-chips";
+import { ConsolidatedSectionRows, ConsolidatedCashFlowSection } from "@/components/reports/consolidated-section-rows";
+import { EliminationRows } from "@/components/reports/elimination-rows";
+import { MismatchBanner } from "@/components/reports/mismatch-banner";
+import type { EliminationRow, Mismatch } from "@/types/consolidated";
 import {
   Popover,
   PopoverContent,
@@ -265,10 +271,22 @@ export default function ReportsPage() {
 
   const router = useRouter();
 
+  const isConsolidated = currentEntityId === "all" && entities.length > 1;
+
   const resolvedEntityId =
-    currentEntityId === "all" && entities.length > 0
+    currentEntityId === "all" && entities.length > 0 && !isConsolidated
       ? entities[0].id
       : currentEntityId;
+
+  // Consolidated report hook (only active when isConsolidated)
+  const consolidated = useConsolidatedReport({
+    entities,
+    startDate: toISODateString(getFirstOfMonth()),
+    endDate: toISODateString(getEndOfMonth()),
+    asOfDate: toISODateString(asOfDate),
+    basis,
+    activeTab: isConsolidated ? activeTab : "income-statement",
+  });
 
   // ─── Fetch balance sheet ────────────────────────────
 
@@ -562,6 +580,128 @@ export default function ReportsPage() {
     );
   }
 
+  // ─── Consolidated CSV export ─────────────────────
+
+  function handleExportConsolidatedIS() {
+    if (!consolidated.consolidatedIS) return;
+    const data = consolidated.consolidatedIS;
+    const rows: Record<string, unknown>[] = [];
+
+    const addSection = (sectionLabel: string, rowKey: "incomeRows" | "expenseRows", totalLabel: string, total: number) => {
+      rows.push({ Section: sectionLabel, Account: "", Entity: "", Balance: "" });
+      // Group accounts across entities
+      const accountMap = new Map<string, { accountNumber: string; accountName: string; total: number; entities: { name: string; balance: number }[] }>();
+      for (const breakdown of data.entityBreakdowns) {
+        if (!consolidated.selectedEntityIds.has(breakdown.entityId)) continue;
+        const sectionRows = breakdown.data[rowKey] ?? [];
+        for (const row of sectionRows) {
+          const key = `${row.accountNumber}:${row.accountType}`;
+          let group = accountMap.get(key);
+          if (!group) {
+            group = { accountNumber: row.accountNumber, accountName: row.accountName, total: 0, entities: [] };
+            accountMap.set(key, group);
+          }
+          group.total += row.netBalance;
+          group.entities.push({ name: breakdown.entityName, balance: row.netBalance });
+        }
+      }
+      for (const [, group] of accountMap) {
+        rows.push({ Section: "", Account: `${group.accountNumber} - ${group.accountName}`, Entity: "", Balance: group.total.toFixed(2) });
+        for (const ent of group.entities) {
+          rows.push({ Section: "", Account: `  ${group.accountName}`, Entity: ent.name, Balance: ent.balance.toFixed(2) });
+        }
+      }
+      rows.push({ Section: "", Account: totalLabel, Entity: "", Balance: total.toFixed(2) });
+      rows.push({ Section: "", Account: "", Entity: "", Balance: "" });
+    };
+
+    addSection("Revenue", "incomeRows", "Total Revenue", data.totalIncome);
+    addSection("Expenses", "expenseRows", "Total Expenses", data.totalExpenses);
+
+    // Eliminations
+    for (const elim of data.eliminations) {
+      rows.push({ Section: "Elimination", Account: elim.label, Entity: "", Balance: (-Math.abs(elim.amount)).toFixed(2) });
+      if (elim.mismatchAmount != null && Math.abs(elim.mismatchAmount) > 0.005) {
+        rows.push({ Section: "", Account: "  Intercompany difference", Entity: "", Balance: Math.abs(elim.mismatchAmount).toFixed(2) });
+      }
+    }
+
+    rows.push({ Section: "", Account: "Net Income", Entity: "", Balance: data.netIncome.toFixed(2) });
+    exportToCsv(rows, `consolidated-income-statement.csv`);
+  }
+
+  function handleExportConsolidatedBS() {
+    if (!consolidated.consolidatedBS) return;
+    const data = consolidated.consolidatedBS;
+    const rows: Record<string, unknown>[] = [];
+
+    const addSection = (sectionLabel: string, rowKey: "assetRows" | "liabilityRows" | "equityRows", totalLabel: string, total: number) => {
+      rows.push({ Section: sectionLabel, Account: "", Entity: "", Balance: "" });
+      const accountMap = new Map<string, { accountNumber: string; accountName: string; total: number; entities: { name: string; balance: number }[] }>();
+      for (const breakdown of data.entityBreakdowns) {
+        if (!consolidated.selectedEntityIds.has(breakdown.entityId)) continue;
+        const sectionRows = breakdown.data[rowKey] ?? [];
+        for (const row of sectionRows) {
+          const key = `${row.accountNumber}:${row.accountType}`;
+          let group = accountMap.get(key);
+          if (!group) {
+            group = { accountNumber: row.accountNumber, accountName: row.accountName, total: 0, entities: [] };
+            accountMap.set(key, group);
+          }
+          group.total += row.netBalance;
+          group.entities.push({ name: breakdown.entityName, balance: row.netBalance });
+        }
+      }
+      for (const [, group] of accountMap) {
+        rows.push({ Section: "", Account: `${group.accountNumber} - ${group.accountName}`, Entity: "", Balance: group.total.toFixed(2) });
+        for (const ent of group.entities) {
+          rows.push({ Section: "", Account: `  ${group.accountName}`, Entity: ent.name, Balance: ent.balance.toFixed(2) });
+        }
+      }
+      rows.push({ Section: "", Account: totalLabel, Entity: "", Balance: total.toFixed(2) });
+      rows.push({ Section: "", Account: "", Entity: "", Balance: "" });
+    };
+
+    addSection("Assets", "assetRows", "Total Assets", data.totalAssets);
+    addSection("Liabilities", "liabilityRows", "Total Liabilities", data.totalLiabilities);
+    addSection("Equity", "equityRows", "Total Equity", data.totalEquity);
+
+    for (const elim of data.eliminations) {
+      rows.push({ Section: "Elimination", Account: elim.label, Entity: "", Balance: (-Math.abs(elim.amount)).toFixed(2) });
+    }
+
+    exportToCsv(rows, `consolidated-balance-sheet.csv`);
+  }
+
+  function handleExportConsolidatedCF() {
+    if (!consolidated.consolidatedCF) return;
+    const data = consolidated.consolidatedCF;
+    const rows: Record<string, unknown>[] = [];
+
+    const addSection = (section: { label: string; items: { accountName: string; amount: number }[]; total: number }) => {
+      rows.push({ Description: section.label, Entity: "", Amount: "" });
+      for (const item of section.items) {
+        rows.push({ Description: `  ${item.accountName}`, Entity: "", Amount: item.amount.toFixed(2) });
+      }
+      rows.push({ Description: `Total ${section.label}`, Entity: "", Amount: section.total.toFixed(2) });
+      rows.push({ Description: "", Entity: "", Amount: "" });
+    };
+
+    addSection(data.operating);
+    addSection(data.investing);
+    addSection(data.financing);
+
+    for (const elim of data.eliminations) {
+      rows.push({ Description: `Elimination: ${elim.label}`, Entity: "", Amount: (-Math.abs(elim.amount)).toFixed(2) });
+    }
+
+    rows.push({ Description: "Net Change in Cash", Entity: "", Amount: data.netChange.toFixed(2) });
+    rows.push({ Description: "Beginning Cash Balance", Entity: "", Amount: data.beginningCash.toFixed(2) });
+    rows.push({ Description: "Ending Cash Balance", Entity: "", Amount: data.endingCash.toFixed(2) });
+
+    exportToCsv(rows, `consolidated-cash-flow.csv`);
+  }
+
   // ─── Early returns ────────────────────────────────
 
   if (entitiesLoading) {
@@ -604,6 +744,32 @@ export default function ReportsPage() {
           <p className="text-sm text-muted-foreground">{entityName}</p>
         )}
       </div>
+
+      {/* Consolidated header */}
+      {isConsolidated && (
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Consolidated:{" "}
+            {consolidated.entities
+              .filter((e) => consolidated.selectedEntityIds.has(e.id))
+              .map((e) => `${e.name} (${e.fiscalYearEnd})`)
+              .join(", ")}
+          </p>
+          <EntityFilterChips
+            entities={consolidated.entities}
+            selectedIds={consolidated.selectedEntityIds}
+            onToggle={consolidated.toggleEntity}
+          />
+          {(() => {
+            const mismatches =
+              consolidated.consolidatedIS?.mismatches ??
+              consolidated.consolidatedBS?.mismatches ??
+              consolidated.consolidatedCF?.mismatches ??
+              [];
+            return <MismatchBanner mismatches={mismatches} />;
+          })()}
+        </div>
+      )}
 
       {/* Tab buttons + basis toggle */}
       <div className="flex flex-wrap items-center gap-3">
@@ -675,12 +841,176 @@ export default function ReportsPage() {
       </div>
 
       {/* ─── Income Statement Tab ─────────────────────── */}
-      {activeTab === "income-statement" && resolvedEntityId && (
+      {activeTab === "income-statement" && isConsolidated && (
+        <div className="space-y-6">
+          {consolidated.loading && <ReportSkeleton />}
+          {consolidated.error && (
+            <p className="text-sm text-red-600">{consolidated.error}</p>
+          )}
+          {!consolidated.loading && consolidated.consolidatedIS && (
+            <>
+              <div className="flex justify-end">
+                <Button variant="outline" size="sm" className="gap-2" onClick={handleExportConsolidatedIS}>
+                  <Download className="h-4 w-4" />
+                  Export CSV
+                </Button>
+              </div>
+              <div className="overflow-x-auto rounded-md border">
+                <Table className="w-max min-w-full">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Account Number</TableHead>
+                      <TableHead>Account Name</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead className="text-right">Balance</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <ConsolidatedSectionRows
+                      label="Revenue"
+                      rowKey="incomeRows"
+                      entityBreakdowns={consolidated.consolidatedIS.entityBreakdowns}
+                      total={consolidated.consolidatedIS.totalIncome}
+                      totalLabel="Total Revenue"
+                      selectedEntityIds={consolidated.selectedEntityIds}
+                    />
+                    <ConsolidatedSectionRows
+                      label="Expenses"
+                      rowKey="expenseRows"
+                      entityBreakdowns={consolidated.consolidatedIS.entityBreakdowns}
+                      total={consolidated.consolidatedIS.totalExpenses}
+                      totalLabel="Total Expenses"
+                      selectedEntityIds={consolidated.selectedEntityIds}
+                    />
+                    <EliminationRows eliminations={consolidated.consolidatedIS.eliminations} />
+                    <TableRow className="bg-muted/50 font-bold">
+                      <TableCell />
+                      <TableCell className="font-bold">Net Income</TableCell>
+                      <TableCell />
+                      <TableCell
+                        className={cn(
+                          "text-right font-mono font-bold",
+                          consolidated.consolidatedIS.netIncome < 0
+                            ? "text-red-600 dark:text-red-400"
+                            : "text-green-600 dark:text-green-400"
+                        )}
+                      >
+                        {formatCurrency(consolidated.consolidatedIS.netIncome)}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+      {activeTab === "income-statement" && !isConsolidated && resolvedEntityId && (
         <IncomeStatementView entityId={resolvedEntityId} basis={basis} />
       )}
 
-      {/* ─── Balance Sheet Tab ────────────────────────── */}
-      {activeTab === "balance-sheet" && (
+      {/* ─── Balance Sheet Tab (Consolidated) ────────── */}
+      {activeTab === "balance-sheet" && isConsolidated && (
+        <div className="space-y-6">
+          {/* As-of date control */}
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">As of</span>
+            <Popover open={asOfCalOpen} onOpenChange={setAsOfCalOpen}>
+              <PopoverTrigger
+                render={
+                  <Button variant="outline" className="h-9 gap-2 font-normal" />
+                }
+              >
+                <CalendarIcon className="h-4 w-4" />
+                {formatDateDisplay(asOfDate)}
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={asOfDate}
+                  onSelect={(date) => {
+                    if (date) {
+                      setAsOfDate(date);
+                      setAsOfCalOpen(false);
+                    }
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {consolidated.loading && <ReportSkeleton />}
+          {consolidated.error && (
+            <p className="text-sm text-red-600">{consolidated.error}</p>
+          )}
+          {!consolidated.loading && consolidated.consolidatedBS && (
+            <>
+              <div className="flex justify-end">
+                <Button variant="outline" size="sm" className="gap-2" onClick={handleExportConsolidatedBS}>
+                  <Download className="h-4 w-4" />
+                  Export CSV
+                </Button>
+              </div>
+              <div className="overflow-x-auto rounded-md border">
+                <Table className="w-max min-w-full">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Account Number</TableHead>
+                      <TableHead>Account Name</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead className="text-right">Balance</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <ConsolidatedSectionRows
+                      label="Assets"
+                      rowKey="assetRows"
+                      entityBreakdowns={consolidated.consolidatedBS.entityBreakdowns}
+                      total={consolidated.consolidatedBS.totalAssets}
+                      totalLabel="Total Assets"
+                      selectedEntityIds={consolidated.selectedEntityIds}
+                    />
+                    <ConsolidatedSectionRows
+                      label="Liabilities"
+                      rowKey="liabilityRows"
+                      entityBreakdowns={consolidated.consolidatedBS.entityBreakdowns}
+                      total={consolidated.consolidatedBS.totalLiabilities}
+                      totalLabel="Total Liabilities"
+                      selectedEntityIds={consolidated.selectedEntityIds}
+                    />
+                    <ConsolidatedSectionRows
+                      label="Equity"
+                      rowKey="equityRows"
+                      entityBreakdowns={consolidated.consolidatedBS.entityBreakdowns}
+                      total={consolidated.consolidatedBS.totalEquity}
+                      totalLabel="Total Equity"
+                      selectedEntityIds={consolidated.selectedEntityIds}
+                    />
+                    <EliminationRows eliminations={consolidated.consolidatedBS.eliminations} />
+                    <TableRow className="bg-muted/50 font-bold">
+                      <TableCell />
+                      <TableCell className="font-bold">
+                        Total Liabilities + Equity
+                      </TableCell>
+                      <TableCell />
+                      <TableCell className="text-right font-mono font-bold">
+                        {formatCurrency(
+                          consolidated.consolidatedBS.totalLiabilities +
+                            consolidated.consolidatedBS.totalEquity
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ─── Balance Sheet Tab (Single Entity) ────────── */}
+      {activeTab === "balance-sheet" && !isConsolidated && (
         <div className="space-y-6">
           {/* As-of date control */}
           <div className="flex items-center gap-3">
@@ -844,8 +1174,140 @@ export default function ReportsPage() {
         </div>
       )}
 
-      {/* ─── Cash Flow Tab ─────────────────────────────── */}
-      {activeTab === "cash-flow" && (
+      {/* ─── Cash Flow Tab (Consolidated) ───────────────── */}
+      {activeTab === "cash-flow" && isConsolidated && (
+        <div className="space-y-6">
+          {/* Date range controls */}
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm text-muted-foreground">From</span>
+            <Popover open={cfStartCalOpen} onOpenChange={setCfStartCalOpen}>
+              <PopoverTrigger
+                render={
+                  <Button variant="outline" className="h-9 gap-2 font-normal" />
+                }
+              >
+                <CalendarIcon className="h-4 w-4" />
+                {formatDateDisplay(cfStartDate)}
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={cfStartDate}
+                  onSelect={(date) => {
+                    if (date) {
+                      setCfStartDate(date);
+                      setCfStartCalOpen(false);
+                    }
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            <span className="text-sm text-muted-foreground">to</span>
+            <Popover open={cfEndCalOpen} onOpenChange={setCfEndCalOpen}>
+              <PopoverTrigger
+                render={
+                  <Button variant="outline" className="h-9 gap-2 font-normal" />
+                }
+              >
+                <CalendarIcon className="h-4 w-4" />
+                {formatDateDisplay(cfEndDate)}
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={cfEndDate}
+                  onSelect={(date) => {
+                    if (date) {
+                      setCfEndDate(date);
+                      setCfEndCalOpen(false);
+                    }
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {consolidated.loading && <ReportSkeleton />}
+          {consolidated.error && (
+            <p className="text-sm text-red-600">{consolidated.error}</p>
+          )}
+          {!consolidated.loading && consolidated.consolidatedCF && (
+            <>
+              <div className="flex justify-end">
+                <Button variant="outline" size="sm" className="gap-2" onClick={handleExportConsolidatedCF}>
+                  <Download className="h-4 w-4" />
+                  Export CSV
+                </Button>
+              </div>
+              <div className="overflow-x-auto rounded-md border">
+                <Table className="w-max min-w-full">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[70%]">Description</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <ConsolidatedCashFlowSection
+                      section={consolidated.consolidatedCF.operating}
+                      entityBreakdowns={consolidated.consolidatedCF.entityBreakdowns as unknown as { entityId: string; entityName: string; data: { operating: { label: string; items: { accountName: string; amount: number }[]; total: number }; investing: { label: string; items: { accountName: string; amount: number }[]; total: number }; financing: { label: string; items: { accountName: string; amount: number }[]; total: number } } }[]}
+                      sectionKey="operating"
+                      selectedEntityIds={consolidated.selectedEntityIds}
+                    />
+                    <ConsolidatedCashFlowSection
+                      section={consolidated.consolidatedCF.investing}
+                      entityBreakdowns={consolidated.consolidatedCF.entityBreakdowns as unknown as { entityId: string; entityName: string; data: { operating: { label: string; items: { accountName: string; amount: number }[]; total: number }; investing: { label: string; items: { accountName: string; amount: number }[]; total: number }; financing: { label: string; items: { accountName: string; amount: number }[]; total: number } } }[]}
+                      sectionKey="investing"
+                      selectedEntityIds={consolidated.selectedEntityIds}
+                    />
+                    <ConsolidatedCashFlowSection
+                      section={consolidated.consolidatedCF.financing}
+                      entityBreakdowns={consolidated.consolidatedCF.entityBreakdowns as unknown as { entityId: string; entityName: string; data: { operating: { label: string; items: { accountName: string; amount: number }[]; total: number }; investing: { label: string; items: { accountName: string; amount: number }[]; total: number }; financing: { label: string; items: { accountName: string; amount: number }[]; total: number } } }[]}
+                      sectionKey="financing"
+                      selectedEntityIds={consolidated.selectedEntityIds}
+                    />
+                    <EliminationRows eliminations={consolidated.consolidatedCF.eliminations} colSpan={2} />
+                    {/* Spacer */}
+                    <TableRow>
+                      <TableCell colSpan={2} className="h-2 p-0" />
+                    </TableRow>
+                    <TableRow className="bg-muted/50 font-bold">
+                      <TableCell className="font-bold">Net Change in Cash</TableCell>
+                      <TableCell
+                        className={cn(
+                          "text-right font-mono font-bold",
+                          consolidated.consolidatedCF.netChange < 0
+                            ? "text-red-600 dark:text-red-400"
+                            : "text-green-600 dark:text-green-400"
+                        )}
+                      >
+                        {formatCurrency(consolidated.consolidatedCF.netChange)}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>Beginning Cash Balance</TableCell>
+                      <TableCell className="text-right font-mono text-sm">
+                        {formatCurrency(consolidated.consolidatedCF.beginningCash)}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow className="bg-muted/50 font-bold">
+                      <TableCell className="font-bold">Ending Cash Balance</TableCell>
+                      <TableCell className="text-right font-mono font-bold">
+                        {formatCurrency(consolidated.consolidatedCF.endingCash)}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ─── Cash Flow Tab (Single Entity) ─────────────── */}
+      {activeTab === "cash-flow" && !isConsolidated && (
         <div className="space-y-6">
           {/* Date range controls */}
           <div className="flex flex-wrap items-center gap-3">
