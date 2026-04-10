@@ -26,3 +26,32 @@ export async function findAccessibleEntity(entityId: string, clerkUserId: string
   });
   return access?.entity ?? null;
 }
+
+/**
+ * Check if user has OWNER role on both entities (required for elimination rule management).
+ * Returns the internal user if authorized, null otherwise.
+ */
+export async function canManageEliminationRule(
+  clerkUserId: string,
+  entityAId: string,
+  entityBId: string
+) {
+  const user = await getInternalUser(clerkUserId);
+  if (!user) return null;
+
+  const accessRecords = await prisma.entityAccess.findMany({
+    where: {
+      userId: user.id,
+      entityId: { in: [entityAId, entityBId] },
+      role: "OWNER",
+    },
+    select: { entityId: true },
+  });
+
+  const ownerEntityIds = new Set(accessRecords.map((a) => a.entityId));
+  if (!ownerEntityIds.has(entityAId) || !ownerEntityIds.has(entityBId)) {
+    return null;
+  }
+
+  return user;
+}
