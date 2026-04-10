@@ -138,7 +138,7 @@ Plans:
 4. Consolidated reports are exportable as CSV
 5. Consolidation respects each entity's fiscal year end when filtering periods
 
-**Plans:** 4 plans
+**Plans:** 1/4 plans executed
 
 Plans:
 - [ ] 08-01-PLAN.md — EliminationRule schema, consolidated TypeScript types, Wave 0 test stubs
@@ -189,6 +189,6 @@ Plans:
 | 5. QBO Parity I | 5/5 | Complete    | 2026-03-29 |
 | 6. QBO Parity II | 3/3 | Complete   | 2026-03-29 |
 | 7. QBO Parity III | 4/4 | Complete   | 2026-04-10 |
-| 8. Family Office I | CONS | ○ Not started | — |
+| 8. Family Office I | 1/4 | In Progress|  |
 | 9. Family Office II | CAP | ○ Not started | — |
 | 10. Family Office III | PERF | ○ Not started | — |

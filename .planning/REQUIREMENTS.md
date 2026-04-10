@@ -177,11 +177,11 @@
 
 ## Phase 8 Requirements — Family Office I: Multi-Entity Consolidation
 
-- [ ] **CONS-01**: User can generate a consolidated P&L across any selected subset of entities
-- [ ] **CONS-02**: User can generate a consolidated Balance Sheet across any selected subset of entities
-- [ ] **CONS-03**: User can define intercompany elimination rules (e.g., eliminate loan between Entity A and Entity B)
-- [ ] **CONS-04**: Consolidated reports clearly distinguish entity-level rows from elimination rows
-- [ ] **CONS-05**: Consolidation respects the entity's fiscal year end when aggregating periods
+- [x] **CONS-01**: User can generate a consolidated P&L across any selected subset of entities
+- [x] **CONS-02**: User can generate a consolidated Balance Sheet across any selected subset of entities
+- [x] **CONS-03**: User can define intercompany elimination rules (e.g., eliminate loan between Entity A and Entity B)
+- [x] **CONS-04**: Consolidated reports clearly distinguish entity-level rows from elimination rows
+- [x] **CONS-05**: Consolidation respects the entity's fiscal year end when aggregating periods
 
 ---
 
