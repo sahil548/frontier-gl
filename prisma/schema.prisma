@@ -40,6 +40,7 @@ model Entity {
   subledgerItems SubledgerItem[]
   access         EntityAccess[]
   dimensions     Dimension[]
+  budgets        Budget[]
 
   @@index([createdById])
   @@index([isActive])
@@ -63,6 +64,7 @@ model Account {
   lineItems      JournalEntryLine[]
   templateLines  JournalEntryTemplateLine[]
   subledgerItems SubledgerItem[]
+  budgets        Budget[]
 
   @@unique([entityId, number])
   @@index([entityId, isActive])
@@ -334,6 +336,23 @@ model JournalEntryLineDimensionTag {
   @@index([journalEntryLineId])
   @@index([dimensionTagId])
   @@map("journal_entry_line_dimension_tags")
+}
+
+model Budget {
+  id        String   @id @default(cuid())
+  entityId  String
+  accountId String
+  year      Int
+  month     Int
+  amount    Decimal  @default(0) @db.Decimal(19, 4)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  entity    Entity   @relation(fields: [entityId], references: [id])
+  account   Account  @relation(fields: [accountId], references: [id])
+
+  @@unique([entityId, accountId, year, month])
+  @@index([entityId, year])
+  @@map("budgets")
 }
 
 enum EntityType {
