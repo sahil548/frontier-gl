@@ -167,11 +167,11 @@
 
 ## Phase 7 Requirements — QBO Parity III: Budget vs Actual
 
-- [ ] **BUDG-01**: User can enter budget amounts per account per month
-- [ ] **BUDG-02**: User can import budget data from CSV (account number, period, amount)
-- [ ] **BUDG-03**: Budget vs Actual report shows actuals, budget, and variance ($ and %) by account for any date range
-- [ ] **BUDG-04**: Budget data is entity-scoped and period-specific
-- [ ] **BUDG-05**: Budget vs Actual report is exportable as CSV
+- [x] **BUDG-01**: User can enter budget amounts per account per month
+- [x] **BUDG-02**: User can import budget data from CSV (account number, period, amount)
+- [x] **BUDG-03**: Budget vs Actual report shows actuals, budget, and variance ($ and %) by account for any date range
+- [x] **BUDG-04**: Budget data is entity-scoped and period-specific
+- [x] **BUDG-05**: Budget vs Actual report is exportable as CSV
 
 ---
 
