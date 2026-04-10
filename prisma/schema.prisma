@@ -41,6 +41,8 @@ model Entity {
   access         EntityAccess[]
   dimensions     Dimension[]
   budgets        Budget[]
+  eliminationRulesAsA EliminationRule[] @relation("EliminationRuleEntityA")
+  eliminationRulesAsB EliminationRule[] @relation("EliminationRuleEntityB")
 
   @@index([createdById])
   @@index([isActive])
@@ -65,6 +67,8 @@ model Account {
   templateLines  JournalEntryTemplateLine[]
   subledgerItems SubledgerItem[]
   budgets        Budget[]
+  eliminationRulesAsA EliminationRule[] @relation("EliminationRuleAccountA")
+  eliminationRulesAsB EliminationRule[] @relation("EliminationRuleAccountB")
 
   @@unique([entityId, number])
   @@index([entityId, isActive])
@@ -353,6 +357,28 @@ model Budget {
   @@unique([entityId, accountId, year, month])
   @@index([entityId, year])
   @@map("budgets")
+}
+
+model EliminationRule {
+  id         String   @id @default(cuid())
+  label      String
+  entityAId  String
+  accountAId String
+  entityBId  String
+  accountBId String
+  isActive   Boolean  @default(true)
+  createdBy  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  entityA    Entity   @relation("EliminationRuleEntityA", fields: [entityAId], references: [id])
+  accountA   Account  @relation("EliminationRuleAccountA", fields: [accountAId], references: [id])
+  entityB    Entity   @relation("EliminationRuleEntityB", fields: [entityBId], references: [id])
+  accountB   Account  @relation("EliminationRuleAccountB", fields: [accountBId], references: [id])
+
+  @@index([entityAId])
+  @@index([entityBId])
+  @@index([isActive])
+  @@map("elimination_rules")
 }
 
 enum EntityType {
