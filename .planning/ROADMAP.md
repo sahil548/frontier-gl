@@ -117,7 +117,7 @@ Plans:
 4. Budget data is entity-scoped; switching entities shows that entity's budgets
 5. Report is exportable as CSV
 
-**Plans:** 1/4 plans executed
+**Plans:** 2/4 plans executed
 
 Plans:
 - [ ] 07-00-PLAN.md — Wave 0 test stubs for all BUDG requirements (Nyquist compliance)
@@ -188,7 +188,7 @@ Plans:
 | 4. Platform | DASH (partial), PC, RPT, HOLD, TMPL, ACC | ✓ Complete | 2026-03-29 |
 | 5. QBO Parity I | 5/5 | Complete    | 2026-03-29 |
 | 6. QBO Parity II | 3/3 | Complete   | 2026-03-29 |
-| 7. QBO Parity III | 1/4 | In Progress|  |
+| 7. QBO Parity III | 2/4 | In Progress|  |
 | 8. Family Office I | CONS | ○ Not started | — |
 | 9. Family Office II | CAP | ○ Not started | — |
 | 10. Family Office III | PERF | ○ Not started | — |
