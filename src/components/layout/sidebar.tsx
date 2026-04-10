@@ -17,6 +17,7 @@ import {
   Import,
   RefreshCw,
   Settings,
+  ArrowLeftRight,
   ChevronLeft,
   ChevronRight,
   Menu,
@@ -48,6 +49,7 @@ const navItems = [
   { href: "/period-close", label: "Period Close", icon: Lock },
   { href: "/import", label: "Data", icon: Import },
   { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/settings/eliminations", label: "Eliminations", icon: ArrowLeftRight },
 ];
 
 function LedgerMark({ className }: { className?: string }) {
