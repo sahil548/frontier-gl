@@ -446,6 +446,181 @@ export async function getBalanceSheet(
 }
 
 // ---------------------------------------------------------------------------
+// Budget vs Actual
+// ---------------------------------------------------------------------------
+
+export interface BudgetVsActualRow {
+  accountId: string;
+  accountNumber: string;
+  accountName: string;
+  accountType: string; // "INCOME" | "EXPENSE"
+  actual: number;
+  budget: number;
+  varianceDollar: number;
+  variancePercent: number | null; // null when budget is zero
+}
+
+export interface BudgetVsActualTotals {
+  actual: number;
+  budget: number;
+  varianceDollar: number;
+  variancePercent: number | null;
+}
+
+export interface BudgetVsActualData {
+  incomeRows: BudgetVsActualRow[];
+  expenseRows: BudgetVsActualRow[];
+  totalIncome: BudgetVsActualTotals;
+  totalExpenses: BudgetVsActualTotals;
+  netIncome: BudgetVsActualTotals;
+}
+
+function computeVariancePercent(varianceDollar: number, budget: number): number | null {
+  if (budget === 0) return null;
+  return (varianceDollar / Math.abs(budget)) * 100;
+}
+
+/**
+ * Budget vs Actual report: joins actuals (from posted journal entries) with
+ * budget amounts for INCOME and EXPENSE accounts in the given date range.
+ *
+ * Variance conventions:
+ * - Income: varianceDollar = actual - budget (positive = favorable)
+ * - Expense: varianceDollar = budget - actual (positive = favorable)
+ */
+export async function getBudgetVsActual(
+  entityId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<BudgetVsActualData> {
+  // Compute which year/month combos fall in the date range.
+  // Include a month's budget if any day of that month falls within the range.
+  const startYear = startDate.getFullYear();
+  const startMonth = startDate.getMonth() + 1;
+  const endYear = endDate.getFullYear();
+  const endMonth = endDate.getMonth() + 1;
+
+  // Build the YYYYMM range for budget filtering
+  const startYM = startYear * 100 + startMonth;
+  const endYM = endYear * 100 + endMonth;
+
+  const rows = await prisma.$queryRaw<
+    {
+      account_id: string;
+      account_number: string;
+      account_name: string;
+      account_type: string;
+      actual_amount: unknown;
+      budget_amount: unknown;
+    }[]
+  >(
+    Prisma.sql`
+      SELECT
+        a.id                                       AS account_id,
+        a.number                                   AS account_number,
+        a.name                                     AS account_name,
+        a.type::text                               AS account_type,
+        COALESCE(SUM(
+          CASE
+            WHEN a.type = 'EXPENSE'
+              THEN jel.debit - jel.credit
+            ELSE jel.credit - jel.debit
+          END
+        ), 0)                                      AS actual_amount,
+        COALESCE(b.budget_total, 0)                AS budget_amount
+      FROM accounts a
+      LEFT JOIN (
+        journal_entry_lines jel
+        JOIN journal_entries je ON je.id = jel."journalEntryId"
+          AND je.status = 'POSTED'
+          AND je.date >= ${startDate}
+          AND je.date <= ${endDate}
+      ) ON jel."accountId" = a.id
+      LEFT JOIN (
+        SELECT "accountId", SUM(amount) AS budget_total
+        FROM budgets
+        WHERE "entityId" = ${entityId}
+          AND (year * 100 + month) >= ${startYM}
+          AND (year * 100 + month) <= ${endYM}
+        GROUP BY "accountId"
+      ) b ON b."accountId" = a.id
+      WHERE a."entityId" = ${entityId}
+        AND a."isActive" = true
+        AND a.type IN ('INCOME', 'EXPENSE')
+      GROUP BY a.id, a.number, a.name, a.type, b.budget_total
+      ORDER BY a.number
+    `
+  );
+
+  const incomeRows: BudgetVsActualRow[] = [];
+  const expenseRows: BudgetVsActualRow[] = [];
+
+  for (const r of rows) {
+    const actual = toNum(r.actual_amount);
+    const budget = toNum(r.budget_amount);
+    const isIncome = r.account_type === "INCOME";
+
+    // Income: favorable = actual > budget, Expense: favorable = actual < budget
+    const varianceDollar = isIncome ? actual - budget : budget - actual;
+    const variancePercent = computeVariancePercent(varianceDollar, budget);
+
+    const row: BudgetVsActualRow = {
+      accountId: r.account_id,
+      accountNumber: r.account_number,
+      accountName: r.account_name,
+      accountType: r.account_type,
+      actual,
+      budget,
+      varianceDollar,
+      variancePercent,
+    };
+
+    if (isIncome) {
+      incomeRows.push(row);
+    } else {
+      expenseRows.push(row);
+    }
+  }
+
+  // Section totals
+  const totalIncomeActual = incomeRows.reduce((s, r) => s + r.actual, 0);
+  const totalIncomeBudget = incomeRows.reduce((s, r) => s + r.budget, 0);
+  const totalIncomeVariance = totalIncomeActual - totalIncomeBudget;
+
+  const totalExpenseActual = expenseRows.reduce((s, r) => s + r.actual, 0);
+  const totalExpenseBudget = expenseRows.reduce((s, r) => s + r.budget, 0);
+  const totalExpenseVariance = totalExpenseBudget - totalExpenseActual;
+
+  // Net income
+  const netActual = totalIncomeActual - totalExpenseActual;
+  const netBudget = totalIncomeBudget - totalExpenseBudget;
+  const netVariance = netActual - netBudget;
+
+  return {
+    incomeRows,
+    expenseRows,
+    totalIncome: {
+      actual: totalIncomeActual,
+      budget: totalIncomeBudget,
+      varianceDollar: totalIncomeVariance,
+      variancePercent: computeVariancePercent(totalIncomeVariance, totalIncomeBudget),
+    },
+    totalExpenses: {
+      actual: totalExpenseActual,
+      budget: totalExpenseBudget,
+      varianceDollar: totalExpenseVariance,
+      variancePercent: computeVariancePercent(totalExpenseVariance, totalExpenseBudget),
+    },
+    netIncome: {
+      actual: netActual,
+      budget: netBudget,
+      varianceDollar: netVariance,
+      variancePercent: computeVariancePercent(netVariance, netBudget),
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Cash Flow Statement (Indirect Method)
 // ---------------------------------------------------------------------------
 
