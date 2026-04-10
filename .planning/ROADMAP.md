@@ -141,10 +141,10 @@ Plans:
 **Plans:** 4/4 plans complete
 
 Plans:
-- [ ] 08-01-PLAN.md — EliminationRule schema, consolidated TypeScript types, Wave 0 test stubs
-- [ ] 08-02-PLAN.md — Consolidated report query functions (P&L, BS, CF) with elimination logic and API routes
-- [ ] 08-03-PLAN.md — Elimination rules CRUD API and Settings > Intercompany Eliminations page
-- [ ] 08-04-PLAN.md — Reports page consolidated mode: entity chips, expandable rows, elimination section, CSV export
+- [x] 08-01-PLAN.md — EliminationRule schema, consolidated TypeScript types, Wave 0 test stubs
+- [x] 08-02-PLAN.md — Consolidated report query functions (P&L, BS, CF) with elimination logic and API routes
+- [x] 08-03-PLAN.md — Elimination rules CRUD API and Settings > Intercompany Eliminations page
+- [x] 08-04-PLAN.md — Reports page consolidated mode: entity chips, expandable rows, elimination section, CSV export
 
 ---
 
