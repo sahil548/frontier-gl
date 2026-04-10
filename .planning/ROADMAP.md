@@ -12,7 +12,7 @@ Frontier GL delivers a multi-entity general ledger that replaces QuickBooks Onli
 - [x] **Phase 4: Platform** — Dashboard, financial statements, period close, holdings, reconciliation, templates, access control (complete 2026-03-29)
 - [x] **Phase 5: QBO Parity I** — Dashboard charts, mobile layout, audit trail UI, attachments, recurring JE UI (completed 2026-03-29)
 - [x] **Phase 6: QBO Parity II** — Class/location tracking with segmented P&L (completed 2026-03-29)
-- [ ] **Phase 7: QBO Parity III** — Budget vs Actual
+- [x] **Phase 7: QBO Parity III** — Budget vs Actual (completed 2026-04-10)
 - [ ] **Phase 8: Family Office I** — Multi-entity consolidation with eliminations
 - [ ] **Phase 9: Family Office II** — Capital account statements for LP/partnership entities
 - [ ] **Phase 10: Family Office III** — Investment performance (IRR, MOIC, realized/unrealized gains)
@@ -117,7 +117,7 @@ Plans:
 4. Budget data is entity-scoped; switching entities shows that entity's budgets
 5. Report is exportable as CSV
 
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [ ] 07-00-PLAN.md — Wave 0 test stubs for all BUDG requirements (Nyquist compliance)
@@ -188,7 +188,7 @@ Plans:
 | 4. Platform | DASH (partial), PC, RPT, HOLD, TMPL, ACC | ✓ Complete | 2026-03-29 |
 | 5. QBO Parity I | 5/5 | Complete    | 2026-03-29 |
 | 6. QBO Parity II | 3/3 | Complete   | 2026-03-29 |
-| 7. QBO Parity III | 3/4 | In Progress|  |
+| 7. QBO Parity III | 4/4 | Complete   | 2026-04-10 |
 | 8. Family Office I | CONS | ○ Not started | — |
 | 9. Family Office II | CAP | ○ Not started | — |
 | 10. Family Office III | PERF | ○ Not started | — |
