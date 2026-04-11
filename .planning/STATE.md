@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 09-03-PLAN.md
-last_updated: "2026-04-11T06:12:03.561Z"
-last_activity: 2026-04-11 -- Phase 9 Plan 03 complete (Plaid integration + Connect Bank Feed UI)
+status: completed
+stopped_at: Completed 09-04-PLAN.md
+last_updated: "2026-04-11T06:20:35.422Z"
+last_activity: 2026-04-11 -- Phase 9 Plan 04 complete (Rules CRUD, management page, dual interface)
 progress:
   total_phases: 10
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 33
-  completed_plans: 31
+  completed_plans: 32
   percent: 94
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 9 of 10 (Bank Transactions -- Import & Plaid Integration)
-Plan: 3 of 4 complete
-Status: Executing Phase 9
-Last activity: 2026-04-11 -- Phase 9 Plan 03 complete (Plaid integration + Connect Bank Feed UI)
+Plan: 4 of 4 complete
+Status: Phase 9 Complete
+Last activity: 2026-04-11 -- Phase 9 Plan 04 complete (Rules CRUD, management page, dual interface)
 
 Progress: [█████████░] 94%
 
@@ -80,6 +80,7 @@ Progress: [█████████░] 94%
 | Phase 09 P01 | 6min | 2 tasks | 11 files |
 | Phase 09 P02 | 6min | 2 tasks | 9 files |
 | Phase 09 P03 | 6min | 2 tasks | 14 files |
+| Phase 09 P04 | 5min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -160,6 +161,9 @@ Recent decisions affecting current work:
 - [Phase 09-02]: TransactionTable compact prop hides checkboxes, source, bulk bar; limits to 10 rows for Holdings reuse
 - [Phase 09-02]: Module-level Map cache with 60s TTL for account combobox on Bank Feed page
 - [Phase 09-02]: Prisma.JsonNull for nullable JSON dimensionTags field in categorization rule creation
+- [Phase 09]: Retroactive rule matching queries PENDING transactions via subledgerItem.account.entityId relation path
+- [Phase 09]: CategorizePrompt strips common prefixes (POS/ACH/WIRE) and uppercases pattern for consistent rule matching
+- [Phase 09]: Dual interface: Bank Feed inbox queue AND Holdings inline display for same transaction data
 
 ### Pending Todos
 
@@ -172,6 +176,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-11T06:12:03.558Z
-Stopped at: Completed 09-03-PLAN.md
+Last session: 2026-04-11T06:20:35.419Z
+Stopped at: Completed 09-04-PLAN.md
 Resume file: None

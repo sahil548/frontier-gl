@@ -14,7 +14,7 @@ Frontier GL delivers a multi-entity general ledger that replaces QuickBooks Onli
 - [x] **Phase 6: QBO Parity II** — Class/location tracking with segmented P&L (completed 2026-03-29)
 - [x] **Phase 7: QBO Parity III** — Budget vs Actual (completed 2026-04-10)
 - [x] **Phase 8: Family Office I** — Multi-entity consolidation with eliminations (completed 2026-04-10)
-- [ ] **Phase 9: Bank Transactions** — CSV import and Plaid integration for automatic bank feeds
+- [x] **Phase 9: Bank Transactions** — CSV import and Plaid integration for automatic bank feeds (completed 2026-04-11)
 - [ ] **Phase 10: Family Office II** — Capital account statements for LP/partnership entities
 
 ---
@@ -159,7 +159,7 @@ Plans:
 4. Categorization rules auto-apply to matching transactions (e.g., "AMAZON" → Office Supplies)
 5. Duplicate detection prevents the same transaction from being imported twice
 
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [ ] 09-01-PLAN.md — Schema (BankTransaction, PlaidConnection, CategorizationRule), Zod validators, core lib modules + test stubs
@@ -196,5 +196,5 @@ Plans:
 | 6. QBO Parity II | 3/3 | Complete   | 2026-03-29 |
 | 7. QBO Parity III | 4/4 | Complete   | 2026-04-10 |
 | 8. Family Office I | 4/4 | Complete   | 2026-04-10 |
-| 9. Bank Transactions | 3/4 | In Progress|  |
+| 9. Bank Transactions | 4/4 | Complete   | 2026-04-11 |
 | 10. Family Office II | CAP | ○ Not started | — |
