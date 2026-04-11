@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/utils/accounting";
 import { cn } from "@/lib/utils";
+import { ConnectBankFeed } from "@/components/holdings/connect-bank-feed";
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -72,6 +73,12 @@ interface HoldingItem {
   isActive: boolean;
   account?: { id: string; number: string; name: string; type: string };
   _reconciliationCount: number;
+  plaidConnection?: {
+    status: "ACTIVE" | "ERROR" | "DISCONNECTED";
+    institutionName: string | null;
+    lastSyncAt: string | null;
+    error: string | null;
+  } | null;
 }
 
 interface Position {
@@ -963,15 +970,27 @@ export default function HoldingsPage() {
                         {formatCurrency(parseFloat(item.currentBalance))}
                       </TableCell>
                       <TableCell>
-                        {item._reconciliationCount > 0 ? (
-                          <Badge variant="secondary" className="gap-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                            <ShieldCheck className="h-3 w-3" /> Reconciled
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="gap-1 text-xs">
-                            <AlertCircle className="h-3 w-3" /> Unreconciled
-                          </Badge>
-                        )}
+                        <div className="flex flex-col gap-1">
+                          {item._reconciliationCount > 0 ? (
+                            <Badge variant="secondary" className="gap-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                              <ShieldCheck className="h-3 w-3" /> Reconciled
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="gap-1 text-xs">
+                              <AlertCircle className="h-3 w-3" /> Unreconciled
+                            </Badge>
+                          )}
+                          {item.itemType === "BANK_ACCOUNT" && (
+                            <ConnectBankFeed
+                              subledgerItemId={item.id}
+                              connectionStatus={item.plaidConnection?.status ?? null}
+                              institutionName={item.plaidConnection?.institutionName}
+                              lastSyncAt={item.plaidConnection?.lastSyncAt}
+                              error={item.plaidConnection?.error}
+                              onSyncComplete={fetchItems}
+                            />
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">

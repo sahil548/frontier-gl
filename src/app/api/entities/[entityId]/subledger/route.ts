@@ -50,6 +50,14 @@ function serialize(item: any) {
       ? { id: item.account.id, number: item.account.number, name: item.account.name, type: item.account.type }
       : undefined,
     _reconciliationCount: item._count?.reconciliations ?? 0,
+    plaidConnection: item.plaidConnection
+      ? {
+          status: item.plaidConnection.status,
+          institutionName: item.plaidConnection.institutionName,
+          lastSyncAt: item.plaidConnection.lastSyncAt?.toISOString() ?? null,
+          error: item.plaidConnection.error,
+        }
+      : null,
   };
 }
 
@@ -83,6 +91,9 @@ export async function GET(
     include: {
       account: { select: { id: true, number: true, name: true, type: true } },
       _count: { select: { reconciliations: true } },
+      plaidConnection: {
+        select: { status: true, institutionName: true, lastSyncAt: true, error: true },
+      },
     },
     orderBy: [{ account: { number: "asc" } }, { name: "asc" }],
   });
