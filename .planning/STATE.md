@@ -156,6 +156,10 @@ Recent decisions affecting current work:
 - [Phase 09]: JE split validation uses 0.005 tolerance for floating point comparison
 - [Phase 09]: Encryption format: iv_hex:authTag_hex:encrypted_hex concatenated string for AES-256-GCM token storage
 - [Phase 09]: Lazy Plaid Link token fetch: only request on button click, not on component mount
+- [Phase 09-02]: Categorization rules API added (Rule 2 deviation) for CategorizePrompt rule creation
+- [Phase 09-02]: TransactionTable compact prop hides checkboxes, source, bulk bar; limits to 10 rows for Holdings reuse
+- [Phase 09-02]: Module-level Map cache with 60s TTL for account combobox on Bank Feed page
+- [Phase 09-02]: Prisma.JsonNull for nullable JSON dimensionTags field in categorization rule creation
 
 ### Pending Todos
 
