@@ -474,6 +474,7 @@ export default function BankFeedPage() {
           accountId={categorizePrompt.accountId}
           accountName={categorizePrompt.accountName}
           onDismiss={() => setCategorizePrompt(null)}
+          onRuleCreated={refreshAll}
         />
       )}
 
