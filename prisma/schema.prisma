@@ -41,8 +41,9 @@ model Entity {
   access         EntityAccess[]
   dimensions     Dimension[]
   budgets        Budget[]
-  eliminationRulesAsA EliminationRule[] @relation("EliminationRuleEntityA")
-  eliminationRulesAsB EliminationRule[] @relation("EliminationRuleEntityB")
+  eliminationRulesAsA  EliminationRule[]    @relation("EliminationRuleEntityA")
+  eliminationRulesAsB  EliminationRule[]    @relation("EliminationRuleEntityB")
+  categorizationRules  CategorizationRule[]
 
   @@index([createdById])
   @@index([isActive])
@@ -67,8 +68,10 @@ model Account {
   templateLines  JournalEntryTemplateLine[]
   subledgerItems SubledgerItem[]
   budgets        Budget[]
-  eliminationRulesAsA EliminationRule[] @relation("EliminationRuleAccountA")
-  eliminationRulesAsB EliminationRule[] @relation("EliminationRuleAccountB")
+  eliminationRulesAsA  EliminationRule[]    @relation("EliminationRuleAccountA")
+  eliminationRulesAsB  EliminationRule[]    @relation("EliminationRuleAccountB")
+  bankTransactions     BankTransaction[]
+  categorizationRules  CategorizationRule[]
 
   @@unique([entityId, number])
   @@index([entityId, isActive])
@@ -108,9 +111,10 @@ model JournalEntry {
   reversedBy   JournalEntry?       @relation("Reversal")
   templateId   String?
   template     JournalEntryTemplate? @relation(fields: [templateId], references: [id])
-  auditEntries JournalEntryAudit[]
-  lineItems    JournalEntryLine[]
-  attachments  Attachment[]
+  auditEntries    JournalEntryAudit[]
+  lineItems       JournalEntryLine[]
+  attachments     Attachment[]
+  bankTransaction BankTransaction?
 
   @@unique([entityId, entryNumber])
   @@index([entityId, status])
@@ -207,8 +211,10 @@ model SubledgerItem {
   updatedAt       DateTime            @updatedAt
   entity          Entity              @relation(fields: [entityId], references: [id])
   account         Account             @relation(fields: [accountId], references: [id])
-  reconciliations BankReconciliation[]
-  positions       Position[]
+  reconciliations  BankReconciliation[]
+  positions        Position[]
+  bankTransactions BankTransaction[]
+  plaidConnection  PlaidConnection?
 
   @@index([entityId, accountId])
   @@index([entityId, itemType])
@@ -478,4 +484,94 @@ enum EntityAccessRole {
   OWNER
   EDITOR
   VIEWER
+}
+
+enum TransactionSource {
+  CSV
+  PLAID
+}
+
+enum TransactionStatus {
+  PENDING
+  CATEGORIZED
+  POSTED
+  EXCLUDED
+}
+
+enum PlaidConnectionStatus {
+  ACTIVE
+  ERROR
+  DISCONNECTED
+}
+
+model BankTransaction {
+  id                    String            @id @default(cuid())
+  subledgerItemId       String
+  externalId            String?
+  date                  DateTime          @db.Date
+  description           String
+  amount                Decimal           @db.Decimal(19, 4)
+  originalDescription   String?
+  merchantName          String?
+  category              String?
+  source                TransactionSource
+  status                TransactionStatus @default(PENDING)
+  accountId             String?
+  ruleId                String?
+  isSplit               Boolean           @default(false)
+  parentTransactionId   String?
+  journalEntryId        String?           @unique
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  subledgerItem         SubledgerItem     @relation(fields: [subledgerItemId], references: [id])
+  account               Account?          @relation(fields: [accountId], references: [id])
+  rule                  CategorizationRule? @relation(fields: [ruleId], references: [id])
+  journalEntry          JournalEntry?     @relation(fields: [journalEntryId], references: [id])
+  parentTransaction     BankTransaction?  @relation("TransactionSplit", fields: [parentTransactionId], references: [id])
+  childTransactions     BankTransaction[] @relation("TransactionSplit")
+
+  @@unique([subledgerItemId, externalId])
+  @@index([subledgerItemId, status])
+  @@index([subledgerItemId, date])
+  @@map("bank_transactions")
+}
+
+model PlaidConnection {
+  id              String                @id @default(cuid())
+  subledgerItemId String                @unique
+  accessToken     String
+  itemId          String
+  institutionId   String?
+  institutionName String?
+  plaidAccountId  String?
+  syncCursor      String?
+  lastSyncAt      DateTime?
+  status          PlaidConnectionStatus @default(ACTIVE)
+  error           String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  subledgerItem   SubledgerItem         @relation(fields: [subledgerItemId], references: [id])
+
+  @@index([status])
+  @@map("plaid_connections")
+}
+
+model CategorizationRule {
+  id              String            @id @default(cuid())
+  entityId        String
+  pattern         String
+  amountMin       Decimal?          @db.Decimal(19, 4)
+  amountMax       Decimal?          @db.Decimal(19, 4)
+  accountId       String
+  dimensionTags   Json?
+  isActive        Boolean           @default(true)
+  priority        Int               @default(0)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  entity          Entity            @relation(fields: [entityId], references: [id])
+  account         Account           @relation(fields: [accountId], references: [id])
+  bankTransactions BankTransaction[]
+
+  @@index([entityId, isActive])
+  @@map("categorization_rules")
 }
