@@ -159,7 +159,7 @@ Plans:
 4. Categorization rules auto-apply to matching transactions (e.g., "AMAZON" → Office Supplies)
 5. Duplicate detection prevents the same transaction from being imported twice
 
-**Plans:** 4 plans
+**Plans:** 3/4 plans executed
 
 Plans:
 - [ ] 09-01-PLAN.md — Schema (BankTransaction, PlaidConnection, CategorizationRule), Zod validators, core lib modules + test stubs
@@ -196,5 +196,5 @@ Plans:
 | 6. QBO Parity II | 3/3 | Complete   | 2026-03-29 |
 | 7. QBO Parity III | 4/4 | Complete   | 2026-04-10 |
 | 8. Family Office I | 4/4 | Complete   | 2026-04-10 |
-| 9. Bank Transactions | BANK | ○ Planned | — |
+| 9. Bank Transactions | 3/4 | In Progress|  |
 | 10. Family Office II | CAP | ○ Not started | — |

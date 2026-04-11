@@ -188,7 +188,7 @@
 ## Phase 9 Requirements — Bank Transactions: Import & Plaid
 
 - [x] **BANK-01**: User can upload a bank statement CSV; system parses transactions into a review queue
-- [ ] **BANK-02**: User can connect a bank account via Plaid Link; transactions sync automatically on a schedule
+- [x] **BANK-02**: User can connect a bank account via Plaid Link; transactions sync automatically on a schedule
 - [ ] **BANK-03**: User can categorize transactions (assign GL account) and post them as journal entries (debit expense/asset, credit bank account)
 - [x] **BANK-04**: Categorization rules auto-apply to matching transactions based on description patterns
 - [x] **BANK-05**: Duplicate detection prevents re-importing the same transaction (by external ID or amount+date+description hash)
