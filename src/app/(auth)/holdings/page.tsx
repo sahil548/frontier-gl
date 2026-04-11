@@ -55,6 +55,7 @@ import {
 import { formatCurrency } from "@/lib/utils/accounting";
 import { cn } from "@/lib/utils";
 import { ConnectBankFeed } from "@/components/holdings/connect-bank-feed";
+import { InlineBankTransactions } from "@/components/holdings/inline-bank-transactions";
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -1008,12 +1009,24 @@ export default function HoldingsPage() {
                       </TableCell>
                     </TableRow>
                     {isExpanded && expandable && (
-                      <PositionsRow
-                        key={`pos-${item.id}`}
-                        entityId={currentEntityId}
-                        item={item}
-                        onBalanceUpdated={fetchItems}
-                      />
+                      <>
+                        <PositionsRow
+                          key={`pos-${item.id}`}
+                          entityId={currentEntityId}
+                          item={item}
+                          onBalanceUpdated={fetchItems}
+                        />
+                        {item.itemType === "BANK_ACCOUNT" && (
+                          <TableRow key={`txns-${item.id}`}>
+                            <TableCell colSpan={8} className="p-0">
+                              <div className="border-t bg-muted/10 px-6 py-4">
+                                <h4 className="text-sm font-medium mb-3">Recent Transactions</h4>
+                                <InlineBankTransactions entityId={currentEntityId} subledgerItemId={item.id} />
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </>
                     )}
                   </React.Fragment>
                 );
