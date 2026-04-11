@@ -14,8 +14,8 @@ Frontier GL delivers a multi-entity general ledger that replaces QuickBooks Onli
 - [x] **Phase 6: QBO Parity II** — Class/location tracking with segmented P&L (completed 2026-03-29)
 - [x] **Phase 7: QBO Parity III** — Budget vs Actual (completed 2026-04-10)
 - [x] **Phase 8: Family Office I** — Multi-entity consolidation with eliminations (completed 2026-04-10)
-- [ ] **Phase 9: Family Office II** — Capital account statements for LP/partnership entities
-- [ ] **Phase 10: Family Office III** — Investment performance (IRR, MOIC, realized/unrealized gains)
+- [ ] **Phase 9: Bank Transactions** — CSV import and Plaid integration for automatic bank feeds
+- [ ] **Phase 10: Family Office II** — Capital account statements for LP/partnership entities
 
 ---
 
@@ -148,9 +148,24 @@ Plans:
 
 ---
 
-### Phase 9: Family Office II — Capital Accounts
-**Goal:** LP and partnership entities can track each partner's capital account balance with contributions, distributions, and allocated income — a core deliverable for fund accounting that QBO has no equivalent for
+### Phase 9: Bank Transactions — Import & Plaid Integration
+**Goal:** CFO can import bank transactions (CSV or automatic Plaid bank feed), review and categorize them, and post them as journal entries — eliminating manual data entry for the most common accounting workflow
 **Depends on:** Phase 8
+**Requirements:** BANK-01–05
+**Success Criteria:**
+1. User can upload a bank statement CSV and see parsed transactions in a review queue
+2. User can connect a bank account via Plaid Link and transactions sync automatically
+3. Each transaction can be categorized (assigned an account) and posted as a journal entry
+4. Categorization rules auto-apply to matching transactions (e.g., "AMAZON" → Office Supplies)
+5. Duplicate detection prevents the same transaction from being imported twice
+
+**Plans:** TBD
+
+---
+
+### Phase 10: Family Office II — Capital Accounts
+**Goal:** LP and partnership entities can track each partner's capital account balance with contributions, distributions, and allocated income — a core deliverable for fund accounting that QBO has no equivalent for
+**Depends on:** Phase 9
 **Requirements:** CAP-01–05
 **Success Criteria:**
 1. User can define partners with name and ownership % for any LP/Partnership entity
@@ -158,21 +173,6 @@ Plans:
 3. Income allocation defaults to pro-rata by ownership %; user can override with a custom waterfall
 4. Capital account balances tie back to equity accounts in the GL — no reconciliation gap
 5. Statements are exportable as CSV and PDF
-
-**Plans:** TBD
-
----
-
-### Phase 10: Family Office III — Investment Performance
-**Goal:** Investment holdings show IRR, MOIC, and realized/unrealized gains — giving the family office a single view of financial performance that previously required a separate portfolio management system
-**Depends on:** Phase 9
-**Requirements:** PERF-01–05
-**Success Criteria:**
-1. Each investment holding shows calculated IRR and MOIC based on recorded cash flows
-2. Each position shows cost basis, current market value, unrealized gain/loss, and % return
-3. User can record cash flow events (capital calls, distributions) against a holding for IRR calculation
-4. Portfolio summary page shows total cost basis, total market value, total unrealized gain/loss across all holdings
-5. Performance data is exportable as CSV
 
 **Plans:** TBD
 
@@ -190,5 +190,5 @@ Plans:
 | 6. QBO Parity II | 3/3 | Complete   | 2026-03-29 |
 | 7. QBO Parity III | 4/4 | Complete   | 2026-04-10 |
 | 8. Family Office I | 4/4 | Complete   | 2026-04-10 |
-| 9. Family Office II | CAP | ○ Not started | — |
-| 10. Family Office III | PERF | ○ Not started | — |
+| 9. Bank Transactions | BANK | ○ Not started | — |
+| 10. Family Office II | CAP | ○ Not started | — |
