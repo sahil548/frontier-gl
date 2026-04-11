@@ -15,7 +15,8 @@ function serializeDecimal(val: Prisma.Decimal | null): string | null {
 /**
  * GET /api/entities/:entityId/bank-transactions/rules
  *
- * List all categorization rules for this entity.
+ * List all active categorization rules for this entity.
+ * Includes account relation and matched transaction count.
  */
 export async function GET(
   _request: Request,
@@ -35,11 +36,12 @@ export async function GET(
   if (!access) return errorResponse("Entity not found", 403);
 
   const rules = await prisma.categorizationRule.findMany({
-    where: { entityId },
+    where: { entityId, isActive: true },
     include: {
-      account: { select: { id: true, number: true, name: true } },
+      account: { select: { id: true, number: true, name: true, type: true } },
+      _count: { select: { bankTransactions: true } },
     },
-    orderBy: [{ priority: "asc" }, { createdAt: "desc" }],
+    orderBy: [{ priority: "asc" }, { createdAt: "asc" }],
   });
 
   return successResponse(
@@ -53,6 +55,7 @@ export async function GET(
       dimensionTags: r.dimensionTags,
       isActive: r.isActive,
       priority: r.priority,
+      matchedCount: r._count.bankTransactions,
       createdAt: r.createdAt.toISOString(),
     }))
   );
@@ -62,6 +65,7 @@ export async function GET(
  * POST /api/entities/:entityId/bank-transactions/rules
  *
  * Create a new categorization rule.
+ * Optionally retroactively matches existing PENDING transactions.
  */
 export async function POST(
   request: Request,
@@ -98,11 +102,28 @@ export async function POST(
   // Verify account belongs to this entity
   const account = await prisma.account.findFirst({
     where: { id: parsed.data.accountId, entityId, isActive: true },
-    select: { id: true },
+    select: { id: true, number: true, name: true },
   });
 
   if (!account) {
     return errorResponse("Account not found or does not belong to this entity", 400);
+  }
+
+  // Verify dimension tags if provided
+  if (parsed.data.dimensionTags) {
+    for (const [dimensionId, tagId] of Object.entries(parsed.data.dimensionTags)) {
+      const tag = await prisma.dimensionTag.findFirst({
+        where: {
+          id: tagId,
+          dimensionId,
+          dimension: { entityId },
+          isActive: true,
+        },
+      });
+      if (!tag) {
+        return errorResponse(`Invalid dimension tag: ${tagId} for dimension ${dimensionId}`, 400);
+      }
+    }
   }
 
   // Get next priority (highest + 1)
@@ -124,11 +145,42 @@ export async function POST(
     },
   });
 
-  // Fetch account details for response
-  const ruleAccount = await prisma.account.findUnique({
-    where: { id: rule.accountId },
-    select: { id: true, number: true, name: true },
+  // Retroactively match existing PENDING transactions for this entity
+  const patternLower = parsed.data.pattern.toLowerCase();
+  const pendingTxns = await prisma.bankTransaction.findMany({
+    where: {
+      subledgerItem: { account: { entityId } },
+      status: "PENDING",
+      accountId: null,
+    },
+    select: { id: true, description: true, amount: true },
   });
+
+  let matchedCount = 0;
+  const matchedIds: string[] = [];
+  for (const txn of pendingTxns) {
+    if (!txn.description.toLowerCase().includes(patternLower)) continue;
+
+    // Check amount range
+    const absAmount = Math.abs(txn.amount.toNumber());
+    if (parsed.data.amountMin !== undefined && absAmount < parsed.data.amountMin) continue;
+    if (parsed.data.amountMax !== undefined && absAmount > parsed.data.amountMax) continue;
+
+    matchedIds.push(txn.id);
+    matchedCount++;
+  }
+
+  // Batch update matched transactions
+  if (matchedIds.length > 0) {
+    await prisma.bankTransaction.updateMany({
+      where: { id: { in: matchedIds } },
+      data: {
+        accountId: parsed.data.accountId,
+        ruleId: rule.id,
+        status: "CATEGORIZED",
+      },
+    });
+  }
 
   return successResponse(
     {
@@ -137,10 +189,11 @@ export async function POST(
       amountMin: serializeDecimal(rule.amountMin),
       amountMax: serializeDecimal(rule.amountMax),
       accountId: rule.accountId,
-      account: ruleAccount,
+      account,
       dimensionTags: rule.dimensionTags,
       isActive: rule.isActive,
       priority: rule.priority,
+      matchedCount,
     },
     201
   );
