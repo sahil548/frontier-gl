@@ -1,4 +1,5 @@
 import Papa from "papaparse";
+import { csvRowSchema } from "@/validators/bank-transaction";
 
 /**
  * Parsed bank statement row.
@@ -138,8 +139,13 @@ export function parseBankStatementCsv(csvText: string): ParsedBankRow[] {
     const dateVal = row[columns.date]?.trim();
     const descVal = row[columns.description]?.trim();
 
-    // Skip rows with missing essential fields
-    if (!dateVal || !descVal) continue;
+    // Validate row against Zod schema — skip invalid rows
+    const validation = csvRowSchema.safeParse({
+      date: dateVal,
+      description: descVal,
+      amount: columns.amount ? row[columns.amount] : "0",
+    });
+    if (!validation.success) continue;
 
     let amount: number;
 
