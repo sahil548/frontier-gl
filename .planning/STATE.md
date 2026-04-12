@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-05-PLAN.md
-last_updated: "2026-04-12T21:06:17.641Z"
-last_activity: 2026-04-12 -- Phase 11 complete (auto-reconcile, badges, holdings navigation)
+stopped_at: Completed 12-00-PLAN.md
+last_updated: "2026-04-12T21:14:54.419Z"
+last_activity: 2026-04-12 -- Phase 11 gap closure (inline position-first categorization, positionId wiring)
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 47
-  completed_plans: 40
+  completed_plans: 41
   percent: 85
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Accountants can view, manage, and close books across all family office entities in one fast, purpose-built GL -- eliminating the per-entity cost and friction of QuickBooks Online.
-**Current focus:** Phase 11 complete -- categorization UX & opening balances
+**Current focus:** Phase 12 -- Reporting Fixes & Onboarding Wizard
 
 ## Current Position
 
-Phase: 11 of 12 (Categorization UX & Opening Balances)
-Plan: 5 of 5 complete
+Phase: 12 of 12 (Reporting Fixes & Onboarding Wizard)
+Plan: 1 of 6 complete
 Status: Executing
-Last activity: 2026-04-12 -- Phase 11 gap closure (inline position-first categorization, positionId wiring)
+Last activity: 2026-04-12 -- Wave 0 test stubs for Phase 12 (39 todos across 9 files)
 
-Progress: [█████████░] 85%
+Progress: [█████████░] 87%
 
 ## Performance Metrics
 
@@ -89,6 +89,7 @@ Progress: [█████████░] 85%
 | Phase 11 P02 | 9min | 2 tasks | 8 files |
 | Phase 11 P04 | 4min | 2 tasks | 7 files |
 | Phase 11 P05 | 3min | 2 tasks | 2 files |
+| Phase 12 P00 | 3min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -196,6 +197,7 @@ Recent decisions affecting current work:
 - [Phase 11]: [Phase 11-04]: Recon badges use compact colored dots in compact mode, full text Badge in normal mode
 - [Phase 11]: Position label resolved in handleCategorize via positions API fetch rather than passing through onCategorize callback
 - [Phase 11]: Per-row target mode state as Record<string, mode> at component level for inline position/account toggle
+- [Phase 12]: Commented-out imports in test stubs to avoid parse errors before implementation files exist (Phase 7 pattern continued)
 
 ### Pending Todos
 
@@ -208,6 +210,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-12T21:06:17.639Z
-Stopped at: Completed 11-05-PLAN.md
+Last session: 2026-04-12T21:14:54.417Z
+Stopped at: Completed 12-00-PLAN.md
 Resume file: None
