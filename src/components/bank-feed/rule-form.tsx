@@ -13,6 +13,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { AccountCombobox } from "@/components/ui/account-combobox";
+import { PositionPicker } from "@/components/bank-feed/position-picker";
 import { DimensionCombobox } from "@/components/journal-entries/dimension-combobox";
 
 // ---- Types ----------------------------------------------------------------
@@ -70,6 +71,8 @@ async function fetchAccountsCached(entityId: string): Promise<AccountOption[]> {
 
 // ---- Component ------------------------------------------------------------
 
+type TargetMode = "position" | "account";
+
 export function RuleForm({
   mode,
   entityId,
@@ -80,11 +83,18 @@ export function RuleForm({
 }: RuleFormProps) {
   const isEdit = mode === "edit" && editRule?.id;
 
+  // Determine initial target mode based on whether editRule has positionId
+  const initialMode: TargetMode =
+    isEdit && editRule?.positionId ? "position" : isEdit && !editRule?.positionId ? "account" : "position";
+
   // Form fields
   const [pattern, setPattern] = useState("");
   const [amountMin, setAmountMin] = useState("");
   const [amountMax, setAmountMax] = useState("");
+  const [targetMode, setTargetMode] = useState<TargetMode>(initialMode);
   const [accountId, setAccountId] = useState<string>("");
+  const [positionId, setPositionId] = useState<string | null>(null);
+  const [resolvedAccountId, setResolvedAccountId] = useState<string | null>(null);
   const [dimensionTags, setDimensionTags] = useState<Record<string, string>>({});
 
   // Data
@@ -92,7 +102,7 @@ export function RuleForm({
   const [dimensions, setDimensions] = useState<DimensionInfo[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch accounts
+  // Fetch accounts (only when in account mode or always for fallback)
   useEffect(() => {
     if (!entityId || !open) return;
     fetchAccountsCached(entityId).then(setAccounts);
@@ -125,14 +135,31 @@ export function RuleForm({
         setPattern(editRule.pattern);
         setAmountMin(editRule.amountMin != null ? String(editRule.amountMin) : "");
         setAmountMax(editRule.amountMax != null ? String(editRule.amountMax) : "");
-        setAccountId(editRule.accountId);
+        setAccountId(editRule.accountId || "");
+        setPositionId(editRule.positionId ?? null);
+        setResolvedAccountId(null);
         setDimensionTags(editRule.dimensionTags ?? {});
+        // Set mode based on whether editing a position-targeted rule
+        setTargetMode(editRule.positionId ? "position" : "account");
+      } else if (editRule) {
+        // Pre-filled from CategorizePrompt (create mode with data)
+        setPattern(editRule.pattern);
+        setAmountMin("");
+        setAmountMax("");
+        setAccountId(editRule.accountId || "");
+        setPositionId(editRule.positionId ?? null);
+        setResolvedAccountId(null);
+        setDimensionTags(editRule.dimensionTags ?? {});
+        setTargetMode(editRule.positionId ? "position" : "account");
       } else {
         setPattern("");
         setAmountMin("");
         setAmountMax("");
         setAccountId("");
+        setPositionId(null);
+        setResolvedAccountId(null);
         setDimensionTags({});
+        setTargetMode("position");
       }
     }
   }, [open, isEdit, editRule]);
@@ -144,6 +171,11 @@ export function RuleForm({
     []
   );
 
+  const handlePositionChange = (pId: string | null, accId: string | null) => {
+    setPositionId(pId);
+    setResolvedAccountId(accId);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -151,7 +183,13 @@ export function RuleForm({
       toast.error("Pattern is required");
       return;
     }
-    if (!accountId) {
+
+    // Validate target selection based on mode
+    if (targetMode === "position" && !positionId) {
+      toast.error("Position is required");
+      return;
+    }
+    if (targetMode === "account" && !accountId) {
       toast.error("Account is required");
       return;
     }
@@ -160,13 +198,21 @@ export function RuleForm({
     try {
       const body: Record<string, unknown> = {
         pattern: pattern.trim(),
-        accountId,
       };
+
+      // Set target based on mode
+      if (targetMode === "position") {
+        body.positionId = positionId;
+        // Include resolved accountId as a display cache if available
+        if (resolvedAccountId) body.accountId = resolvedAccountId;
+      } else {
+        body.accountId = accountId;
+      }
 
       if (amountMin) body.amountMin = parseFloat(amountMin);
       if (amountMax) body.amountMax = parseFloat(amountMax);
 
-      // Only include non-empty dimension tags
+      // Only include non-empty dimension tags (preserved in both modes)
       const activeTags: Record<string, string> = {};
       for (const [dimId, tagId] of Object.entries(dimensionTags)) {
         if (tagId) activeTags[dimId] = tagId;
@@ -266,18 +312,39 @@ export function RuleForm({
             </p>
           </div>
 
-          {/* Account */}
+          {/* Target: Position or GL Account */}
           <div className="space-y-2">
-            <Label>GL Account</Label>
-            <AccountCombobox
-              accounts={accounts}
-              value={accountId || null}
-              onSelect={setAccountId}
-              placeholder="Select account..."
-            />
+            <Label>
+              {targetMode === "position" ? "Holding / Position" : "GL Account"}
+            </Label>
+
+            {targetMode === "position" ? (
+              <PositionPicker
+                entityId={entityId}
+                value={positionId}
+                onChange={handlePositionChange}
+              />
+            ) : (
+              <AccountCombobox
+                accounts={accounts}
+                value={accountId || null}
+                onSelect={setAccountId}
+                placeholder="Select account..."
+              />
+            )}
+
+            <button
+              type="button"
+              className="text-xs text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+              onClick={() => {
+                setTargetMode((prev) => (prev === "position" ? "account" : "position"));
+              }}
+            >
+              {targetMode === "position" ? "Use GL account" : "Use holding/position"}
+            </button>
           </div>
 
-          {/* Dimension Tags */}
+          {/* Dimension Tags -- visible in both position mode and account mode */}
           {dimensions.length > 0 && (
             <div className="space-y-3">
               <Label>Dimension Tags (optional)</Label>

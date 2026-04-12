@@ -18,8 +18,11 @@ function serializeDecimal(val: Prisma.Decimal | null): string {
 // ---- Validation Schemas ---------------------------------------------------
 
 const categorizeSchema = z.object({
-  accountId: z.string().min(1, "Account ID is required"),
+  accountId: z.string().min(1).optional(),
+  positionId: z.string().min(1).optional(),
   dimensionTags: z.record(z.string(), z.string()).optional(),
+}).refine((d) => d.accountId || d.positionId, {
+  message: "Either accountId or positionId is required",
 });
 
 const postTransactionSchema = z.object({
@@ -73,20 +76,43 @@ export async function PATCH(
     return errorResponse("Transaction not found", 404);
   }
 
-  // Verify account belongs to this entity
-  const account = await prisma.account.findFirst({
-    where: { id: parsed.data.accountId, entityId, isActive: true },
-    select: { id: true, number: true, name: true },
-  });
+  // Resolve accountId: either directly provided or resolved from positionId
+  let resolvedAccountId = parsed.data.accountId ?? null;
+  let resolvedPositionId = parsed.data.positionId ?? null;
 
-  if (!account) {
-    return errorResponse("Account not found or does not belong to this entity", 400);
+  if (parsed.data.positionId) {
+    const position = await prisma.position.findFirst({
+      where: {
+        id: parsed.data.positionId,
+        subledgerItem: { entityId, isActive: true },
+        isActive: true,
+      },
+      include: { subledgerItem: { select: { accountId: true } } },
+    });
+    if (!position) {
+      return errorResponse("Position not found or does not belong to this entity", 400);
+    }
+    // Resolve GL account at apply-time from position
+    resolvedAccountId = resolvedAccountId || position.accountId || position.subledgerItem.accountId;
+    resolvedPositionId = position.id;
+  }
+
+  // Verify resolved account belongs to this entity
+  if (resolvedAccountId) {
+    const account = await prisma.account.findFirst({
+      where: { id: resolvedAccountId, entityId, isActive: true },
+      select: { id: true, number: true, name: true },
+    });
+    if (!account) {
+      return errorResponse("Account not found or does not belong to this entity", 400);
+    }
   }
 
   const updated = await prisma.bankTransaction.update({
     where: { id: transactionId },
     data: {
-      accountId: parsed.data.accountId,
+      accountId: resolvedAccountId,
+      positionId: resolvedPositionId,
       status: "CATEGORIZED",
     },
     include: {
@@ -103,6 +129,7 @@ export async function PATCH(
     amount: serializeDecimal(updated.amount),
     status: updated.status,
     accountId: updated.accountId,
+    positionId: updated.positionId,
     account: updated.account
       ? { id: updated.account.id, number: updated.account.number, name: updated.account.name }
       : null,
@@ -174,8 +201,19 @@ export async function POST(
     return errorResponse("Transaction is already posted", 400);
   }
 
-  // For non-split, transaction must have an accountId assigned
-  if (!splits && !transaction.accountId) {
+  // For non-split, resolve accountId from positionId if needed
+  let offsetAccountId = transaction.accountId;
+  if (!offsetAccountId && transaction.positionId) {
+    const position = await prisma.position.findUnique({
+      where: { id: transaction.positionId },
+      include: { subledgerItem: { select: { accountId: true } } },
+    });
+    if (position) {
+      offsetAccountId = position.accountId ?? position.subledgerItem.accountId;
+    }
+  }
+
+  if (!splits && !offsetAccountId) {
     return errorResponse(
       "Transaction must be categorized (have an account assigned) before posting",
       400
@@ -200,13 +238,14 @@ export async function POST(
 
   try {
     // Build the JE input using our library function
+    // Use resolved offset accountId (from position or direct assignment)
     const jeInput = createJournalEntryFromTransaction({
       transaction: {
         id: transaction.id,
         date: transaction.date,
         description: transaction.description,
         amount: Number(transaction.amount),
-        accountId: transaction.accountId,
+        accountId: offsetAccountId,
       },
       bankAccountId,
       entityId,

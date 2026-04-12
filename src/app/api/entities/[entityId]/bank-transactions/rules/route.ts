@@ -175,6 +175,18 @@ export async function POST(
   });
 
   // Retroactively match existing PENDING transactions for this entity
+  // For position-targeted rules, resolve GL account at apply-time
+  let resolvedAccountId = parsed.data.accountId ?? null;
+  if (parsed.data.positionId && !resolvedAccountId) {
+    const pos = await prisma.position.findUnique({
+      where: { id: parsed.data.positionId },
+      include: { subledgerItem: { select: { accountId: true } } },
+    });
+    if (pos) {
+      resolvedAccountId = pos.accountId ?? pos.subledgerItem.accountId;
+    }
+  }
+
   const patternLower = parsed.data.pattern.toLowerCase();
   const pendingTxns = await prisma.bankTransaction.findMany({
     where: {
@@ -199,12 +211,12 @@ export async function POST(
     matchedCount++;
   }
 
-  // Batch update matched transactions
+  // Batch update matched transactions with resolved GL account
   if (matchedIds.length > 0) {
     await prisma.bankTransaction.updateMany({
       where: { id: { in: matchedIds } },
       data: {
-        accountId: parsed.data.accountId ?? null,
+        accountId: resolvedAccountId,
         positionId: parsed.data.positionId ?? null,
         ruleId: rule.id,
         status: "CATEGORIZED",

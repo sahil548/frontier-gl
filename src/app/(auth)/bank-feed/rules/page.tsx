@@ -32,8 +32,12 @@ type SerializedRule = {
   pattern: string;
   amountMin: string | null;
   amountMax: string | null;
-  accountId: string;
+  accountId: string | null;
+  positionId: string | null;
   account: { id: string; number: string; name: string; type: string } | null;
+  positionName: string | null;
+  holdingName: string | null;
+  holdingType: string | null;
   dimensionTags: Record<string, string> | null;
   isActive: boolean;
   priority: number;
@@ -53,6 +57,37 @@ function formatAmountRange(min: string | null, max: string | null): string {
   if (min && max) return `$${fmtNum(min)} - $${fmtNum(max)}`;
   if (min) return `>= $${fmtNum(min)}`;
   return `<= $${fmtNum(max!)}`;
+}
+
+/** Render the target column: position name as primary label with GL detail for
+ *  position-targeted rules, or account name for accountId-only rules. */
+function renderTarget(rule: SerializedRule): React.ReactNode {
+  // Position-targeted rule: show "HoldingName -> PositionName" with GL detail
+  if (rule.positionId && rule.holdingName && rule.positionName) {
+    return (
+      <div>
+        <div className="font-medium text-sm">
+          {rule.holdingName} -&gt; {rule.positionName}
+        </div>
+        {rule.account && (
+          <div className="text-xs text-muted-foreground">
+            ({rule.account.number} - {rule.account.name})
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Account-only rule (legacy or GL fallback)
+  if (rule.account) {
+    return (
+      <span className="text-sm">
+        {rule.account.number} - {rule.account.name}
+      </span>
+    );
+  }
+
+  return <span className="text-sm text-muted-foreground">--</span>;
 }
 
 // ---- Component ------------------------------------------------------------
@@ -108,7 +143,8 @@ export default function RulesPage() {
       pattern: rule.pattern,
       amountMin: rule.amountMin ? parseFloat(rule.amountMin) : undefined,
       amountMax: rule.amountMax ? parseFloat(rule.amountMax) : undefined,
-      accountId: rule.accountId,
+      accountId: rule.accountId ?? "",
+      positionId: rule.positionId ?? undefined,
       dimensionTags: rule.dimensionTags ?? undefined,
     });
     setFormOpen(true);
@@ -201,7 +237,7 @@ export default function RulesPage() {
               <TableRow>
                 <TableHead>Pattern</TableHead>
                 <TableHead>Amount Range</TableHead>
-                <TableHead>Account</TableHead>
+                <TableHead>Target</TableHead>
                 <TableHead>Tags</TableHead>
                 <TableHead className="text-right">Matched</TableHead>
                 <TableHead className="text-right w-[100px]">Actions</TableHead>
@@ -218,11 +254,7 @@ export default function RulesPage() {
                   <TableCell className="text-sm">
                     {formatAmountRange(rule.amountMin, rule.amountMax)}
                   </TableCell>
-                  <TableCell className="text-sm">
-                    {rule.account
-                      ? `${rule.account.number} - ${rule.account.name}`
-                      : "--"}
-                  </TableCell>
+                  <TableCell>{renderTarget(rule)}</TableCell>
                   <TableCell>
                     {rule.dimensionTags &&
                     typeof rule.dimensionTags === "object" &&
