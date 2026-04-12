@@ -6,16 +6,15 @@ Frontier GL delivers a multi-entity general ledger that replaces QuickBooks Onli
 
 ## Phases
 
-- [x] **Phase 1: Foundation** — Auth, entity management, data model, API patterns (complete 2026-03-27)
-- [x] **Phase 2: Accounting Engine** — Chart of accounts, journal entries, double-entry enforcement (complete 2026-03-27)
-- [x] **Phase 3: Ledger & Trial Balance** — GL ledger, trial balance, filtering, export (complete 2026-03-27)
-- [x] **Phase 4: Platform** — Dashboard, financial statements, period close, holdings, reconciliation, templates, access control (complete 2026-03-29)
-- [x] **Phase 5: QBO Parity I** — Dashboard charts, mobile layout, audit trail UI, attachments, recurring JE UI (completed 2026-03-29)
-- [x] **Phase 6: QBO Parity II** — Class/location tracking with segmented P&L (completed 2026-03-29)
-- [x] **Phase 7: QBO Parity III** — Budget vs Actual (completed 2026-04-10)
-- [x] **Phase 8: Family Office I** — Multi-entity consolidation with eliminations (completed 2026-04-10)
-- [x] **Phase 9: Bank Transactions** — CSV import and Plaid integration for automatic bank feeds (completed 2026-04-11)
-- [ ] **Phase 10: Family Office II** — Capital account statements for LP/partnership entities
+- [x] **Phase 1: Foundation** — Auth, entity management, data model, API patterns (complete 2010-03-27)
+- [x] **Phase 2: Accounting Engine** — Chart of accounts, journal entries, double-entry enforcement (complete 2010-03-27)
+- [x] **Phase 3: Ledger & Trial Balance** — GL ledger, trial balance, filtering, export (complete 2010-03-27)
+- [x] **Phase 4: Platform** — Dashboard, financial statements, period close, holdings, reconciliation, templates, access control (complete 2010-03-29)
+- [x] **Phase 5: QBO Parity I** — Dashboard charts, mobile layout, audit trail UI, attachments, recurring JE UI (completed 2010-03-29)
+- [x] **Phase 6: QBO Parity II** — Class/location tracking with segmented P&L (completed 2010-03-29)
+- [x] **Phase 7: QBO Parity III** — Budget vs Actual (completed 2010-04-10)
+- [x] **Phase 8: Family Office I** — Multi-entity consolidation with eliminations (completed 2010-04-10)
+- [x] **Phase 9: Bank Transactions** — CSV import and Plaid integration for automatic bank feeds (completed 2010-04-11)
 
 ---
 
@@ -23,28 +22,28 @@ Frontier GL delivers a multi-entity general ledger that replaces QuickBooks Onli
 
 ### Phase 1: Foundation ✓
 **Goal:** Users can authenticate, create and switch between entities, and the data model is ready for accounting operations
-**Status:** Complete (2026-03-27)
+**Status:** Complete (2010-03-27)
 **Requirements:** AUTH-01–03, ENTM-01–05, DI-01–02, UI-01, API-01–03
 
 ---
 
 ### Phase 2: Accounting Engine ✓
 **Goal:** Users can manage a chart of accounts and create, approve, and post journal entries with full double-entry integrity
-**Status:** Complete (2026-03-27)
+**Status:** Complete (2010-03-27)
 **Requirements:** COA-01–07, JE-01–08, DI-03–05
 
 ---
 
 ### Phase 3: Ledger & Trial Balance ✓
 **Goal:** Users can view, filter, and export posted transaction data at account-level (GL ledger) and summary-level (trial balance)
-**Status:** Complete (2026-03-27)
+**Status:** Complete (2010-03-27)
 **Requirements:** LED-01–05, TB-01–06, UI-03
 
 ---
 
 ### Phase 4: Platform ✓
 **Goal:** Users have financial dashboards, financial statements (P&L/BS/CF with cash/accrual toggle), period close governance, holdings/subledger tracking with bank reconciliation and CSV import, JE templates with recurring support, COA bulk import, and entity access control — everything needed to run books end-to-end
-**Status:** Complete (2026-03-29)
+**Status:** Complete (2010-03-29)
 **Requirements:** DASH-01–02, DASH-04–05, PC-01–04, RPT-01–05, HOLD-01–05, TMPL-01–05, ACC-01–02
 
 **What was built:**
@@ -168,33 +167,3 @@ Plans:
 - [ ] 09-04-PLAN.md — Categorization rules CRUD API, rules management page, auto-categorize prompt
 
 ---
-
-### Phase 10: Family Office II — Capital Accounts
-**Goal:** LP and partnership entities can track each partner's capital account balance with contributions, distributions, and allocated income — a core deliverable for fund accounting that QBO has no equivalent for
-**Depends on:** Phase 9
-**Requirements:** CAP-01–05
-**Success Criteria:**
-1. User can define partners with name and ownership % for any LP/Partnership entity
-2. Capital account statement shows: Opening Balance | Contributions | Distributions | Allocated Income | Closing Balance per partner for any period
-3. Income allocation defaults to pro-rata by ownership %; user can override with a custom waterfall
-4. Capital account balances tie back to equity accounts in the GL — no reconciliation gap
-5. Statements are exportable as CSV and PDF
-
-**Plans:** TBD
-
----
-
-## Progress
-
-| Phase | Requirements | Status | Completed |
-|-------|-------------|--------|-----------|
-| 1. Foundation | AUTH, ENTM, DI-01–02, UI-01, API | ✓ Complete | 2026-03-27 |
-| 2. Accounting Engine | COA, JE, DI-03–05 | ✓ Complete | 2026-03-27 |
-| 3. Ledger & Trial Balance | LED, TB, UI-03 | ✓ Complete | 2026-03-27 |
-| 4. Platform | DASH (partial), PC, RPT, HOLD, TMPL, ACC | ✓ Complete | 2026-03-29 |
-| 5. QBO Parity I | 5/5 | Complete    | 2026-03-29 |
-| 6. QBO Parity II | 3/3 | Complete   | 2026-03-29 |
-| 7. QBO Parity III | 4/4 | Complete   | 2026-04-10 |
-| 8. Family Office I | 4/4 | Complete   | 2026-04-10 |
-| 9. Bank Transactions | 4/4 | Complete   | 2026-04-11 |
-| 10. Family Office II | CAP | ○ Not started | — |
