@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import type { AccountType } from "@/generated/prisma/enums";
+import { classifyCashFlowRow } from "@/lib/queries/cash-flow-classify";
 
 // Cash Flow types
 export interface CashFlowItem {
@@ -641,6 +642,7 @@ export async function getCashFlowStatement(
     {
       account_name: string;
       account_type: string;
+      cash_flow_category: string | null;
       net_movement: unknown;
     }[]
   >(
@@ -648,6 +650,7 @@ export async function getCashFlowStatement(
       SELECT
         a.name                                     AS account_name,
         a.type::text                               AS account_type,
+        a."cashFlowCategory"::text                 AS cash_flow_category,
         COALESCE(SUM(jel.debit - jel.credit), 0)   AS net_movement
       FROM accounts a
       JOIN journal_entry_lines jel ON jel."accountId" = a.id
@@ -657,7 +660,7 @@ export async function getCashFlowStatement(
         AND je.date <= ${endDate}
       WHERE a."entityId" = ${entityId}
         AND a."isActive" = true
-      GROUP BY a.name, a.type
+      GROUP BY a.name, a.type, a."cashFlowCategory"
       ORDER BY a.name
     `
   );
@@ -684,86 +687,25 @@ export async function getCashFlowStatement(
   operatingItems.push({ accountName: "Net Income", amount: netIncome });
 
   for (const r of rows) {
-    const nameLower = r.account_name.toLowerCase();
     const mv = toNum(r.net_movement);
-    if (mv === 0) continue;
+    const result = classifyCashFlowRow({
+      account_name: r.account_name,
+      account_type: r.account_type,
+      cash_flow_category: r.cash_flow_category,
+      net_movement: mv,
+    });
+    if (!result) continue;
 
-    // Skip cash accounts (they are the result, not a source)
-    if (r.account_type === "ASSET" && nameLower.includes("cash")) continue;
-
-    // Skip income/expense — already captured in net income
-    if (r.account_type === "INCOME" || r.account_type === "EXPENSE") {
-      // Exception: add back depreciation expense
-      if (r.account_type === "EXPENSE" && nameLower.includes("depreciation")) {
-        operatingItems.push({
-          accountName: `Add back: ${r.account_name}`,
-          amount: mv, // debit-normal, so positive = expense incurred
-        });
-      }
-      continue;
-    }
-
-    // ── Investing: investment-type asset accounts ──
-    if (
-      r.account_type === "ASSET" &&
-      (nameLower.includes("investment") ||
-        nameLower.includes("securities") ||
-        nameLower.includes("real estate") ||
-        nameLower.includes("private equity"))
-    ) {
-      // Asset increase (debit) = cash outflow (negative)
-      investingItems.push({ accountName: r.account_name, amount: -mv });
-      continue;
-    }
-
-    // ── Financing: loan / mortgage liabilities ──
-    if (
-      r.account_type === "LIABILITY" &&
-      (nameLower.includes("loan") || nameLower.includes("mortgage"))
-    ) {
-      // Liability increase (credit, mv < 0) = cash inflow (positive)
-      financingItems.push({ accountName: r.account_name, amount: -mv });
-      continue;
-    }
-
-    // ── Financing: equity contributions ──
-    if (
-      r.account_type === "EQUITY" &&
-      (nameLower.includes("equity") || nameLower.includes("capital")) &&
-      !nameLower.includes("retained")
-    ) {
-      financingItems.push({ accountName: r.account_name, amount: -mv });
-      continue;
-    }
-
-    // ── Financing: distributions ──
-    if (r.account_type === "EQUITY" && nameLower.includes("distribution")) {
-      // Distribution is a debit to equity = cash outflow
-      financingItems.push({ accountName: r.account_name, amount: -mv });
-      continue;
-    }
-
-    // ── Operating: working capital changes ──
-    if (r.account_type === "ASSET") {
-      if (
-        nameLower.includes("receivable") ||
-        nameLower.includes("prepaid")
-      ) {
-        // Asset increase = cash used (negative)
-        operatingItems.push({ accountName: `Change in ${r.account_name}`, amount: -mv });
-        continue;
-      }
-    }
-
-    if (r.account_type === "LIABILITY") {
-      if (
-        nameLower.includes("payable") ||
-        nameLower.includes("accrued")
-      ) {
-        // Liability increase = cash source (positive)
-        operatingItems.push({ accountName: `Change in ${r.account_name}`, amount: -mv });
-        continue;
-      }
+    switch (result.section) {
+      case "operating":
+        operatingItems.push(result.item);
+        break;
+      case "investing":
+        investingItems.push(result.item);
+        break;
+      case "financing":
+        financingItems.push(result.item);
+        break;
     }
   }
 
@@ -785,7 +727,7 @@ export async function getCashFlowStatement(
         WHERE a."entityId" = ${entityId}
           AND a."isActive" = true
           AND a.type = 'ASSET'
-          AND LOWER(a.name) LIKE '%cash%'
+          AND a."cashFlowCategory" = 'EXCLUDED'
       `
     );
     return toNum(result[0]?.balance);
