@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-02-PLAN.md
-last_updated: "2026-04-12T21:33:48.892Z"
-last_activity: 2026-04-12 -- Rate-based budget computation utility, API endpoint, and budget page UI with recalculate
+stopped_at: Completed 12-04-PLAN.md
+last_updated: "2026-04-12T21:37:25.630Z"
+last_activity: 2026-04-12 -- LLM-powered CSV column detection with mapping confirmation UI across all import flows
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 47
-  completed_plans: 44
+  completed_plans: 45
   percent: 91
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 12 of 12 (Reporting Fixes & Onboarding Wizard)
-Plan: 3 of 6 complete
+Plan: 4 of 6 complete
 Status: Executing
-Last activity: 2026-04-12 -- Rate-based budget computation utility, API endpoint, and budget page UI with recalculate
+Last activity: 2026-04-12 -- LLM-powered CSV column detection with mapping confirmation UI across all import flows
 
 Progress: [█████████░] 91%
 
@@ -93,6 +93,7 @@ Progress: [█████████░] 91%
 | Phase 12 P01 | 8min | 2 tasks | 8 files |
 | Phase 12 P03 | 5min | 2 tasks | 5 files |
 | Phase 12 P02 | 8min | 2 tasks | 8 files |
+| Phase 12 P04 | 11min | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -210,6 +211,10 @@ Recent decisions affecting current work:
 - [Phase 12]: Extracted classifyCashFlowRow as pure function for testability rather than testing through DB
 - [Phase 12]: Contra netting uses Math.abs for consistent deduction, display-only grouping preserves raw balances
 - [Phase 12]: Balance sheet SQL extended with isContra/parentId for contra display support
+- [Phase 12]: Anthropic SDK mock uses function constructor pattern for vitest compatibility
+- [Phase 12]: Heuristic patterns duplicated in csv-column-map API route for import-type-specific detection
+- [Phase 12]: ColumnMappingUI fetches mapping from API on mount, falls back to empty on error
+- [Phase 12]: detectColumns exported from csv-parser for heuristic fallback reuse
 
 ### Pending Todos
 
@@ -222,6 +227,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-12T21:33:48.890Z
-Stopped at: Completed 12-02-PLAN.md
+Last session: 2026-04-12T21:37:25.627Z
+Stopped at: Completed 12-04-PLAN.md
 Resume file: None
