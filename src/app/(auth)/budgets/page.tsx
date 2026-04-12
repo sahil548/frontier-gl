@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { DollarSign, Upload, Copy, Save } from "lucide-react";
+import { DollarSign, Upload, Copy, Save, TrendingUp, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useEntityContext } from "@/providers/entity-provider";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -12,6 +14,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { getFiscalYearMonths, type FiscalYearMonth } from "@/lib/utils/fiscal-year";
 
@@ -31,6 +41,22 @@ interface BudgetEntry {
   month: number;
   amount: string;
   account: { id: string; number: string; name: string; type: string };
+}
+
+interface HoldingRow {
+  id: string;
+  name: string;
+  itemType: string;
+  fairMarketValue: string | null;
+}
+
+interface RateTargetEntry {
+  holdingId: string;
+  holdingName: string;
+  accountId: string;
+  accountName: string;
+  annualRate: number;
+  monthlyAmount: string;
 }
 
 // ─── Helpers ────────────────────────────────────────────
@@ -97,6 +123,17 @@ export default function BudgetsPage() {
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // ─── Rate-based budget state ─────────────────────────
+  const [rateSheetOpen, setRateSheetOpen] = useState(false);
+  const [holdings, setHoldings] = useState<HoldingRow[]>([]);
+  const [incomeAccountsList, setIncomeAccountsList] = useState<AccountRow[]>([]);
+  const [selectedHoldingId, setSelectedHoldingId] = useState("");
+  const [selectedAccountId, setSelectedAccountId] = useState("");
+  const [annualRatePercent, setAnnualRatePercent] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [rateTargetEntries, setRateTargetEntries] = useState<RateTargetEntry[]>([]);
+  const [recalculating, setRecalculating] = useState<string | null>(null);
+
   const resolvedEntityId =
     currentEntityId === "all" && entities.length > 0
       ? entities[0].id
@@ -123,6 +160,26 @@ export default function BudgetsPage() {
           );
           filtered.sort((a, b) => a.number.localeCompare(b.number));
           setAccounts(filtered);
+        }
+      }
+    } catch {
+      // silently fail
+    }
+  }, [resolvedEntityId]);
+
+  // ─── Fetch holdings (for rate-based budgets) ────────
+
+  const fetchHoldings = useCallback(async () => {
+    if (!resolvedEntityId || resolvedEntityId === "all") return;
+    try {
+      const res = await fetch(`/api/entities/${resolvedEntityId}/subledger`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) {
+          const items = (json.data as HoldingRow[]).filter(
+            (h) => h.fairMarketValue !== null
+          );
+          setHoldings(items);
         }
       }
     } catch {
@@ -171,6 +228,144 @@ export default function BudgetsPage() {
       setLoading(false);
     }
   }, [fetchBudgets, accounts.length]);
+
+  useEffect(() => {
+    fetchHoldings();
+  }, [fetchHoldings]);
+
+  useEffect(() => {
+    setIncomeAccountsList(accounts.filter((a) => a.type === "INCOME"));
+  }, [accounts]);
+
+  // ─── Rate-based budget handlers ────────────────────
+
+  async function handleGenerateFromRate() {
+    if (!resolvedEntityId || resolvedEntityId === "all") return;
+    if (!selectedHoldingId || !selectedAccountId || !annualRatePercent) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+    const rate = parseFloat(annualRatePercent);
+    if (isNaN(rate) || rate < 0 || rate > 100) {
+      toast.error("Annual rate must be between 0 and 100");
+      return;
+    }
+    const annualRate = rate / 100; // Convert percentage to decimal
+
+    setGenerating(true);
+    try {
+      const res = await fetch(
+        `/api/entities/${resolvedEntityId}/budgets/rate-target`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            holdingId: selectedHoldingId,
+            accountId: selectedAccountId,
+            annualRate,
+            fiscalYear,
+          }),
+        }
+      );
+
+      const json = await res.json();
+      if (res.ok && json.success) {
+        const holdingName = holdings.find((h) => h.id === selectedHoldingId)?.name ?? "";
+        const accountName = incomeAccountsList.find((a) => a.id === selectedAccountId)?.name ?? "";
+        const entry: RateTargetEntry = {
+          holdingId: selectedHoldingId,
+          holdingName,
+          accountId: selectedAccountId,
+          accountName,
+          annualRate,
+          monthlyAmount: json.data.monthlyAmount,
+        };
+
+        // Replace existing entry for same holding+account or add new
+        setRateTargetEntries((prev) => {
+          const filtered = prev.filter(
+            (e) => !(e.holdingId === entry.holdingId && e.accountId === entry.accountId)
+          );
+          return [...filtered, entry];
+        });
+
+        const formatted = parseFloat(json.data.monthlyAmount).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+        toast.success(`Generated 12 monthly budget entries at $${formatted}/month`);
+
+        // Reset form fields
+        setSelectedHoldingId("");
+        setSelectedAccountId("");
+        setAnnualRatePercent("");
+
+        // Refresh the budget grid data
+        await fetchBudgets();
+      } else {
+        toast.error(json.error ?? "Failed to generate rate-based budget");
+      }
+    } catch {
+      toast.error("Failed to generate rate-based budget");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function handleRecalculate(entry: RateTargetEntry) {
+    if (!resolvedEntityId || resolvedEntityId === "all") return;
+    const key = `${entry.holdingId}-${entry.accountId}`;
+    setRecalculating(key);
+    const previousAmount = entry.monthlyAmount;
+
+    try {
+      const res = await fetch(
+        `/api/entities/${resolvedEntityId}/budgets/rate-target`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            holdingId: entry.holdingId,
+            accountId: entry.accountId,
+            annualRate: entry.annualRate,
+            fiscalYear,
+          }),
+        }
+      );
+
+      const json = await res.json();
+      if (res.ok && json.success) {
+        // Update the entry with new monthly amount
+        setRateTargetEntries((prev) =>
+          prev.map((e) =>
+            e.holdingId === entry.holdingId && e.accountId === entry.accountId
+              ? { ...e, monthlyAmount: json.data.monthlyAmount }
+              : e
+          )
+        );
+
+        const newFormatted = parseFloat(json.data.monthlyAmount).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+        const prevFormatted = parseFloat(previousAmount).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+        toast.success(
+          `Recalculated 12 monthly budget entries at $${newFormatted}/month (was $${prevFormatted}/month)`
+        );
+
+        await fetchBudgets();
+      } else {
+        toast.error(json.error ?? "Failed to recalculate");
+      }
+    } catch {
+      toast.error("Failed to recalculate");
+    } finally {
+      setRecalculating(null);
+    }
+  }
 
   // ─── Cell change handler ────────────────────────────
 
@@ -470,6 +665,166 @@ export default function BudgetsPage() {
             if (file) handleCsvImport(file);
           }}
         />
+
+        {/* Generate from Rate */}
+        <Sheet open={rateSheetOpen} onOpenChange={setRateSheetOpen}>
+          <SheetTrigger
+            render={
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                disabled={loading}
+              />
+            }
+          >
+            <TrendingUp className="h-4 w-4" />
+            Generate from Rate
+          </SheetTrigger>
+          <SheetContent side="right">
+            <SheetHeader>
+              <SheetTitle>Generate from Return Rate</SheetTitle>
+              <SheetDescription>
+                Compute monthly budget amounts from a holding&apos;s market value and
+                a target annual return rate.
+              </SheetDescription>
+            </SheetHeader>
+
+            <div className="space-y-4 p-4">
+              {/* Holding selector */}
+              <div className="space-y-2">
+                <Label htmlFor="rate-holding">Holding</Label>
+                <Select
+                  value={selectedHoldingId}
+                  onValueChange={setSelectedHoldingId}
+                >
+                  <SelectTrigger id="rate-holding">
+                    <SelectValue placeholder="Select holding..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {holdings.map((h) => (
+                      <SelectItem key={h.id} value={h.id}>
+                        {h.name} ({h.itemType}) - $
+                        {parseFloat(h.fairMarketValue ?? "0").toLocaleString()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {holdings.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No holdings with market values found.
+                  </p>
+                )}
+              </div>
+
+              {/* Account selector (income accounts only) */}
+              <div className="space-y-2">
+                <Label htmlFor="rate-account">Income Account</Label>
+                <Select
+                  value={selectedAccountId}
+                  onValueChange={setSelectedAccountId}
+                >
+                  <SelectTrigger id="rate-account">
+                    <SelectValue placeholder="Select income account..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {incomeAccountsList.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.number} - {a.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Annual rate input */}
+              <div className="space-y-2">
+                <Label htmlFor="rate-annual">Annual Return Rate (%)</Label>
+                <div className="relative">
+                  <Input
+                    id="rate-annual"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    placeholder="e.g. 8"
+                    value={annualRatePercent}
+                    onChange={(e) => setAnnualRatePercent(e.target.value)}
+                    className="pr-8"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                    %
+                  </span>
+                </div>
+              </div>
+
+              {/* Fiscal year (read-only, from context) */}
+              <div className="space-y-2">
+                <Label>Fiscal Year</Label>
+                <p className="text-sm font-medium">{fiscalYear}</p>
+              </div>
+
+              {/* Generate button */}
+              <Button
+                className="w-full gap-2"
+                onClick={handleGenerateFromRate}
+                disabled={generating || !selectedHoldingId || !selectedAccountId || !annualRatePercent}
+              >
+                <TrendingUp className="h-4 w-4" />
+                {generating ? "Generating..." : "Generate"}
+              </Button>
+
+              {/* Previously generated entries with Recalculate */}
+              {rateTargetEntries.length > 0 && (
+                <div className="space-y-3 border-t pt-4">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Generated Rate Targets
+                  </p>
+                  {rateTargetEntries.map((entry) => {
+                    const key = `${entry.holdingId}-${entry.accountId}`;
+                    const isRecalculating = recalculating === key;
+                    return (
+                      <div
+                        key={key}
+                        className="rounded-md border p-3 space-y-1"
+                      >
+                        <p className="text-sm font-medium truncate">
+                          {entry.holdingName}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {entry.accountName} at {(entry.annualRate * 100).toFixed(1)}%
+                        </p>
+                        <p className="text-sm font-mono">
+                          $
+                          {parseFloat(entry.monthlyAmount).toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                          /month
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full gap-2 mt-2"
+                          onClick={() => handleRecalculate(entry)}
+                          disabled={isRecalculating}
+                        >
+                          <RefreshCw
+                            className={cn(
+                              "h-3 w-3",
+                              isRecalculating && "animate-spin"
+                            )}
+                          />
+                          {isRecalculating ? "Recalculating..." : "Recalculate"}
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
 
         {/* Save */}
         <Button
