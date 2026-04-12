@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-03-PLAN.md
-last_updated: "2026-04-12T19:43:00.691Z"
-last_activity: 2026-04-12 -- Phase 10 complete (positions model & holdings overhaul)
+stopped_at: Completed 11-01-PLAN.md
+last_updated: "2026-04-12T19:52:40.326Z"
+last_activity: 2026-04-12 -- Phase 11 plan 01 complete (schema + validators + positions API)
 progress:
   total_phases: 12
   completed_phases: 8
   total_plans: 46
-  completed_plans: 35
-  percent: 76
+  completed_plans: 36
+  percent: 78
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Accountants can view, manage, and close books across all family office entities in one fast, purpose-built GL -- eliminating the per-entity cost and friction of QuickBooks Online.
-**Current focus:** Phase 10 complete -- ready for Phase 11
+**Current focus:** Phase 11 in progress -- categorization UX & opening balances
 
 ## Current Position
 
-Phase: 10 of 12 (Positions Model & Holdings Overhaul)
-Plan: 3 of 3 complete
-Status: Phase 10 Complete
-Last activity: 2026-04-12 -- Phase 10 complete (positions model & holdings overhaul)
+Phase: 11 of 12 (Categorization UX & Opening Balances)
+Plan: 1 of 4 complete
+Status: Executing
+Last activity: 2026-04-12 -- Phase 11 plan 01 complete (schema + validators + positions API)
 
-Progress: [████████░░] 76%
+Progress: [████████░░] 78%
 
 ## Performance Metrics
 
@@ -84,6 +84,7 @@ Progress: [████████░░] 76%
 | Phase 10 P01 | 5min | 2 tasks | 8 files |
 | Phase 10 P02 | 5min | 2 tasks | 6 files |
 | Phase 10 P03 | 5min | 3 tasks | 2 files |
+| Phase 11 P01 | 5min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -178,6 +179,8 @@ Recent decisions affecting current work:
 - [Phase 10]: Aggregate totals computed client-side from positions array rather than separate API endpoint
 - [Phase 10]: AddPositionsPrompt pre-fills default position name and type based on holding type mapping
 - [Phase 10]: Legacy types (INVESTMENT, PRIVATE_EQUITY, RECEIVABLE) display with (Legacy) label but excluded from creation form
+- [Phase 11]: accountId optional on CategorizationRule with refine requiring at least one of accountId/positionId
+- [Phase 11]: reconciliationStatus as String with PENDING default rather than enum for flexibility
 
 ### Pending Todos
 
@@ -190,6 +193,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-12T19:42:51.736Z
-Stopped at: Completed 10-03-PLAN.md
+Last session: 2026-04-12T19:52:40.323Z
+Stopped at: Completed 11-01-PLAN.md
 Resume file: None
