@@ -179,12 +179,15 @@ Plans:
 ### Phase 11: Categorization UX & Opening Balances
 
 **Goal:** Bank feed categorization uses holdings/positions as offset targets instead of raw GL accounts. Opening balance JEs auto-generated when holdings are created with balances. Reconciliation workflow fully integrated with bank feed as single source of truth.
-**Requirements**: TBD
+**Requirements:** CAT-01, CAT-03, OBE-01, OBE-02, OBE-03, REC-01, REC-03, REC-04
 **Depends on:** Phase 10
-**Plans:** 0 plans
+**Plans:** 4 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 11 to break down)
+- [ ] 11-01-PLAN.md — Schema migration (positionId, reconciliationStatus), validators, positions API, Wave 0 test stubs
+- [ ] 11-02-PLAN.md — PositionPicker component, CategorizePrompt position-first UX, rules API positionId support
+- [ ] 11-03-PLAN.md — Opening balance JE auto-generation on holding creation, adjusting JE on balance edit
+- [ ] 11-04-PLAN.md — Auto-reconcile on post, reconciliation status badges, running totals, holdings navigation
 
 ### Phase 12: Reporting Fixes & Onboarding Wizard
 
