@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-03-PLAN.md
-last_updated: "2026-04-12T19:59:52Z"
+stopped_at: Completed 11-02-PLAN.md
+last_updated: "2026-04-12T20:06:07.611Z"
 last_activity: 2026-04-12 -- Phase 11 plan 03 complete (opening balance JE auto-generation)
 progress:
   total_phases: 12
@@ -86,6 +86,7 @@ Progress: [████████░░] 83%
 | Phase 10 P03 | 5min | 3 tasks | 2 files |
 | Phase 11 P01 | 5min | 2 tasks | 10 files |
 | Phase 11 P03 | 5min | 2 tasks | 5 files |
+| Phase 11 P02 | 9min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -185,6 +186,9 @@ Recent decisions affecting current work:
 - [Phase 11-03]: Opening balance JE uses position GL leaf account for accurate position-level posting
 - [Phase 11-03]: PUT handler wrapped in $transaction to make adjusting JE + update atomic
 - [Phase 11-03]: Date picker uses native HTML date input, required validation via toast
+- [Phase 11]: Position-first target mode: CategorizePrompt and RuleForm default to position picker with 'Use GL account' text link toggle
+- [Phase 11]: GL resolution at apply-time: position.accountId ?? subledgerItem.accountId chain for position -> GL resolution
+- [Phase 11]: Dimension tags preserved in position mode: selector visible and functional in both target modes
 
 ### Pending Todos
 
@@ -197,6 +201,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-12T19:59:52Z
-Stopped at: Completed 11-03-PLAN.md
+Last session: 2026-04-12T20:05:46.747Z
+Stopped at: Completed 11-02-PLAN.md
 Resume file: None
