@@ -166,4 +166,34 @@ Plans:
 - [ ] 09-03-PLAN.md — Plaid integration: client, Link widget, token exchange, cursor-based sync, cron job
 - [ ] 09-04-PLAN.md — Categorization rules CRUD API, rules management page, auto-categorize prompt
 
+### Phase 10: Positions Model & Holdings Overhaul
+
+**Goal:** Holdings contain positions (cash, securities, LP interests, etc.), and positions — not holdings — link to GL accounts. Holding types expanded for family office use cases (lending, operating businesses, insurance). GL accounts auto-created at position level.
+**Requirements**: TBD
+**Depends on:** Phase 9
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 10 to break down)
+
+### Phase 11: Categorization UX & Opening Balances
+
+**Goal:** Bank feed categorization uses holdings/positions as offset targets instead of raw GL accounts. Opening balance JEs auto-generated when holdings are created with balances. Reconciliation workflow fully integrated with bank feed as single source of truth.
+**Requirements**: TBD
+**Depends on:** Phase 10
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 11 to break down)
+
+### Phase 12: Reporting Fixes & Onboarding Wizard
+
+**Goal:** Cash flow classification uses account codes instead of name pattern matching. Contra account types added to schema. Rate-based budget targets for investment returns. Onboarding wizard guides new entity setup (COA → Holdings → Opening balances → First transactions). AI-powered CSV import with auto-column detection.
+**Requirements**: TBD
+**Depends on:** Phase 11
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 12 to break down)
+
 ---
