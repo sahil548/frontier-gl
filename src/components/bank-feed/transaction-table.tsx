@@ -42,6 +42,7 @@ export type SerializedBankTransaction = {
   ruleId: string | null;
   isSplit: boolean;
   parentTransactionId: string | null;
+  reconciliationStatus?: string;
   journalEntryId: string | null;
   createdAt: string;
   updatedAt: string;
@@ -190,6 +191,7 @@ export function TransactionTable({
             {!compact && <TableHead className="w-[70px]">Source</TableHead>}
             <TableHead className="w-[180px]">Account</TableHead>
             <TableHead className="w-[100px]">Status</TableHead>
+            <TableHead className="w-[90px]">Recon</TableHead>
             <TableHead className="w-[50px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -263,6 +265,47 @@ export function TransactionTable({
                   <Badge variant={statusBadgeVariant(txn.status)}>
                     {statusLabel(txn.status)}
                   </Badge>
+                </TableCell>
+                <TableCell>
+                  {txn.reconciliationStatus ? (
+                    compact ? (
+                      <span
+                        className={cn(
+                          "inline-block h-2 w-2 rounded-full",
+                          txn.reconciliationStatus === "RECONCILED"
+                            ? "bg-green-500"
+                            : txn.reconciliationStatus === "UNMATCHED"
+                              ? "bg-red-500"
+                              : "bg-amber-500"
+                        )}
+                        title={
+                          txn.reconciliationStatus === "RECONCILED"
+                            ? "Reconciled"
+                            : txn.reconciliationStatus === "UNMATCHED"
+                              ? "Unmatched"
+                              : "Pending"
+                        }
+                      />
+                    ) : (
+                      <Badge
+                        variant="secondary"
+                        className={cn(
+                          "text-xs",
+                          txn.reconciliationStatus === "RECONCILED"
+                            ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200"
+                            : txn.reconciliationStatus === "UNMATCHED"
+                              ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200"
+                              : "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200"
+                        )}
+                      >
+                        {txn.reconciliationStatus === "RECONCILED"
+                          ? "Reconciled"
+                          : txn.reconciliationStatus === "UNMATCHED"
+                            ? "Unmatched"
+                            : "Pending"}
+                      </Badge>
+                    )
+                  ) : null}
                 </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   {!isPosted && (

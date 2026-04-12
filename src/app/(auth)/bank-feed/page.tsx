@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Upload, Loader2 } from "lucide-react";
 import { useEntityContext } from "@/providers/entity-provider";
@@ -20,6 +21,7 @@ import {
 } from "@/components/bank-feed/transaction-table";
 import { SplitDialog } from "@/components/bank-feed/split-dialog";
 import { CategorizePrompt } from "@/components/bank-feed/categorize-prompt";
+import { ReconciliationSummary } from "@/components/bank-feed/reconciliation-summary";
 
 // ---- Types ----------------------------------------------------------------
 
@@ -75,9 +77,11 @@ const TABS: TabKey[] = ["ALL", "PENDING", "CATEGORIZED", "POSTED"];
 
 export default function BankFeedPage() {
   const { currentEntityId, entities, isLoading: entityLoading } = useEntityContext();
+  const searchParams = useSearchParams();
+  const urlSubledgerItemId = searchParams.get("subledgerItemId") ?? "";
 
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
-  const [selectedBankAccountId, setSelectedBankAccountId] = useState<string>("");
+  const [selectedBankAccountId, setSelectedBankAccountId] = useState<string>(urlSubledgerItemId);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [activeTab, setActiveTab] = useState<TabKey>("ALL");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -517,16 +521,19 @@ export default function BankFeedPage() {
                 <p className="text-muted-foreground">Loading transactions...</p>
               </div>
             ) : (
-              <TransactionTable
-                transactions={tabData[tab].transactions}
-                accounts={accounts}
-                onCategorize={handleCategorize}
-                onPost={handlePost}
-                onBulkPost={handleBulkPost}
-                onSplit={handleSplit}
-                selectedIds={selectedIds}
-                onSelectionChange={setSelectedIds}
-              />
+              <div className="space-y-4">
+                <ReconciliationSummary transactions={tabData[tab].transactions} />
+                <TransactionTable
+                  transactions={tabData[tab].transactions}
+                  accounts={accounts}
+                  onCategorize={handleCategorize}
+                  onPost={handlePost}
+                  onBulkPost={handleBulkPost}
+                  onSplit={handleSplit}
+                  selectedIds={selectedIds}
+                  onSelectionChange={setSelectedIds}
+                />
+              </div>
             )}
           </TabsContent>
         ))}

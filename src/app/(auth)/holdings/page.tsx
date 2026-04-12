@@ -20,6 +20,7 @@ import {
   Home,
   Building,
   FileText,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useEntityContext } from "@/providers/entity-provider";
@@ -1156,7 +1157,25 @@ export default function HoldingsPage() {
                                   </TableCell>
                                   <TableCell className="font-medium">
                                     <div className="flex items-center gap-2">
-                                      {item.name}
+                                      {item.itemType === "BANK_ACCOUNT" ? (
+                                        <button
+                                          onClick={() => router.push(`/bank-feed?subledgerItemId=${item.id}`)}
+                                          className="text-primary hover:underline text-left"
+                                        >
+                                          {item.name}
+                                        </button>
+                                      ) : (
+                                        item.name
+                                      )}
+                                      {item.itemType === "BANK_ACCOUNT" && (
+                                        <button
+                                          onClick={() => router.push(`/bank-feed?subledgerItemId=${item.id}`)}
+                                          className="text-muted-foreground hover:text-primary"
+                                          title="View Bank Feed"
+                                        >
+                                          <ExternalLink className="h-3.5 w-3.5" />
+                                        </button>
+                                      )}
                                     </div>
                                   </TableCell>
                                   <TableCell>
