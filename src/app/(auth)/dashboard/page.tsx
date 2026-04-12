@@ -14,6 +14,7 @@ import {
 import { startOfMonth, endOfMonth, subMonths, startOfQuarter, startOfYear } from "date-fns";
 import { useEntityContext } from "@/providers/entity-provider";
 import { WelcomeScreen } from "@/components/onboarding/welcome-screen";
+import { SetupBanner } from "@/components/onboarding/setup-banner";
 import {
   Select,
   SelectContent,
@@ -211,6 +212,11 @@ export default function DashboardPage() {
           </SelectContent>
         </Select>
       </div>
+
+      {/* Setup Banner (shows when wizard incomplete) */}
+      {currentEntity && currentEntityId !== "all" && (
+        <SetupBanner entityId={currentEntity.id} entityName={currentEntity.name} />
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

@@ -124,7 +124,11 @@ export function EntityForm({ mode, defaultValues, onSuccess }: EntityFormProps) 
           mode === "create" ? "Entity created" : "Entity updated"
         );
         await onSuccess?.();
-        router.refresh();
+        if (mode === "create" && json.data?.id) {
+          router.push(`/onboarding/${json.data.id}`);
+        } else {
+          router.refresh();
+        }
       } else {
         toast.error(json.error || "Something went wrong");
       }
