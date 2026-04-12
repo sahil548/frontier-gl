@@ -15,6 +15,7 @@ Frontier GL delivers a multi-entity general ledger that replaces QuickBooks Onli
 - [x] **Phase 7: QBO Parity III** — Budget vs Actual (completed 2010-04-10)
 - [x] **Phase 8: Family Office I** — Multi-entity consolidation with eliminations (completed 2010-04-10)
 - [x] **Phase 9: Bank Transactions** — CSV import and Plaid integration for automatic bank feeds (completed 2010-04-11)
+- [x] **Phase 10: Positions Model & Holdings Overhaul** — Position model, 13 holding types, GL account hierarchy, holdings page restructure (completed 2026-04-12)
 
 ---
 
@@ -166,17 +167,18 @@ Plans:
 - [ ] 09-03-PLAN.md — Plaid integration: client, Link widget, token exchange, cursor-based sync, cron job
 - [ ] 09-04-PLAN.md — Categorization rules CRUD API, rules management page, auto-categorize prompt
 
-### Phase 10: Positions Model & Holdings Overhaul
+### Phase 10: Positions Model & Holdings Overhaul ✓
 
 **Goal:** Holdings contain positions (cash, securities, LP interests, etc.), and positions — not holdings — link to GL accounts. Holding types expanded for family office use cases (lending, operating businesses, insurance). GL accounts auto-created at position level.
+**Status:** Complete (2026-04-12)
 **Requirements:** POS-01, POS-02, POS-03, POS-04, POS-05, POS-06, POS-07, POS-08
 **Depends on:** Phase 9
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
-- [ ] 10-01-PLAN.md — Schema expansion (13 holding types, Position.accountId), shared constants, GL account creation helpers, updated subledger + position API routes
-- [ ] 10-02-PLAN.md — Data migration script for existing holdings, bank transaction posting updated to position-level GL accounts
-- [ ] 10-03-PLAN.md — Holdings page restructured with 13-type grouping, aggregate totals, position GL display, AddPositionsPrompt
+- [x] 10-01-PLAN.md — Schema expansion (13 holding types, Position.accountId), shared constants, GL account creation helpers, updated subledger + position API routes
+- [x] 10-02-PLAN.md — Data migration script for existing holdings, bank transaction posting updated to position-level GL accounts
+- [x] 10-03-PLAN.md — Holdings page restructured with 13-type grouping, aggregate totals, position GL display, AddPositionsPrompt
 
 ### Phase 11: Categorization UX & Opening Balances
 

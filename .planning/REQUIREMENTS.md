@@ -202,8 +202,8 @@
 - [x] **POS-03**: Creating a position auto-creates a GL leaf account under the holding's summary account (3-level COA hierarchy)
 - [x] **POS-04**: Creating a holding auto-creates a parent summary GL account and a default position with its own GL leaf account
 - [x] **POS-05**: Data migration auto-backfills default positions for existing holdings and transfers GL accounts to position level
-- [ ] **POS-06**: After holding creation, user is immediately prompted to add positions via a multi-row form
-- [ ] **POS-07**: Holdings page groups holdings by type with collapsible sections, aggregate totals, and position-level GL account display
+- [x] **POS-06**: After holding creation, user is immediately prompted to add positions via a multi-row form
+- [x] **POS-07**: Holdings page groups holdings by type with collapsible sections, aggregate totals, and position-level GL account display
 - [x] **POS-08**: Bank transactions post against position-level GL accounts (not holding summary accounts)
 
 ---
