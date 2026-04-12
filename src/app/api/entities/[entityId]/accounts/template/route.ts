@@ -6,12 +6,14 @@ import { findAccessibleEntity } from "@/lib/db/entity-access";
 /**
  * POST /api/entities/:entityId/accounts/template
  *
- * Applies the Family Office Standard template to the entity.
+ * Applies a COA template to the entity.
+ * Accepts optional { templateName } in body ("family_office" | "hedge_fund").
+ * Defaults to "family_office" if not provided.
  * Skips accounts whose number already exists (merge logic).
  * Returns { inserted, skipped } counts.
  */
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ entityId: string }> }
 ) {
   const { userId } = await auth();
@@ -25,8 +27,19 @@ export async function POST(
     return errorResponse("Entity not found", 404);
   }
 
+  // Parse optional template name from body
+  let templateName: "family_office" | "hedge_fund" = "family_office";
   try {
-    const result = await applyTemplate(entityId);
+    const body = await request.json();
+    if (body.templateName === "hedge_fund") {
+      templateName = "hedge_fund";
+    }
+  } catch {
+    // No body or invalid JSON -- use default
+  }
+
+  try {
+    const result = await applyTemplate(entityId, templateName);
     return successResponse(result);
   } catch (error) {
     const message =
