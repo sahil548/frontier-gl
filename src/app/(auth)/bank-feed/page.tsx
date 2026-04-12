@@ -264,7 +264,7 @@ export default function BankFeedPage() {
 
   // ---- Transaction Actions ------------------------------------------------
 
-  const handleCategorize = async (transactionId: string, accountId: string) => {
+  const handleCategorize = async (transactionId: string, accountId: string, positionId?: string | null) => {
     if (!entityId) return;
 
     try {
@@ -273,7 +273,7 @@ export default function BankFeedPage() {
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ accountId }),
+          body: JSON.stringify({ accountId, ...(positionId ? { positionId } : {}) }),
         }
       );
 
@@ -288,11 +288,27 @@ export default function BankFeedPage() {
         );
 
         if (account && txn) {
+          let resolvedPositionLabel: string | null = null;
+          if (positionId) {
+            try {
+              const posRes = await fetch(`/api/entities/${entityId}/positions`);
+              const posJson = await posRes.json();
+              if (posJson.success) {
+                const pos = posJson.data.find((p: { id: string }) => p.id === positionId);
+                if (pos) {
+                  resolvedPositionLabel = `${pos.holdingName} -> ${pos.name}`;
+                }
+              }
+            } catch { /* fallback to null */ }
+          }
+
           setCategorizePrompt({
             transactionDescription: txn.description,
             merchantName: txn.merchantName,
             accountId,
             accountName: `${account.accountNumber} - ${account.name}`,
+            positionId: positionId ?? null,
+            positionLabel: resolvedPositionLabel,
           });
         }
 
@@ -532,6 +548,7 @@ export default function BankFeedPage() {
                   onSplit={handleSplit}
                   selectedIds={selectedIds}
                   onSelectionChange={setSelectedIds}
+                  entityId={entityId}
                 />
               </div>
             )}
