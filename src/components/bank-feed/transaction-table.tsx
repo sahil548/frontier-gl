@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AccountCombobox } from "@/components/ui/account-combobox";
+import { PositionPicker } from "@/components/bank-feed/position-picker";
 import { cn } from "@/lib/utils";
 
 // ---- Types ----------------------------------------------------------------
@@ -59,13 +60,14 @@ type AccountOption = {
 type TransactionTableProps = {
   transactions: SerializedBankTransaction[];
   accounts: AccountOption[];
-  onCategorize: (transactionId: string, accountId: string) => void;
+  onCategorize: (transactionId: string, accountId: string, positionId?: string | null) => void;
   onPost: (transactionId: string) => void;
   onBulkPost: (transactionIds: string[], accountId: string, postImmediately: boolean) => void;
   onSplit: (transactionId: string) => void;
   onExclude?: (transactionId: string) => void;
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
+  entityId?: string;
   compact?: boolean;
 };
 
@@ -125,9 +127,11 @@ export function TransactionTable({
   onExclude,
   selectedIds,
   onSelectionChange,
+  entityId,
   compact = false,
 }: TransactionTableProps) {
   const [bulkAccountId, setBulkAccountId] = useState<string | null>(null);
+  const [rowTargetMode, setRowTargetMode] = useState<Record<string, "position" | "account">>({});
 
   const displayTransactions = compact
     ? transactions.slice(0, 10)
@@ -241,14 +245,61 @@ export function TransactionTable({
                 )}
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   {txn.status === "PENDING" ? (
-                    <AccountCombobox
-                      accounts={accounts}
-                      value={txn.accountId}
-                      onSelect={(accountId) =>
-                        onCategorize(txn.id, accountId)
-                      }
-                      placeholder="Assign account..."
-                    />
+                    !compact && entityId ? (
+                      <div className="space-y-1">
+                        {(rowTargetMode[txn.id] ?? "position") === "position" ? (
+                          <>
+                            <PositionPicker
+                              entityId={entityId}
+                              value={null}
+                              onChange={(positionId, accountId) => {
+                                if (positionId && accountId) {
+                                  onCategorize(txn.id, accountId, positionId);
+                                }
+                              }}
+                            />
+                            <button
+                              type="button"
+                              className="text-xs text-muted-foreground hover:underline cursor-pointer"
+                              onClick={() =>
+                                setRowTargetMode((prev) => ({ ...prev, [txn.id]: "account" }))
+                              }
+                            >
+                              Use GL account
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <AccountCombobox
+                              accounts={accounts}
+                              value={txn.accountId}
+                              onSelect={(accountId) =>
+                                onCategorize(txn.id, accountId)
+                              }
+                              placeholder="Assign account..."
+                            />
+                            <button
+                              type="button"
+                              className="text-xs text-muted-foreground hover:underline cursor-pointer"
+                              onClick={() =>
+                                setRowTargetMode((prev) => ({ ...prev, [txn.id]: "position" }))
+                              }
+                            >
+                              Use position
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <AccountCombobox
+                        accounts={accounts}
+                        value={txn.accountId}
+                        onSelect={(accountId) =>
+                          onCategorize(txn.id, accountId)
+                        }
+                        placeholder="Assign account..."
+                      />
+                    )
                   ) : txn.account ? (
                     <span className="text-sm">
                       {txn.account.number} - {txn.account.name}
