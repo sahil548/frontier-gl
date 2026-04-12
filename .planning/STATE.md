@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Phase 12 planned (6 plans, 4 waves)
-last_updated: "2026-04-12T18:35:17.646Z"
-last_activity: 2026-04-11 -- Phase 9 Plan 04 complete (Rules CRUD, management page, dual interface)
+status: executing
+stopped_at: Phase 10 Plan 01 complete (schema expansion, GL hierarchy helpers)
+last_updated: "2026-04-12T18:46:37Z"
+last_activity: 2026-04-12 -- Phase 10 Plan 01 complete (schema expansion, GL hierarchy helpers, updated API routes)
 progress:
   total_phases: 12
   completed_phases: 7
   total_plans: 46
-  completed_plans: 32
-  percent: 94
+  completed_plans: 33
+  percent: 95
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Accountants can view, manage, and close books across all family office entities in one fast, purpose-built GL -- eliminating the per-entity cost and friction of QuickBooks Online.
-**Current focus:** Phase 9 in progress -- bank transaction import and categorization
+**Current focus:** Phase 10 in progress -- positions model and holdings overhaul
 
 ## Current Position
 
-Phase: 9 of 9 (Bank Transactions -- Import & Plaid Integration)
-Plan: 4 of 4 complete
-Status: Phase 9 Complete
-Last activity: 2026-04-11 -- Phase 9 Plan 04 complete (Rules CRUD, management page, dual interface)
+Phase: 10 of 12 (Positions Model & Holdings Overhaul)
+Plan: 1 of 3 complete
+Status: Phase 10 In Progress
+Last activity: 2026-04-12 -- Phase 10 Plan 01 complete (schema expansion, GL hierarchy helpers, updated API routes)
 
-Progress: [█████████░] 94%
+Progress: [█████████░] 95%
 
 ## Performance Metrics
 
@@ -81,6 +81,7 @@ Progress: [█████████░] 94%
 | Phase 09 P02 | 6min | 2 tasks | 9 files |
 | Phase 09 P03 | 6min | 2 tasks | 14 files |
 | Phase 09 P04 | 5min | 3 tasks | 8 files |
+| Phase 10 P01 | 5min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -164,6 +165,10 @@ Recent decisions affecting current work:
 - [Phase 09]: Retroactive rule matching queries PENDING transactions via subledgerItem.account.entityId relation path
 - [Phase 09]: CategorizePrompt strips common prefixes (POS/ACH/WIRE) and uppercases pattern for consistent rule matching
 - [Phase 09]: Dual interface: Bank Feed inbox queue AND Holdings inline display for same transaction data
+- [Phase 10]: Legacy SubledgerItemType values (INVESTMENT, PRIVATE_EQUITY, RECEIVABLE) kept alongside new values for data compatibility
+- [Phase 10]: Position.accountId nullable initially for migration compatibility (Plan 02 will backfill)
+- [Phase 10]: 3-level COA hierarchy: type parent > holding summary (+100) > position leaf (+10)
+- [Phase 10]: GL account creation helpers accept Prisma tx as first arg for transaction safety
 
 ### Pending Todos
 
@@ -176,6 +181,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-12T18:35:17.643Z
-Stopped at: Phase 12 planned (6 plans, 4 waves)
-Resume file: .planning/phases/12-reporting-fixes-onboarding-wizard/12-01-PLAN.md
+Last session: 2026-04-12T18:46:37Z
+Stopped at: Completed 10-01-PLAN.md
+Resume file: .planning/phases/10-positions-model-holdings-overhaul/10-02-PLAN.md
