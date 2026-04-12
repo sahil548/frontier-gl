@@ -65,7 +65,17 @@ export async function POST(
       status: { not: "POSTED" }, // Skip already-posted transactions
     },
     include: {
-      subledgerItem: { select: { accountId: true } },
+      subledgerItem: {
+        select: {
+          accountId: true,
+          positions: {
+            where: { isActive: true },
+            orderBy: { createdAt: "asc" },
+            take: 1,
+            select: { accountId: true },
+          },
+        },
+      },
     },
   });
 
@@ -93,7 +103,7 @@ export async function POST(
                 amount: Number(txn.amount),
                 accountId: accountId,
               },
-              bankAccountId: txn.subledgerItem.accountId,
+              bankAccountId: txn.subledgerItem.positions?.[0]?.accountId ?? txn.subledgerItem.accountId,
               entityId,
               userId,
               postImmediately: true,

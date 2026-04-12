@@ -1,3 +1,4 @@
+#!/usr/bin/env npx tsx --tsconfig ../tsconfig.json
 /**
  * Data migration script: Migrate existing holdings to the position model.
  *
@@ -11,17 +12,55 @@
  * - Creates GL leaf accounts for holdings with existing positions
  * - Re-parents existing GL accounts under the new summary accounts
  * - Is idempotent: safe to re-run
+ *
+ * @see src/scripts/migrate-holdings-positions.ts for the library function (unit-testable)
  */
 
-import { PrismaClient } from "../../src/generated/prisma/client";
-import {
-  HOLDING_TYPE_TO_GL,
-  DEFAULT_POSITION_NAME,
-  DEFAULT_POSITION_TYPE,
-} from "../../src/lib/holdings/constants";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+// Relative imports since this file is outside src/ (tsx resolves these at runtime)
+const { PrismaClient } = require("../src/generated/prisma/client") as {
+  PrismaClient: new () => any;
+};
+
+const HOLDING_TYPE_TO_GL: Record<string, { parentPrefix: string; accountType: string }> = {
+  BANK_ACCOUNT: { parentPrefix: "11000", accountType: "ASSET" },
+  BROKERAGE_ACCOUNT: { parentPrefix: "12000", accountType: "ASSET" },
+  TRUST_ACCOUNT: { parentPrefix: "12500", accountType: "ASSET" },
+  PRIVATE_FUND: { parentPrefix: "13000", accountType: "ASSET" },
+  NOTES_RECEIVABLE: { parentPrefix: "14000", accountType: "ASSET" },
+  REAL_ESTATE: { parentPrefix: "16000", accountType: "ASSET" },
+  EQUIPMENT: { parentPrefix: "17000", accountType: "ASSET" },
+  OPERATING_BUSINESS: { parentPrefix: "18000", accountType: "ASSET" },
+  OTHER: { parentPrefix: "19000", accountType: "ASSET" },
+  CREDIT_CARD: { parentPrefix: "21000", accountType: "LIABILITY" },
+  LOAN: { parentPrefix: "22000", accountType: "LIABILITY" },
+  MORTGAGE: { parentPrefix: "23000", accountType: "LIABILITY" },
+  LINE_OF_CREDIT: { parentPrefix: "24000", accountType: "LIABILITY" },
+  INVESTMENT: { parentPrefix: "12000", accountType: "ASSET" },
+  PRIVATE_EQUITY: { parentPrefix: "13000", accountType: "ASSET" },
+  RECEIVABLE: { parentPrefix: "14000", accountType: "ASSET" },
+};
+
+const DEFAULT_POSITION_NAME: Record<string, string> = {
+  BANK_ACCOUNT: "Cash", BROKERAGE_ACCOUNT: "Cash", CREDIT_CARD: "Balance",
+  REAL_ESTATE: "Property", EQUIPMENT: "Equipment", LOAN: "Principal",
+  PRIVATE_FUND: "LP Interest", MORTGAGE: "Principal", LINE_OF_CREDIT: "Balance",
+  TRUST_ACCOUNT: "Corpus", OPERATING_BUSINESS: "Equity Interest",
+  NOTES_RECEIVABLE: "Note", OTHER: "General",
+  INVESTMENT: "Cash", PRIVATE_EQUITY: "LP Interest", RECEIVABLE: "Note",
+};
+
+const DEFAULT_POSITION_TYPE: Record<string, string> = {
+  BANK_ACCOUNT: "CASH", BROKERAGE_ACCOUNT: "CASH", CREDIT_CARD: "CASH",
+  TRUST_ACCOUNT: "CASH", REAL_ESTATE: "REAL_PROPERTY", EQUIPMENT: "OTHER",
+  LOAN: "OTHER", MORTGAGE: "OTHER", LINE_OF_CREDIT: "OTHER",
+  PRIVATE_FUND: "PRIVATE_EQUITY", OPERATING_BUSINESS: "OTHER",
+  NOTES_RECEIVABLE: "OTHER", OTHER: "OTHER",
+  INVESTMENT: "CASH", PRIVATE_EQUITY: "PRIVATE_EQUITY", RECEIVABLE: "OTHER",
+};
 
 const prisma = new PrismaClient();
-
 const isDryRun = process.argv.includes("--dry-run");
 
 async function main() {
@@ -31,7 +70,6 @@ async function main() {
       : "Starting holdings-to-positions migration..."
   );
 
-  // Fetch all active holdings with their account and positions
   const holdings = await prisma.subledgerItem.findMany({
     where: { isActive: true },
     include: {
@@ -51,9 +89,8 @@ async function main() {
   let skipped = 0;
 
   for (const holding of holdings) {
-    // Idempotency: skip if any position already has accountId
     const alreadyMigrated = holding.positions.some(
-      (p) => p.accountId !== null && p.accountId !== undefined
+      (p: any) => p.accountId !== null && p.accountId !== undefined
     );
     if (alreadyMigrated) {
       console.log(`  SKIP: "${holding.name}" (already migrated)`);
@@ -63,9 +100,7 @@ async function main() {
 
     const glMapping = HOLDING_TYPE_TO_GL[holding.itemType];
     if (!glMapping) {
-      console.warn(
-        `  SKIP: "${holding.name}" -- unknown type "${holding.itemType}"`
-      );
+      console.warn(`  SKIP: "${holding.name}" -- unknown type "${holding.itemType}"`);
       skipped++;
       continue;
     }
@@ -85,27 +120,18 @@ async function main() {
       continue;
     }
 
-    // Run migration for this holding in a transaction
-    await prisma.$transaction(async (tx) => {
-      // 1. Create summary GL account
+    await prisma.$transaction(async (tx: any) => {
       const parentAccount = await tx.account.findFirst({
-        where: {
-          entityId: holding.entityId,
-          number: glMapping.parentPrefix,
-          isActive: true,
-        },
+        where: { entityId: holding.entityId, number: glMapping.parentPrefix, isActive: true },
         select: { id: true, number: true },
       });
 
       if (!parentAccount) {
-        console.warn(
-          `  SKIP: "${holding.name}" -- GL parent ${glMapping.parentPrefix} not found`
-        );
+        console.warn(`  SKIP: "${holding.name}" -- GL parent ${glMapping.parentPrefix} not found`);
         skipped++;
         return;
       }
 
-      // Find highest sibling for +100 stepping
       const siblings = await tx.account.findMany({
         where: { entityId: holding.entityId, parentId: parentAccount.id },
         orderBy: { number: "desc" },
@@ -128,45 +154,33 @@ async function main() {
         },
       });
 
-      await tx.accountBalance.create({
-        data: { accountId: summaryAccount.id, balance: 0 },
-      });
+      await tx.accountBalance.create({ data: { accountId: summaryAccount.id, balance: 0 } });
 
       if (holding.positions.length === 0) {
-        // Re-parent existing GL account
         await tx.account.update({
           where: { id: holding.account.id },
           data: { parentId: summaryAccount.id },
         });
 
-        // Create default position
-        const posName =
-          DEFAULT_POSITION_NAME[holding.itemType] || "General";
-        const posType =
-          DEFAULT_POSITION_TYPE[holding.itemType] || "OTHER";
+        const posName = DEFAULT_POSITION_NAME[holding.itemType] || "General";
+        const posType = DEFAULT_POSITION_TYPE[holding.itemType] || "OTHER";
 
         await tx.position.create({
           data: {
             subledgerItemId: holding.id,
             name: posName,
-            positionType: posType as any,
+            positionType: posType,
             accountId: holding.account.id,
             marketValue: 0,
           },
         });
 
         defaultPositionsCreated++;
-        console.log(
-          `  MIGRATED: "${holding.name}" -- default position "${posName}" created`
-        );
+        console.log(`  MIGRATED: "${holding.name}" -- default position "${posName}" created`);
       } else {
-        // Create GL leaf for each position
         for (const pos of holding.positions) {
           const posSiblings = await tx.account.findMany({
-            where: {
-              entityId: holding.entityId,
-              parentId: summaryAccount.id,
-            },
+            where: { entityId: holding.entityId, parentId: summaryAccount.id },
             orderBy: { number: "desc" },
             take: 1,
           });
@@ -187,9 +201,7 @@ async function main() {
             },
           });
 
-          await tx.accountBalance.create({
-            data: { accountId: leafAccount.id, balance: 0 },
-          });
+          await tx.accountBalance.create({ data: { accountId: leafAccount.id, balance: 0 } });
 
           await tx.position.update({
             where: { id: pos.id },
@@ -197,7 +209,6 @@ async function main() {
           });
         }
 
-        // Re-parent existing GL account
         await tx.account.update({
           where: { id: holding.account.id },
           data: { parentId: summaryAccount.id },
@@ -209,7 +220,6 @@ async function main() {
         );
       }
 
-      // Update holding's accountId to summary
       await tx.subledgerItem.update({
         where: { id: holding.id },
         data: { accountId: summaryAccount.id },
@@ -231,7 +241,7 @@ async function main() {
 }
 
 main()
-  .catch((err) => {
+  .catch((err: Error) => {
     console.error("Migration failed:", err);
     process.exit(1);
   })

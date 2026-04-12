@@ -152,7 +152,17 @@ export async function POST(
       subledgerItem: { entityId },
     },
     include: {
-      subledgerItem: { select: { accountId: true } },
+      subledgerItem: {
+        select: {
+          accountId: true,
+          positions: {
+            where: { isActive: true },
+            orderBy: { createdAt: "asc" },
+            take: 1,
+            select: { accountId: true },
+          },
+        },
+      },
     },
   });
 
@@ -184,7 +194,9 @@ export async function POST(
     }
   }
 
-  const bankAccountId = transaction.subledgerItem.accountId;
+  // Resolve position-level GL account (leaf) if available, fall back to holding summary
+  const defaultPosition = transaction.subledgerItem.positions?.[0];
+  const bankAccountId = defaultPosition?.accountId ?? transaction.subledgerItem.accountId;
 
   try {
     // Build the JE input using our library function

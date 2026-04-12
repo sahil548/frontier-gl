@@ -111,6 +111,85 @@ describe("createJournalEntryFromTransaction", () => {
     ).toThrow();
   });
 
+  describe("position-level bankAccountId resolution", () => {
+    it("uses position accountId when available (migrated holding)", () => {
+      // Simulate what the route does: resolve position's GL leaf account as bankAccountId
+      const positionAccountId = "position-leaf-gl-id";
+      const subledgerAccountId = "holding-summary-gl-id";
+
+      // Route resolution logic: position?.accountId ?? subledgerItem.accountId
+      const defaultPosition = { accountId: positionAccountId };
+      const bankAccountId = defaultPosition?.accountId ?? subledgerAccountId;
+
+      const result = createJournalEntryFromTransaction({
+        ...baseParams,
+        bankAccountId,
+        transaction: {
+          id: "t-pos-1",
+          date: new Date("2025-02-01"),
+          description: "ATM WITHDRAWAL",
+          amount: -200,
+          accountId: "expense-acc-id",
+        },
+      });
+
+      // The bank (credit) side should use the position's GL leaf account
+      const creditLine = result.lineItems.find((l) => Number(l.credit) > 0);
+      expect(creditLine!.accountId).toBe("position-leaf-gl-id");
+    });
+
+    it("falls back to subledgerItem accountId when no position exists (legacy data)", () => {
+      // Simulate unmigrated holding: no position with accountId
+      const subledgerAccountId = "legacy-holding-gl-id";
+
+      // Route resolution: undefined?.accountId ?? subledgerItem.accountId
+      const defaultPosition = undefined;
+      const bankAccountId =
+        (defaultPosition as any)?.accountId ?? subledgerAccountId;
+
+      const result = createJournalEntryFromTransaction({
+        ...baseParams,
+        bankAccountId,
+        transaction: {
+          id: "t-pos-2",
+          date: new Date("2025-02-02"),
+          description: "DIRECT DEPOSIT",
+          amount: 3000,
+          accountId: "income-acc-id",
+        },
+      });
+
+      // The bank (debit) side should fall back to subledgerItem.accountId
+      const debitLine = result.lineItems.find((l) => Number(l.debit) > 0);
+      expect(debitLine!.accountId).toBe("legacy-holding-gl-id");
+    });
+
+    it("falls back when position has null accountId (partially migrated)", () => {
+      // Position exists but accountId is null (migration not yet backfilled)
+      const subledgerAccountId = "holding-summary-gl-id";
+
+      const defaultPosition = { accountId: null };
+      const bankAccountId =
+        defaultPosition?.accountId ?? subledgerAccountId;
+
+      const result = createJournalEntryFromTransaction({
+        ...baseParams,
+        bankAccountId,
+        transaction: {
+          id: "t-pos-3",
+          date: new Date("2025-02-03"),
+          description: "PAYMENT",
+          amount: -50,
+          accountId: "expense-acc-id",
+        },
+      });
+
+      // Should fall back to subledgerItem.accountId
+      const creditLine = result.lineItems.find((l) => Number(l.credit) > 0);
+      expect(creditLine!.accountId).toBe("holding-summary-gl-id");
+    });
+  });
+
   it("supports postImmediately flag (POSTED vs DRAFT status)", () => {
     const draft = createJournalEntryFromTransaction({
       ...baseParams,
