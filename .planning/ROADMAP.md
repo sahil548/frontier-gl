@@ -171,7 +171,7 @@ Plans:
 **Goal:** Holdings contain positions (cash, securities, LP interests, etc.), and positions — not holdings — link to GL accounts. Holding types expanded for family office use cases (lending, operating businesses, insurance). GL accounts auto-created at position level.
 **Requirements:** POS-01, POS-02, POS-03, POS-04, POS-05, POS-06, POS-07, POS-08
 **Depends on:** Phase 9
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] 10-01-PLAN.md — Schema expansion (13 holding types, Position.accountId), shared constants, GL account creation helpers, updated subledger + position API routes

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 10 Plan 01 complete (schema expansion, GL hierarchy helpers)
-last_updated: "2026-04-12T18:46:37Z"
-last_activity: 2026-04-12 -- Phase 10 Plan 01 complete (schema expansion, GL hierarchy helpers, updated API routes)
+stopped_at: Completed 10-02-PLAN.md
+last_updated: "2026-04-12T18:55:03.295Z"
+last_activity: 2026-04-12 -- Phase 10 Plan 02 complete (data migration + position-level bank transaction posting)
 progress:
   total_phases: 12
   completed_phases: 7
   total_plans: 46
-  completed_plans: 33
+  completed_plans: 34
   percent: 95
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 10 of 12 (Positions Model & Holdings Overhaul)
-Plan: 1 of 3 complete
+Plan: 2 of 3 complete
 Status: Phase 10 In Progress
-Last activity: 2026-04-12 -- Phase 10 Plan 01 complete (schema expansion, GL hierarchy helpers, updated API routes)
+Last activity: 2026-04-12 -- Phase 10 Plan 02 complete (data migration + position-level bank transaction posting)
 
 Progress: [█████████░] 95%
 
@@ -82,6 +82,7 @@ Progress: [█████████░] 95%
 | Phase 09 P03 | 6min | 2 tasks | 14 files |
 | Phase 09 P04 | 5min | 3 tasks | 8 files |
 | Phase 10 P01 | 5min | 2 tasks | 8 files |
+| Phase 10 P02 | 5min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -169,6 +170,9 @@ Recent decisions affecting current work:
 - [Phase 10]: Position.accountId nullable initially for migration compatibility (Plan 02 will backfill)
 - [Phase 10]: 3-level COA hierarchy: type parent > holding summary (+100) > position leaf (+10)
 - [Phase 10]: GL account creation helpers accept Prisma tx as first arg for transaction safety
+- [Phase 10]: Migration library function in src/scripts/ (testable via vitest), standalone runner in scripts/ (self-contained)
+- [Phase 10]: Position-level GL resolution uses nullish coalescing: position?.accountId ?? subledgerItem.accountId
+- [Phase 10]: Migration idempotency detected by checking if any active position has a non-null accountId
 
 ### Pending Todos
 
@@ -181,6 +185,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-12T18:46:37Z
-Stopped at: Completed 10-01-PLAN.md
-Resume file: .planning/phases/10-positions-model-holdings-overhaul/10-02-PLAN.md
+Last session: 2026-04-12T18:55:03.293Z
+Stopped at: Completed 10-02-PLAN.md
+Resume file: None

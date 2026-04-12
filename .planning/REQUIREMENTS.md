@@ -201,10 +201,10 @@
 - [x] **POS-02**: Position model has accountId FK as the primary GL anchor (positions link to GL accounts, not holdings)
 - [x] **POS-03**: Creating a position auto-creates a GL leaf account under the holding's summary account (3-level COA hierarchy)
 - [x] **POS-04**: Creating a holding auto-creates a parent summary GL account and a default position with its own GL leaf account
-- [ ] **POS-05**: Data migration auto-backfills default positions for existing holdings and transfers GL accounts to position level
+- [x] **POS-05**: Data migration auto-backfills default positions for existing holdings and transfers GL accounts to position level
 - [ ] **POS-06**: After holding creation, user is immediately prompted to add positions via a multi-row form
 - [ ] **POS-07**: Holdings page groups holdings by type with collapsible sections, aggregate totals, and position-level GL account display
-- [ ] **POS-08**: Bank transactions post against position-level GL accounts (not holding summary accounts)
+- [x] **POS-08**: Bank transactions post against position-level GL accounts (not holding summary accounts)
 
 ---
 
