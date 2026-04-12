@@ -336,6 +336,7 @@ export async function POST(
         where: { id: transactionId },
         data: {
           status: "POSTED",
+          reconciliationStatus: "RECONCILED",
           journalEntryId: je.id,
           isSplit: splits !== undefined && splits.length > 0,
           // If splits provided, also set accountId to null (multiple accounts via JE lines)

@@ -171,6 +171,7 @@ export async function POST(
               data: {
                 accountId,
                 status: "POSTED",
+                reconciliationStatus: "RECONCILED",
                 journalEntryId: je.id,
               },
             });

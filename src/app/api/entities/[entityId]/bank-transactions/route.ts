@@ -32,6 +32,7 @@ function serializeTransaction(t: Record<string, unknown>) {
     ruleId: string | null;
     isSplit: boolean;
     parentTransactionId: string | null;
+    reconciliationStatus: string;
     journalEntryId: string | null;
     createdAt: Date;
     updatedAt: Date;
@@ -55,6 +56,7 @@ function serializeTransaction(t: Record<string, unknown>) {
     ruleId: txn.ruleId,
     isSplit: txn.isSplit,
     parentTransactionId: txn.parentTransactionId,
+    reconciliationStatus: txn.reconciliationStatus,
     journalEntryId: txn.journalEntryId,
     createdAt: txn.createdAt.toISOString(),
     updatedAt: txn.updatedAt.toISOString(),
