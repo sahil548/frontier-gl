@@ -72,6 +72,7 @@ model Account {
   eliminationRulesAsB  EliminationRule[]    @relation("EliminationRuleAccountB")
   bankTransactions     BankTransaction[]
   categorizationRules  CategorizationRule[]
+  positions            Position[]
 
   @@unique([entityId, number])
   @@index([entityId, isActive])
@@ -224,6 +225,7 @@ model SubledgerItem {
 model Position {
   id              String          @id @default(cuid())
   subledgerItemId String
+  accountId       String?         // GL anchor for position (nullable for migration compatibility)
   name            String          // "AAPL", "Cash Sweep", "Land", "Building"
   positionType    PositionType
   // Quantities (for securities)
@@ -242,8 +244,10 @@ model Position {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   subledgerItem   SubledgerItem   @relation(fields: [subledgerItemId], references: [id], onDelete: Cascade)
+  account         Account?        @relation(fields: [accountId], references: [id])
 
   @@index([subledgerItemId])
+  @@index([accountId])
   @@map("positions")
 }
 
@@ -419,13 +423,24 @@ enum JournalEntryStatus {
 }
 
 enum SubledgerItemType {
+  // New canonical types (13)
   BANK_ACCOUNT
-  INVESTMENT
+  BROKERAGE_ACCOUNT
+  CREDIT_CARD
   REAL_ESTATE
+  EQUIPMENT
   LOAN
+  PRIVATE_FUND
+  MORTGAGE
+  LINE_OF_CREDIT
+  TRUST_ACCOUNT
+  OPERATING_BUSINESS
+  NOTES_RECEIVABLE
+  OTHER
+  // Legacy types (kept for data compatibility)
+  INVESTMENT
   PRIVATE_EQUITY
   RECEIVABLE
-  OTHER
 }
 
 enum ReconciliationStatus {
