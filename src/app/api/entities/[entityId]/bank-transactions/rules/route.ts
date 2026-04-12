@@ -51,6 +51,7 @@ export async function GET(
       amountMin: serializeDecimal(r.amountMin),
       amountMax: serializeDecimal(r.amountMax),
       accountId: r.accountId,
+      positionId: r.positionId,
       account: r.account,
       dimensionTags: r.dimensionTags,
       isActive: r.isActive,
@@ -99,14 +100,31 @@ export async function POST(
     return errorResponse("Validation failed", 400, parsed.error);
   }
 
-  // Verify account belongs to this entity
-  const account = await prisma.account.findFirst({
-    where: { id: parsed.data.accountId, entityId, isActive: true },
-    select: { id: true, number: true, name: true },
-  });
+  // Verify account belongs to this entity (if provided)
+  let account: { id: string; number: string; name: string } | null = null;
+  if (parsed.data.accountId) {
+    account = await prisma.account.findFirst({
+      where: { id: parsed.data.accountId, entityId, isActive: true },
+      select: { id: true, number: true, name: true },
+    });
 
-  if (!account) {
-    return errorResponse("Account not found or does not belong to this entity", 400);
+    if (!account) {
+      return errorResponse("Account not found or does not belong to this entity", 400);
+    }
+  }
+
+  // Verify position belongs to this entity (if provided)
+  if (parsed.data.positionId) {
+    const position = await prisma.position.findFirst({
+      where: {
+        id: parsed.data.positionId,
+        subledgerItem: { entityId, isActive: true },
+        isActive: true,
+      },
+    });
+    if (!position) {
+      return errorResponse("Position not found or does not belong to this entity", 400);
+    }
   }
 
   // Verify dimension tags if provided
@@ -139,7 +157,8 @@ export async function POST(
       pattern: parsed.data.pattern,
       amountMin: parsed.data.amountMin ? new Prisma.Decimal(String(parsed.data.amountMin)) : null,
       amountMax: parsed.data.amountMax ? new Prisma.Decimal(String(parsed.data.amountMax)) : null,
-      accountId: parsed.data.accountId,
+      accountId: parsed.data.accountId ?? null,
+      positionId: parsed.data.positionId ?? null,
       dimensionTags: parsed.data.dimensionTags ?? Prisma.JsonNull,
       priority: (maxPriority?.priority ?? 0) + 1,
     },
@@ -175,7 +194,8 @@ export async function POST(
     await prisma.bankTransaction.updateMany({
       where: { id: { in: matchedIds } },
       data: {
-        accountId: parsed.data.accountId,
+        accountId: parsed.data.accountId ?? null,
+        positionId: parsed.data.positionId ?? null,
         ruleId: rule.id,
         status: "CATEGORIZED",
       },

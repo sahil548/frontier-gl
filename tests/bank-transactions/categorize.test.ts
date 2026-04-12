@@ -7,7 +7,8 @@ type TestRule = {
   pattern: string;
   amountMin: number | null;
   amountMax: number | null;
-  accountId: string;
+  accountId: string | null;
+  positionId?: string | null;
   dimensionTags: Record<string, string> | null;
   isActive: boolean;
   priority: number;

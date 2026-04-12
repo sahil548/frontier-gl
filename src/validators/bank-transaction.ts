@@ -39,6 +39,8 @@ export const bankTransactionSchema = z.object({
   source: z.enum(["CSV", "PLAID"]),
   status: z.enum(["PENDING", "CATEGORIZED", "POSTED", "EXCLUDED"]).optional(),
   accountId: z.string().nullable().optional(),
+  positionId: z.string().nullable().optional(),
+  reconciliationStatus: z.enum(["PENDING", "RECONCILED", "UNMATCHED"]).optional(),
   ruleId: z.string().nullable().optional(),
 });
 
@@ -46,13 +48,17 @@ export type BankTransaction = z.infer<typeof bankTransactionSchema>;
 
 /**
  * Validates categorization rule create/update.
+ * Rules must target at least one of accountId or positionId.
  */
 export const categorizationRuleSchema = z.object({
   pattern: z.string().min(1, "Pattern is required"),
   amountMin: z.number().optional(),
   amountMax: z.number().optional(),
-  accountId: z.string().min(1, "Account ID is required"),
+  accountId: z.string().optional(),
+  positionId: z.string().optional(),
   dimensionTags: z.record(z.string(), z.string()).optional(),
+}).refine((d) => d.accountId || d.positionId, {
+  message: "Either accountId or positionId is required",
 });
 
 export type CategorizationRule = z.infer<typeof categorizationRuleSchema>;

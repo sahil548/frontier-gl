@@ -245,6 +245,8 @@ model Position {
   updatedAt       DateTime        @updatedAt
   subledgerItem   SubledgerItem   @relation(fields: [subledgerItemId], references: [id], onDelete: Cascade)
   account         Account?        @relation(fields: [accountId], references: [id])
+  categorizationRules CategorizationRule[]
+  bankTransactions    BankTransaction[]
 
   @@index([subledgerItemId])
   @@index([accountId])
@@ -532,6 +534,8 @@ model BankTransaction {
   source                TransactionSource
   status                TransactionStatus @default(PENDING)
   accountId             String?
+  positionId            String?
+  reconciliationStatus  String            @default("PENDING")
   ruleId                String?
   isSplit               Boolean           @default(false)
   parentTransactionId   String?
@@ -540,6 +544,7 @@ model BankTransaction {
   updatedAt             DateTime          @updatedAt
   subledgerItem         SubledgerItem     @relation(fields: [subledgerItemId], references: [id])
   account               Account?          @relation(fields: [accountId], references: [id])
+  position              Position?         @relation(fields: [positionId], references: [id])
   rule                  CategorizationRule? @relation(fields: [ruleId], references: [id])
   journalEntry          JournalEntry?     @relation(fields: [journalEntryId], references: [id])
   parentTransaction     BankTransaction?  @relation("TransactionSplit", fields: [parentTransactionId], references: [id])
@@ -577,14 +582,16 @@ model CategorizationRule {
   pattern         String
   amountMin       Decimal?          @db.Decimal(19, 4)
   amountMax       Decimal?          @db.Decimal(19, 4)
-  accountId       String
+  accountId       String?
+  positionId      String?
   dimensionTags   Json?
   isActive        Boolean           @default(true)
   priority        Int               @default(0)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
   entity          Entity            @relation(fields: [entityId], references: [id])
-  account         Account           @relation(fields: [accountId], references: [id])
+  account         Account?          @relation(fields: [accountId], references: [id])
+  position        Position?         @relation(fields: [positionId], references: [id])
   bankTransactions BankTransaction[]
 
   @@index([entityId, isActive])

@@ -7,7 +7,8 @@ export interface RuleInput {
   pattern: string;
   amountMin: number | { toNumber?: () => number } | null;
   amountMax: number | { toNumber?: () => number } | null;
-  accountId: string;
+  accountId: string | null;
+  positionId?: string | null;
   dimensionTags: Record<string, string> | unknown | null;
   isActive: boolean;
   priority: number;
