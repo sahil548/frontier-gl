@@ -94,6 +94,8 @@ export default function BankFeedPage() {
     merchantName: string | null;
     accountId: string;
     accountName: string;
+    positionId?: string | null;
+    positionLabel?: string | null;
   } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -473,6 +475,8 @@ export default function BankFeedPage() {
           merchantName={categorizePrompt.merchantName}
           accountId={categorizePrompt.accountId}
           accountName={categorizePrompt.accountName}
+          positionId={categorizePrompt.positionId}
+          positionLabel={categorizePrompt.positionLabel}
           onDismiss={() => setCategorizePrompt(null)}
           onRuleCreated={refreshAll}
         />

@@ -39,6 +39,13 @@ export async function GET(
     where: { entityId, isActive: true },
     include: {
       account: { select: { id: true, number: true, name: true, type: true } },
+      position: {
+        select: {
+          id: true,
+          name: true,
+          subledgerItem: { select: { name: true, itemType: true } },
+        },
+      },
       _count: { select: { bankTransactions: true } },
     },
     orderBy: [{ priority: "asc" }, { createdAt: "asc" }],
@@ -53,6 +60,9 @@ export async function GET(
       accountId: r.accountId,
       positionId: r.positionId,
       account: r.account,
+      positionName: r.position?.name ?? null,
+      holdingName: r.position?.subledgerItem?.name ?? null,
+      holdingType: r.position?.subledgerItem?.itemType ?? null,
       dimensionTags: r.dimensionTags,
       isActive: r.isActive,
       priority: r.priority,

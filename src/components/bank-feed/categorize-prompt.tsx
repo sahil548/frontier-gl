@@ -11,6 +11,8 @@ type CategorizePromptProps = {
   merchantName: string | null;
   accountId: string;
   accountName: string;
+  positionId?: string | null;
+  positionLabel?: string | null;
   dimensionTags?: Record<string, string>;
   ruleId?: string | null;
   onDismiss: () => void;
@@ -43,7 +45,10 @@ function extractPattern(description: string, merchantName: string | null): strin
  * Features:
  * - "Yes, create rule" -- instantly creates rule with extracted pattern
  * - "No, just this once" -- dismisses prompt
- * - "Customize rule..." -- opens RuleForm Sheet pre-filled with pattern and account
+ * - "Customize rule..." -- opens RuleForm Sheet pre-filled with pattern and account/position
+ *
+ * Position-first: If a positionId was used for categorization, the rule is created
+ * with positionId (GL resolved at apply-time). Otherwise falls back to accountId.
  */
 export function CategorizePrompt({
   entityId,
@@ -51,6 +56,8 @@ export function CategorizePrompt({
   merchantName,
   accountId,
   accountName,
+  positionId,
+  positionLabel,
   dimensionTags,
   ruleId,
   onDismiss,
@@ -64,10 +71,21 @@ export function CategorizePrompt({
 
   const pattern = extractPattern(transactionDescription, merchantName);
 
+  // Display label: position name if available, otherwise account name
+  const targetLabel = positionLabel || accountName;
+
   const handleCreateRule = async () => {
     setIsCreating(true);
     try {
-      const body: Record<string, unknown> = { pattern, accountId };
+      const body: Record<string, unknown> = { pattern };
+
+      // Position-targeted rule: store positionId, GL resolved at apply-time
+      if (positionId) {
+        body.positionId = positionId;
+      } else {
+        body.accountId = accountId;
+      }
+
       if (dimensionTags && Object.keys(dimensionTags).length > 0) {
         body.dimensionTags = dimensionTags;
       }
@@ -86,7 +104,7 @@ export function CategorizePrompt({
         const matchedCount = json.data.matchedCount ?? 0;
         const msg = matchedCount > 0
           ? `Rule created! ${matchedCount} existing transaction${matchedCount === 1 ? "" : "s"} matched.`
-          : `Rule created: "${pattern}" will auto-categorize as ${accountName}`;
+          : `Rule created: "${pattern}" will auto-categorize as ${targetLabel}`;
         toast.success(msg);
         onRuleCreated?.();
         onDismiss();
@@ -107,6 +125,7 @@ export function CategorizePrompt({
   const customizeRuleData: RuleData = {
     pattern,
     accountId,
+    positionId: positionId ?? undefined,
     dimensionTags,
   };
 
@@ -115,7 +134,7 @@ export function CategorizePrompt({
       <div className="flex flex-wrap items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm dark:border-blue-900 dark:bg-blue-950">
         <span className="text-blue-700 dark:text-blue-300">
           Always categorize &quot;{pattern}&quot; as{" "}
-          <span className="font-medium">{accountName}</span>?
+          <span className="font-medium">{targetLabel}</span>?
         </span>
         <Button
           size="sm"

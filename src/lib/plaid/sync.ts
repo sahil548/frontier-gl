@@ -99,7 +99,8 @@ export async function syncTransactions(
     pattern: string;
     amountMin: unknown;
     amountMax: unknown;
-    accountId: string;
+    accountId: string | null;
+    positionId?: string | null;
     dimensionTags: unknown;
     isActive: boolean;
     priority: number;

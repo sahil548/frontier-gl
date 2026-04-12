@@ -23,6 +23,7 @@ export type RuleData = {
   amountMin?: number;
   amountMax?: number;
   accountId: string;
+  positionId?: string;
   dimensionTags?: Record<string, string>;
 };
 
