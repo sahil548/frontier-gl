@@ -6,6 +6,7 @@ import { CalendarIcon, Download } from "lucide-react";
 import { useEntityContext } from "@/providers/entity-provider";
 import { Button } from "@/components/ui/button";
 import { IncomeStatementView } from "@/components/reports/income-statement-view";
+import { BalanceSheetView } from "@/components/reports/balance-sheet-view";
 import { useConsolidatedReport } from "@/hooks/use-consolidated-report";
 import { EntityFilterChips } from "@/components/reports/entity-filter-chips";
 import { ConsolidatedSectionRows, ConsolidatedCashFlowSection } from "@/components/reports/consolidated-section-rows";
@@ -1062,113 +1063,7 @@ export default function ReportsPage() {
                 </Button>
               </div>
 
-              {/* Empty state */}
-              {bsData.assetRows.length === 0 &&
-                bsData.liabilityRows.length === 0 &&
-                bsData.equityRows.length === 0 && (
-                  <div className="rounded-md border py-12 text-center">
-                    <p className="text-muted-foreground">
-                      No balance sheet data found as of this date.
-                    </p>
-                  </div>
-                )}
-
-              {/* Table */}
-              {(bsData.assetRows.length > 0 ||
-                bsData.liabilityRows.length > 0 ||
-                bsData.equityRows.length > 0) && (
-                <div className="overflow-x-auto rounded-md border">
-                  <Table className="w-max min-w-full">
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Account Number</TableHead>
-                        <TableHead>Account Name</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead className="text-right">Balance</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {/* Assets section */}
-                      {bsData.assetRows.length > 0 && (
-                        <SectionRows
-                          label="Assets"
-                          rows={bsData.assetRows}
-                          total={bsData.totalAssets}
-                          totalLabel="Total Assets"
-                        />
-                      )}
-
-                      {/* Liabilities section */}
-                      {bsData.liabilityRows.length > 0 && (
-                        <SectionRows
-                          label="Liabilities"
-                          rows={bsData.liabilityRows}
-                          total={bsData.totalLiabilities}
-                          totalLabel="Total Liabilities"
-                        />
-                      )}
-
-                      {/* Equity section */}
-                      {bsData.equityRows.length > 0 && (
-                        <SectionRows
-                          label="Equity"
-                          rows={bsData.equityRows}
-                          total={bsData.totalEquity}
-                          totalLabel="Total Equity"
-                        />
-                      )}
-
-                      {/* Liabilities + Equity total */}
-                      <TableRow className="bg-muted/20 hover:bg-muted/20">
-                        <TableCell />
-                        <TableCell className="font-semibold text-sm">
-                          Total Liabilities + Equity
-                        </TableCell>
-                        <TableCell />
-                        <TableCell className="text-right font-mono text-sm font-semibold">
-                          {formatCurrency(
-                            bsData.totalLiabilities + bsData.totalEquity
-                          )}
-                        </TableCell>
-                      </TableRow>
-
-                      {/* Balance check row */}
-                      <TableRow className="bg-muted/50 font-bold">
-                        <TableCell />
-                        <TableCell className="font-bold">
-                          Balance Check (Assets = L + E)
-                        </TableCell>
-                        <TableCell />
-                        <TableCell className="text-right">
-                          {Math.abs(
-                            bsData.totalAssets -
-                              (bsData.totalLiabilities + bsData.totalEquity)
-                          ) < 0.005 ? (
-                            <Badge
-                              variant="secondary"
-                              className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-0"
-                            >
-                              Balanced
-                            </Badge>
-                          ) : (
-                            <Badge
-                              variant="secondary"
-                              className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-0"
-                            >
-                              Difference:{" "}
-                              {formatCurrency(
-                                bsData.totalAssets -
-                                  (bsData.totalLiabilities +
-                                    bsData.totalEquity)
-                              )}
-                            </Badge>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
+              <BalanceSheetView data={bsData} />
             </>
           )}
         </div>

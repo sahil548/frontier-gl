@@ -6,6 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { createAccountSchema } from "@/lib/validators/account";
 import type { CreateAccountInput } from "@/lib/validators/account";
+import { CashFlowCategory } from "@/generated/prisma/enums";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,6 +47,15 @@ const ACCOUNT_TYPES = [
   { value: "EXPENSE", label: "Expense" },
 ];
 
+const CASH_FLOW_CATEGORIES = [
+  { value: CashFlowCategory.OPERATING, label: "Operating" },
+  { value: CashFlowCategory.INVESTING, label: "Investing" },
+  { value: CashFlowCategory.FINANCING, label: "Financing" },
+  { value: CashFlowCategory.EXCLUDED, label: "Excluded" },
+];
+
+const BALANCE_SHEET_TYPES = ["ASSET", "LIABILITY", "EQUITY"];
+
 type SerializedAccount = {
   id: string;
   entityId: string;
@@ -55,6 +66,8 @@ type SerializedAccount = {
   parentId: string | null;
   isActive: boolean;
   balance: string;
+  cashFlowCategory: string | null;
+  isContra: boolean;
 };
 
 type AccountFormProps = {
@@ -105,6 +118,10 @@ export function AccountForm({
       type: isEdit ? (editAccount.type as CreateAccountInput["type"]) : undefined,
       description: isEdit ? editAccount.description ?? "" : "",
       parentId: isEdit ? (editAccount.parentId ?? undefined) : defaultParentId,
+      cashFlowCategory: isEdit
+        ? (editAccount.cashFlowCategory as CreateAccountInput["cashFlowCategory"]) ?? undefined
+        : undefined,
+      isContra: isEdit ? editAccount.isContra : false,
     },
   });
 
@@ -118,6 +135,9 @@ export function AccountForm({
           type: editAccount.type as CreateAccountInput["type"],
           description: editAccount.description ?? "",
           parentId: editAccount.parentId ?? undefined,
+          cashFlowCategory:
+            (editAccount.cashFlowCategory as CreateAccountInput["cashFlowCategory"]) ?? undefined,
+          isContra: editAccount.isContra,
         });
       } else {
         reset({
@@ -126,6 +146,8 @@ export function AccountForm({
           type: undefined,
           description: "",
           parentId: defaultParentId,
+          cashFlowCategory: undefined,
+          isContra: false,
         });
       }
     }
@@ -330,6 +352,66 @@ export function AccountForm({
               <p className="text-sm text-destructive">{errors.type.message}</p>
             )}
           </div>
+
+          {/* Cash Flow Category (balance sheet types only) */}
+          {watchType && BALANCE_SHEET_TYPES.includes(watchType) && (
+            <div className="space-y-2">
+              <Label htmlFor="account-cashflow">Cash Flow Category</Label>
+              <Select
+                value={watch("cashFlowCategory") ?? "__none__"}
+                onValueChange={(val) =>
+                  setValue(
+                    "cashFlowCategory",
+                    !val || val === "__none__"
+                      ? undefined
+                      : (val as CreateAccountInput["cashFlowCategory"]),
+                    { shouldValidate: true }
+                  )
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Default (Operating)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="__none__">Default (Operating)</SelectItem>
+                    {CASH_FLOW_CATEGORIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Controls how this account appears on the cash flow statement
+              </p>
+            </div>
+          )}
+
+          {/* Is Contra (balance sheet types only) */}
+          {watchType && BALANCE_SHEET_TYPES.includes(watchType) && (
+            <div className="flex items-start gap-3 py-1">
+              <Checkbox
+                id="account-contra"
+                checked={watch("isContra") ?? false}
+                onCheckedChange={(checked) =>
+                  setValue("isContra", checked === true, {
+                    shouldValidate: true,
+                  })
+                }
+              />
+              <div className="space-y-1">
+                <Label htmlFor="account-contra" className="cursor-pointer">
+                  This is a contra account (opposite normal balance)
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Contra accounts are displayed with &quot;Less:&quot; prefix on the
+                  balance sheet
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Description */}
           <div className="space-y-2">

@@ -34,6 +34,8 @@ export interface ReportRow {
   accountName: string;
   accountType: AccountType;
   netBalance: number;
+  isContra?: boolean;
+  parentId?: string | null;
 }
 
 export interface IncomeStatementData {
@@ -395,6 +397,8 @@ export async function getBalanceSheet(
       account_number: string;
       account_name: string;
       account_type: string;
+      is_contra: boolean;
+      parent_id: string | null;
       net_balance: unknown;
     }[]
   >(
@@ -404,6 +408,8 @@ export async function getBalanceSheet(
         a.number                                   AS account_number,
         a.name                                     AS account_name,
         a.type::text                               AS account_type,
+        a."isContra"                               AS is_contra,
+        a."parentId"                               AS parent_id,
         COALESCE(SUM(
           CASE
             WHEN a.type = 'ASSET'
@@ -422,7 +428,7 @@ export async function getBalanceSheet(
       WHERE a."entityId" = ${entityId}
         AND a."isActive" = true
         AND a.type IN ('ASSET', 'LIABILITY', 'EQUITY')
-      GROUP BY a.id, a.number, a.name, a.type
+      GROUP BY a.id, a.number, a.name, a.type, a."isContra", a."parentId"
       ORDER BY a.number
     `
   );
@@ -433,6 +439,8 @@ export async function getBalanceSheet(
     accountName: r.account_name,
     accountType: r.account_type as AccountType,
     netBalance: toNum(r.net_balance),
+    isContra: r.is_contra,
+    parentId: r.parent_id,
   }));
 
   const assetRows = mapped.filter((r) => r.accountType === "ASSET");
