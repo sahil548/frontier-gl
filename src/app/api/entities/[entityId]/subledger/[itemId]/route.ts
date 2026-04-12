@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db/prisma";
 import { z } from "zod";
 import { successResponse, errorResponse } from "@/lib/validators/api-response";
+import { generateAdjustingJE } from "@/lib/bank-transactions/opening-balance";
 
 const updateSchema = z.object({
   name: z.string().min(1).max(200).optional(),
@@ -95,32 +96,66 @@ export async function PUT(
 
   const existing = await prisma.subledgerItem.findFirst({
     where: { id: itemId, entityId },
+    include: {
+      account: { select: { id: true, type: true } },
+    },
   });
   if (!existing) return errorResponse("Subledger item not found", 404);
 
   const data = result.data;
-  const updated = await prisma.subledgerItem.update({
-    where: { id: itemId },
-    data: {
-      ...(data.name !== undefined ? { name: data.name } : {}),
-      ...(data.costBasis !== undefined ? { costBasis: data.costBasis } : {}),
-      ...(data.fairMarketValue !== undefined ? { fairMarketValue: data.fairMarketValue } : {}),
-      ...(data.currentBalance !== undefined ? { currentBalance: data.currentBalance } : {}),
-      ...(data.counterparty !== undefined ? { counterparty: data.counterparty } : {}),
-      ...(data.referenceNumber !== undefined ? { referenceNumber: data.referenceNumber } : {}),
-      ...(data.acquiredDate !== undefined ? { acquiredDate: data.acquiredDate ? new Date(data.acquiredDate) : null } : {}),
-      ...(data.maturityDate !== undefined ? { maturityDate: data.maturityDate ? new Date(data.maturityDate) : null } : {}),
-      ...(data.interestRate !== undefined ? { interestRate: data.interestRate } : {}),
-      ...(data.notes !== undefined ? { notes: data.notes } : {}),
-      ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
-    },
-    include: {
-      account: { select: { id: true, number: true, name: true, type: true } },
-      reconciliations: {
-        orderBy: { statementDate: "desc" },
-        take: 10,
+
+  const updated = await prisma.$transaction(async (tx) => {
+    // Check if balance is changing -- generate adjusting JE if so
+    if (
+      data.currentBalance !== undefined &&
+      existing.account &&
+      Number(existing.currentBalance) !== data.currentBalance
+    ) {
+      // Find the position's GL leaf account for the JE
+      // Use the first active position's accountId, falling back to the holding's summary account
+      const position = await tx.position.findFirst({
+        where: { subledgerItemId: itemId, isActive: true },
+        select: { accountId: true },
+      });
+      const holdingAccountId = position?.accountId ?? existing.accountId;
+
+      await generateAdjustingJE(tx, {
+        entityId,
+        userId: userId!,
+        holdingAccountId,
+        holdingAccountType: existing.account.type,
+        oldBalance: Number(existing.currentBalance),
+        newBalance: data.currentBalance,
+        date: new Date(),
+      });
+    }
+
+    // Perform the update
+    const result = await tx.subledgerItem.update({
+      where: { id: itemId },
+      data: {
+        ...(data.name !== undefined ? { name: data.name } : {}),
+        ...(data.costBasis !== undefined ? { costBasis: data.costBasis } : {}),
+        ...(data.fairMarketValue !== undefined ? { fairMarketValue: data.fairMarketValue } : {}),
+        ...(data.currentBalance !== undefined ? { currentBalance: data.currentBalance } : {}),
+        ...(data.counterparty !== undefined ? { counterparty: data.counterparty } : {}),
+        ...(data.referenceNumber !== undefined ? { referenceNumber: data.referenceNumber } : {}),
+        ...(data.acquiredDate !== undefined ? { acquiredDate: data.acquiredDate ? new Date(data.acquiredDate) : null } : {}),
+        ...(data.maturityDate !== undefined ? { maturityDate: data.maturityDate ? new Date(data.maturityDate) : null } : {}),
+        ...(data.interestRate !== undefined ? { interestRate: data.interestRate } : {}),
+        ...(data.notes !== undefined ? { notes: data.notes } : {}),
+        ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
       },
-    },
+      include: {
+        account: { select: { id: true, number: true, name: true, type: true } },
+        reconciliations: {
+          orderBy: { statementDate: "desc" },
+          take: 10,
+        },
+      },
+    });
+
+    return result;
   });
 
   return successResponse(serialize(updated));

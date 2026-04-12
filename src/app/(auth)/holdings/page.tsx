@@ -685,6 +685,7 @@ export default function HoldingsPage() {
   const [formRef, setFormRef] = useState("");
   const [formCostBasis, setFormCostBasis] = useState("");
   const [formNotes, setFormNotes] = useState("");
+  const [formOpeningBalanceDate, setFormOpeningBalanceDate] = useState("");
   const [saving, setSaving] = useState(false);
 
   const fetchItems = useCallback(async () => {
@@ -709,7 +710,7 @@ export default function HoldingsPage() {
   function resetForm() {
     setFormName(""); setFormType("BANK_ACCOUNT");
     setFormBalance(""); setFormCounterparty(""); setFormRef("");
-    setFormCostBasis(""); setFormNotes("");
+    setFormCostBasis(""); setFormNotes(""); setFormOpeningBalanceDate("");
   }
 
   function openEdit(item: HoldingItem) {
@@ -743,8 +744,16 @@ export default function HoldingsPage() {
 
   async function handleSave() {
     if (!formName.trim()) return;
-    setSaving(true);
     const isEdit = !!editItem;
+    const balance = parseFloat(formBalance) || 0;
+
+    // Validate: date required when creating with non-zero balance
+    if (!isEdit && balance !== 0 && !formOpeningBalanceDate) {
+      toast.error("Date required for opening balance");
+      return;
+    }
+
+    setSaving(true);
     const url = isEdit
       ? `/api/entities/${currentEntityId}/subledger/${editItem.id}`
       : `/api/entities/${currentEntityId}/subledger`;
@@ -756,11 +765,12 @@ export default function HoldingsPage() {
         body: JSON.stringify({
           name: formName.trim(),
           itemType: formType,
-          currentBalance: parseFloat(formBalance) || 0,
+          currentBalance: balance,
           counterparty: formCounterparty.trim() || undefined,
           referenceNumber: formRef.trim() || undefined,
           costBasis: formCostBasis ? parseFloat(formCostBasis) : undefined,
           notes: formNotes.trim() || undefined,
+          ...(!isEdit && formOpeningBalanceDate ? { openingBalanceDate: formOpeningBalanceDate } : {}),
         }),
       });
       const json = await res.json();
@@ -769,7 +779,11 @@ export default function HoldingsPage() {
           toast.success("Holding updated");
           setEditItem(null);
         } else {
-          toast.success("Holding created");
+          if (json.data.openingBalanceJEId) {
+            toast.success("Holding created with opening balance journal entry");
+          } else {
+            toast.success("Holding created");
+          }
           // After creation, trigger the AddPositionsPrompt
           setPromptHolding({
             id: json.data.id,
@@ -912,6 +926,20 @@ export default function HoldingsPage() {
           </div>
         )}
       </div>
+      {/* Opening Balance Date -- only on creation when balance is non-zero */}
+      {!editItem && parseFloat(formBalance) !== 0 && formBalance !== "" && (
+        <div className="space-y-2">
+          <Label>Opening Balance Date</Label>
+          <Input
+            type="date"
+            value={formOpeningBalanceDate}
+            onChange={(e) => setFormOpeningBalanceDate(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Date for the opening balance journal entry
+          </p>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label>Counterparty</Label>

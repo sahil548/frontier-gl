@@ -11,6 +11,7 @@ import {
   createHoldingSummaryAccount,
   createPositionGLAccount,
 } from "@/lib/holdings/position-gl";
+import { generateOpeningBalanceJE } from "@/lib/bank-transactions/opening-balance";
 
 const createSchema = z.object({
   name: z.string().min(1).max(200),
@@ -43,6 +44,7 @@ const createSchema = z.object({
   maturityDate: z.string().optional(),
   interestRate: z.number().optional(),
   notes: z.string().optional(),
+  openingBalanceDate: z.string().optional(),
 });
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -213,6 +215,19 @@ export async function POST(
       },
     });
 
+    // 5. Generate opening balance JE if balance is non-zero
+    let openingBalanceJEId: string | null = null;
+    if (data.currentBalance && data.currentBalance !== 0) {
+      openingBalanceJEId = await generateOpeningBalanceJE(tx, {
+        entityId,
+        userId: userId!,
+        holdingAccountId: positionGLAccount.id,
+        holdingAccountType: glMapping.accountType,
+        balance: data.currentBalance,
+        date: data.openingBalanceDate ? new Date(data.openingBalanceDate) : new Date(),
+      });
+    }
+
     // Re-fetch with includes for serialization
     const fullItem = await tx.subledgerItem.findUniqueOrThrow({
       where: { id: subledgerItem.id },
@@ -226,8 +241,8 @@ export async function POST(
       },
     });
 
-    return fullItem;
+    return { fullItem, openingBalanceJEId };
   });
 
-  return successResponse(serialize(item), 201);
+  return successResponse({ ...serialize(item.fullItem), openingBalanceJEId: item.openingBalanceJEId }, 201);
 }
