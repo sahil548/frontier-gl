@@ -185,7 +185,7 @@ Plans:
 **Goal:** Bank feed categorization uses holdings/positions as offset targets instead of raw GL accounts. Opening balance JEs auto-generated when holdings are created with balances. Reconciliation workflow fully integrated with bank feed as single source of truth.
 **Requirements:** CAT-01, CAT-03, OBE-01, OBE-02, OBE-03, REC-01, REC-03, REC-04
 **Depends on:** Phase 10
-**Plans:** 5 plans (4 complete + 1 gap closure)
+**Plans:** 5/5 plans complete
 
 Plans:
 - [x] 11-01-PLAN.md — Schema migration (positionId, reconciliationStatus), validators, positions API, Wave 0 test stubs

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-04-PLAN.md
-last_updated: "2026-04-12T20:13:47.261Z"
+stopped_at: Completed 11-05-PLAN.md
+last_updated: "2026-04-12T21:06:17.641Z"
 last_activity: 2026-04-12 -- Phase 11 complete (auto-reconcile, badges, holdings navigation)
 progress:
   total_phases: 12
   completed_phases: 9
-  total_plans: 46
-  completed_plans: 39
+  total_plans: 47
+  completed_plans: 40
   percent: 85
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 11 of 12 (Categorization UX & Opening Balances)
-Plan: 4 of 4 complete
+Plan: 5 of 5 complete
 Status: Executing
-Last activity: 2026-04-12 -- Phase 11 complete (auto-reconcile, badges, holdings navigation)
+Last activity: 2026-04-12 -- Phase 11 gap closure (inline position-first categorization, positionId wiring)
 
 Progress: [█████████░] 85%
 
@@ -88,6 +88,7 @@ Progress: [█████████░] 85%
 | Phase 11 P03 | 5min | 2 tasks | 5 files |
 | Phase 11 P02 | 9min | 2 tasks | 8 files |
 | Phase 11 P04 | 4min | 2 tasks | 7 files |
+| Phase 11 P05 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -193,6 +194,8 @@ Recent decisions affecting current work:
 - [Phase 11]: [Phase 11-04]: reconciliationStatus added to GET serialization for bank transactions (was missing from serialize function)
 - [Phase 11]: [Phase 11-04]: Bank feed page reads subledgerItemId from URL searchParams for cross-page holdings navigation
 - [Phase 11]: [Phase 11-04]: Recon badges use compact colored dots in compact mode, full text Badge in normal mode
+- [Phase 11]: Position label resolved in handleCategorize via positions API fetch rather than passing through onCategorize callback
+- [Phase 11]: Per-row target mode state as Record<string, mode> at component level for inline position/account toggle
 
 ### Pending Todos
 
@@ -205,6 +208,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-12T20:13:47.257Z
-Stopped at: Completed 11-04-PLAN.md
+Last session: 2026-04-12T21:06:17.639Z
+Stopped at: Completed 11-05-PLAN.md
 Resume file: None
