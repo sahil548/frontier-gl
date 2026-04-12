@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-01-PLAN.md
+stopped_at: Completed 12-03-PLAN.md
 last_updated: "2026-04-12T21:22:11.067Z"
-last_activity: 2026-04-12 -- Schema migration, backfill utility, templates, and API routes for cash flow classification
+last_activity: 2026-04-12 -- Rate-based budget computation utility, API endpoint, and budget page UI with recalculate
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 47
-  completed_plans: 42
-  percent: 89
+  completed_plans: 43
+  percent: 91
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 12 of 12 (Reporting Fixes & Onboarding Wizard)
-Plan: 2 of 6 complete
+Plan: 3 of 6 complete
 Status: Executing
-Last activity: 2026-04-12 -- Schema migration, backfill utility, templates, and API routes for cash flow classification
+Last activity: 2026-04-12 -- Rate-based budget computation utility, API endpoint, and budget page UI with recalculate
 
-Progress: [█████████░] 89%
+Progress: [█████████░] 91%
 
 ## Performance Metrics
 
@@ -91,6 +91,7 @@ Progress: [█████████░] 89%
 | Phase 11 P05 | 3min | 2 tasks | 2 files |
 | Phase 12 P00 | 3min | 2 tasks | 9 files |
 | Phase 12 P01 | 8min | 2 tasks | 8 files |
+| Phase 12 P03 | 5min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -202,6 +203,9 @@ Recent decisions affecting current work:
 - [Phase 12]: Name-based inference matches existing report-queries.ts cash flow logic exactly
 - [Phase 12]: HEDGE_FUND_TEMPLATE uses prime brokerage structure with long/short securities
 - [Phase 12]: applyTemplate signature extended with templateName parameter, defaults to family_office
+- [Phase 12-03]: computeMonthlyBudget uses Decimal.js with 4 decimal precision matching DB Decimal(19,4)
+- [Phase 12-03]: No separate recalculate endpoint; same POST with upsert overwrites previous budget amounts
+- [Phase 12-03]: Holdings sourced from /subledger endpoint, filtered to items with fairMarketValue
 
 ### Pending Todos
 
@@ -214,6 +218,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-12T21:22:11.064Z
-Stopped at: Completed 12-01-PLAN.md
+Last session: 2026-04-12T21:29:29Z
+Stopped at: Completed 12-03-PLAN.md
 Resume file: None
