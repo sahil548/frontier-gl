@@ -18,6 +18,8 @@ function serializeAccount(account: {
   description: string | null;
   parentId: string | null;
   isActive: boolean;
+  cashFlowCategory?: string | null;
+  isContra?: boolean;
   createdAt: Date;
   updatedAt: Date;
   balance?: { debitTotal: Decimal; creditTotal: Decimal; balance: Decimal } | null;
@@ -57,6 +59,8 @@ function serializeAccount(account: {
     description: account.description,
     parentId: account.parentId,
     isActive: account.isActive,
+    cashFlowCategory: account.cashFlowCategory ?? null,
+    isContra: account.isContra ?? false,
     balance: displayBalance,
     debitTotal: account.balance
       ? serializeDecimal(new Decimal(account.balance.debitTotal.toString()))

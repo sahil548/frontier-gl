@@ -33,6 +33,8 @@ function serializeAccount(account: any) {
     description: account.description,
     parentId: account.parentId,
     isActive: account.isActive,
+    cashFlowCategory: account.cashFlowCategory ?? null,
+    isContra: account.isContra ?? false,
     balance: displayBalance,
     debitTotal: account.balance
       ? serializeDecimal(new Decimal(account.balance.debitTotal.toString()))
@@ -137,7 +139,7 @@ export async function POST(
     return errorResponse("Validation failed", 400, result.error);
   }
 
-  const { name, number, type, description, parentId } = result.data;
+  const { name, number, type, description, parentId, cashFlowCategory, isContra } = result.data;
 
   // Hierarchy validation
   if (parentId) {
@@ -198,6 +200,8 @@ export async function POST(
         type,
         description,
         parentId,
+        cashFlowCategory,
+        isContra,
       },
     });
 
