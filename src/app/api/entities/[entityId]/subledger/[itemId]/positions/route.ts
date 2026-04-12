@@ -2,6 +2,8 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db/prisma";
 import { z } from "zod";
 import { successResponse, errorResponse } from "@/lib/validators/api-response";
+import { HOLDING_TYPE_TO_GL } from "@/lib/holdings/constants";
+import { createPositionGLAccount } from "@/lib/holdings/position-gl";
 
 const createSchema = z.object({
   name: z.string().min(1).max(200),
@@ -32,6 +34,7 @@ function serialize(p: any) {
   return {
     id: p.id,
     subledgerItemId: p.subledgerItemId,
+    accountId: p.accountId ?? null,
     name: p.name,
     positionType: p.positionType,
     quantity: p.quantity?.toString() ?? null,
@@ -46,6 +49,9 @@ function serialize(p: any) {
     isActive: p.isActive,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
+    account: p.account
+      ? { id: p.account.id, number: p.account.number, name: p.account.name }
+      : null,
   };
 }
 
@@ -80,6 +86,9 @@ export async function GET(
 
   const positions = await prisma.position.findMany({
     where: { subledgerItemId: itemId, isActive: true },
+    include: {
+      account: { select: { id: true, number: true, name: true } },
+    },
     orderBy: [{ positionType: "asc" }, { name: "asc" }],
   });
 
@@ -115,33 +124,61 @@ export async function POST(
 
   const data = result.data;
 
-  // Auto-compute costBasis from quantity × unitCost if not provided
+  // Auto-compute costBasis from quantity * unitCost if not provided
   let costBasis = data.costBasis;
   if (costBasis === undefined && data.quantity !== undefined && data.unitCost !== undefined) {
     costBasis = data.quantity * data.unitCost;
   }
 
-  // Auto-compute marketValue from quantity × unitPrice if not provided
+  // Auto-compute marketValue from quantity * unitPrice if not provided
   let marketValue = data.marketValue;
   if (marketValue === 0 && data.quantity !== undefined && data.unitPrice !== undefined) {
     marketValue = data.quantity * data.unitPrice;
   }
 
-  const position = await prisma.position.create({
-    data: {
-      subledgerItemId: itemId,
-      name: data.name,
-      positionType: data.positionType,
-      quantity: data.quantity,
-      unitCost: data.unitCost,
-      unitPrice: data.unitPrice,
-      costBasis,
-      marketValue,
-      ticker: data.ticker,
-      assetClass: data.assetClass,
-      acquiredDate: data.acquiredDate ? new Date(data.acquiredDate) : null,
-      notes: data.notes,
-    },
+  // Create position with auto-created GL leaf account in a transaction
+  const position = await prisma.$transaction(async (tx) => {
+    // Look up the holding's accountId (summary GL) and itemType
+    const holdingItem = await tx.subledgerItem.findFirst({
+      where: { id: itemId, entityId },
+      select: { accountId: true, itemType: true },
+    });
+    if (!holdingItem) throw new Error("Subledger item not found");
+
+    // Create GL leaf account for the position under the holding summary
+    const glMapping = HOLDING_TYPE_TO_GL[holdingItem.itemType];
+    const accountType = glMapping?.accountType ?? "ASSET";
+    const positionGLAccount = await createPositionGLAccount(
+      tx as never,
+      entityId,
+      holdingItem.accountId,
+      data.name,
+      accountType
+    );
+
+    // Create the position linked to the new GL account
+    const newPosition = await tx.position.create({
+      data: {
+        subledgerItemId: itemId,
+        accountId: positionGLAccount.id,
+        name: data.name,
+        positionType: data.positionType,
+        quantity: data.quantity,
+        unitCost: data.unitCost,
+        unitPrice: data.unitPrice,
+        costBasis,
+        marketValue,
+        ticker: data.ticker,
+        assetClass: data.assetClass,
+        acquiredDate: data.acquiredDate ? new Date(data.acquiredDate) : null,
+        notes: data.notes,
+      },
+      include: {
+        account: { select: { id: true, number: true, name: true } },
+      },
+    });
+
+    return newPosition;
   });
 
   await syncParentBalance(itemId);

@@ -2,33 +2,37 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db/prisma";
 import { z } from "zod";
 import { successResponse, errorResponse } from "@/lib/validators/api-response";
-import { AccountType } from "@/generated/prisma/client";
-
-/**
- * Maps SubledgerItemType → parent account number prefix + GL AccountType.
- * When a holding is created, a GL leaf account is auto-created under the
- * matching parent account.
- */
-const HOLDING_TYPE_TO_GL: Record<string, { parentPrefix: string; accountType: AccountType }> = {
-  BANK_ACCOUNT: { parentPrefix: "11000", accountType: "ASSET" },
-  INVESTMENT: { parentPrefix: "12000", accountType: "ASSET" },
-  REAL_ESTATE: { parentPrefix: "16000", accountType: "ASSET" },
-  LOAN: { parentPrefix: "22000", accountType: "LIABILITY" },
-  PRIVATE_EQUITY: { parentPrefix: "13000", accountType: "ASSET" },
-  RECEIVABLE: { parentPrefix: "14000", accountType: "ASSET" },
-  OTHER: { parentPrefix: "18000", accountType: "ASSET" },
-};
+import {
+  HOLDING_TYPE_TO_GL,
+  DEFAULT_POSITION_NAME,
+  DEFAULT_POSITION_TYPE,
+} from "@/lib/holdings/constants";
+import {
+  createHoldingSummaryAccount,
+  createPositionGLAccount,
+} from "@/lib/holdings/position-gl";
 
 const createSchema = z.object({
   name: z.string().min(1).max(200),
   itemType: z.enum([
+    // New canonical types (13)
     "BANK_ACCOUNT",
-    "INVESTMENT",
+    "BROKERAGE_ACCOUNT",
+    "CREDIT_CARD",
     "REAL_ESTATE",
+    "EQUIPMENT",
     "LOAN",
+    "PRIVATE_FUND",
+    "MORTGAGE",
+    "LINE_OF_CREDIT",
+    "TRUST_ACCOUNT",
+    "OPERATING_BUSINESS",
+    "NOTES_RECEIVABLE",
+    "OTHER",
+    // Legacy types (backward compat)
+    "INVESTMENT",
     "PRIVATE_EQUITY",
     "RECEIVABLE",
-    "OTHER",
   ]),
   costBasis: z.number().optional(),
   fairMarketValue: z.number().optional(),
@@ -73,6 +77,13 @@ function serialize(item: any) {
           error: item.plaidConnection.error,
         }
       : null,
+    positions: item.positions?.map((p: { id: string; name: string; accountId: string | null; positionType: string; marketValue: { toString(): string } }) => ({
+      id: p.id,
+      name: p.name,
+      accountId: p.accountId,
+      positionType: p.positionType,
+      marketValue: p.marketValue?.toString() ?? "0",
+    })) ?? [],
   };
 }
 
@@ -108,6 +119,10 @@ export async function GET(
       _count: { select: { reconciliations: true } },
       plaidConnection: {
         select: { status: true, institutionName: true, lastSyncAt: true, error: true },
+      },
+      positions: {
+        where: { isActive: true },
+        select: { id: true, name: true, accountId: true, positionType: true, marketValue: true },
       },
     },
     orderBy: [{ account: { number: "asc" } }, { name: "asc" }],
@@ -146,59 +161,22 @@ export async function POST(
   const glMapping = HOLDING_TYPE_TO_GL[data.itemType];
   if (!glMapping) return errorResponse("Unknown holding type", 400);
 
-  // Find the parent account by number prefix
-  const parentAccount = await prisma.account.findFirst({
-    where: { entityId, number: glMapping.parentPrefix, isActive: true },
-  });
-  if (!parentAccount) {
-    return errorResponse(
-      `GL parent account ${glMapping.parentPrefix} not found. Ensure the Chart of Accounts has been set up.`,
-      400
-    );
-  }
-
-  // Auto-generate next account number under this parent
-  const siblings = await prisma.account.findMany({
-    where: { entityId, parentId: parentAccount.id },
-    orderBy: { number: "desc" },
-    take: 1,
-  });
-  const parentNum = parseInt(parentAccount.number, 10);
-  const nextNumber = siblings.length === 0
-    ? (parentNum + 100).toString()
-    : (parseInt(siblings[0].number, 10) + 100).toString();
-
-  // Check for duplicate account number
-  const existing = await prisma.account.findFirst({
-    where: { entityId, number: nextNumber },
-  });
-  if (existing) {
-    return errorResponse(`Account number ${nextNumber} already exists`, 409);
-  }
-
-  // Create GL account + holding in a single transaction
+  // Create GL hierarchy + holding + default position in a single transaction
   const item = await prisma.$transaction(async (tx) => {
-    // Create the GL leaf account
-    const newAccount = await tx.account.create({
-      data: {
-        entityId,
-        number: nextNumber,
-        name: data.name,
-        type: glMapping.accountType,
-        parentId: parentAccount.id,
-      },
-    });
+    // 1. Create the holding's summary GL account under the type parent
+    const summaryAccount = await createHoldingSummaryAccount(
+      tx as never,
+      entityId,
+      glMapping.parentPrefix,
+      data.name,
+      glMapping.accountType
+    );
 
-    // Create empty balance record
-    await tx.accountBalance.create({
-      data: { accountId: newAccount.id, balance: 0 },
-    });
-
-    // Create the subledger item linked to the new account
+    // 2. Create the SubledgerItem pointing to the summary account
     const subledgerItem = await tx.subledgerItem.create({
       data: {
         entityId,
-        accountId: newAccount.id,
+        accountId: summaryAccount.id,
         name: data.name,
         itemType: data.itemType,
         costBasis: data.costBasis,
@@ -211,13 +189,44 @@ export async function POST(
         interestRate: data.interestRate,
         notes: data.notes,
       },
-      include: {
-        account: { select: { id: true, number: true, name: true, type: true } },
-        _count: { select: { reconciliations: true } },
+    });
+
+    // 3. Create the default position's GL leaf account under the summary
+    const defaultPositionName = DEFAULT_POSITION_NAME[data.itemType] || "General";
+    const positionGLAccount = await createPositionGLAccount(
+      tx as never,
+      entityId,
+      summaryAccount.id,
+      defaultPositionName,
+      glMapping.accountType
+    );
+
+    // 4. Create the default Position linked to the GL leaf account
+    const defaultPositionType = DEFAULT_POSITION_TYPE[data.itemType] || "OTHER";
+    await tx.position.create({
+      data: {
+        subledgerItemId: subledgerItem.id,
+        accountId: positionGLAccount.id,
+        name: defaultPositionName,
+        positionType: defaultPositionType as never,
+        marketValue: data.currentBalance ?? 0,
       },
     });
 
-    return subledgerItem;
+    // Re-fetch with includes for serialization
+    const fullItem = await tx.subledgerItem.findUniqueOrThrow({
+      where: { id: subledgerItem.id },
+      include: {
+        account: { select: { id: true, number: true, name: true, type: true } },
+        _count: { select: { reconciliations: true } },
+        positions: {
+          where: { isActive: true },
+          select: { id: true, name: true, accountId: true, positionType: true, marketValue: true },
+        },
+      },
+    });
+
+    return fullItem;
   });
 
   return successResponse(serialize(item), 201);
