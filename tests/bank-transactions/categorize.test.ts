@@ -71,6 +71,12 @@ describe("matchRule", () => {
   });
 });
 
+describe("Position-targeted rules", () => {
+  // CAT-03: Rules with positionId instead of accountId
+  it.todo("matchRule matches rule with positionId and null accountId");
+  it.todo("applyRules returns positionId in matched result for caller to resolve GL");
+});
+
 describe("applyRules", () => {
   it("assigns accountId and dimensionTags from matched rule", () => {
     const rules = [
