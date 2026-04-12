@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, test } from "vitest";
 import { createAccountSchema, updateAccountSchema } from "./account";
 
 describe("Account Validators", () => {
@@ -131,5 +131,14 @@ describe("Account Validators", () => {
       });
       expect(result.success).toBe(false);
     });
+  });
+
+  describe("Phase 12 extensions", () => {
+    test.todo("createAccountSchema accepts cashFlowCategory for ASSET type");
+    test.todo("createAccountSchema accepts isContra boolean");
+    test.todo(
+      "createAccountSchema rejects cashFlowCategory for INCOME type",
+    );
+    test.todo("updateAccountSchema accepts cashFlowCategory and isContra");
   });
 });
