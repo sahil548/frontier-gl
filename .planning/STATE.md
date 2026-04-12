@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-01-PLAN.md
-last_updated: "2026-04-12T19:52:40.326Z"
-last_activity: 2026-04-12 -- Phase 11 plan 01 complete (schema + validators + positions API)
+stopped_at: Completed 11-03-PLAN.md
+last_updated: "2026-04-12T19:59:52Z"
+last_activity: 2026-04-12 -- Phase 11 plan 03 complete (opening balance JE auto-generation)
 progress:
   total_phases: 12
   completed_phases: 8
   total_plans: 46
-  completed_plans: 36
-  percent: 78
+  completed_plans: 38
+  percent: 83
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 11 of 12 (Categorization UX & Opening Balances)
-Plan: 1 of 4 complete
+Plan: 3 of 4 complete
 Status: Executing
-Last activity: 2026-04-12 -- Phase 11 plan 01 complete (schema + validators + positions API)
+Last activity: 2026-04-12 -- Phase 11 plan 03 complete (opening balance JE auto-generation)
 
-Progress: [████████░░] 78%
+Progress: [████████░░] 83%
 
 ## Performance Metrics
 
@@ -85,6 +85,7 @@ Progress: [████████░░] 78%
 | Phase 10 P02 | 5min | 2 tasks | 6 files |
 | Phase 10 P03 | 5min | 3 tasks | 2 files |
 | Phase 11 P01 | 5min | 2 tasks | 10 files |
+| Phase 11 P03 | 5min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -181,6 +182,9 @@ Recent decisions affecting current work:
 - [Phase 10]: Legacy types (INVESTMENT, PRIVATE_EQUITY, RECEIVABLE) display with (Legacy) label but excluded from creation form
 - [Phase 11]: accountId optional on CategorizationRule with refine requiring at least one of accountId/positionId
 - [Phase 11]: reconciliationStatus as String with PENDING default rather than enum for flexibility
+- [Phase 11-03]: Opening balance JE uses position GL leaf account for accurate position-level posting
+- [Phase 11-03]: PUT handler wrapped in $transaction to make adjusting JE + update atomic
+- [Phase 11-03]: Date picker uses native HTML date input, required validation via toast
 
 ### Pending Todos
 
@@ -193,6 +197,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-12T19:52:40.323Z
-Stopped at: Completed 11-01-PLAN.md
+Last session: 2026-04-12T19:59:52Z
+Stopped at: Completed 11-03-PLAN.md
 Resume file: None
