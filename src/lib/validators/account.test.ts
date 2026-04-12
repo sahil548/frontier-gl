@@ -1,4 +1,4 @@
-import { describe, it, expect, test } from "vitest";
+import { describe, it, expect } from "vitest";
 import { createAccountSchema, updateAccountSchema } from "./account";
 
 describe("Account Validators", () => {
@@ -133,12 +133,92 @@ describe("Account Validators", () => {
     });
   });
 
-  describe("Phase 12 extensions", () => {
-    test.todo("createAccountSchema accepts cashFlowCategory for ASSET type");
-    test.todo("createAccountSchema accepts isContra boolean");
-    test.todo(
-      "createAccountSchema rejects cashFlowCategory for INCOME type",
-    );
-    test.todo("updateAccountSchema accepts cashFlowCategory and isContra");
+  describe("Phase 12: cashFlowCategory + isContra", () => {
+    it('accepts cashFlowCategory "OPERATING" for ASSET type', () => {
+      const result = createAccountSchema.safeParse({
+        name: "Accounts Receivable",
+        number: "10300",
+        type: "ASSET",
+        cashFlowCategory: "OPERATING",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('accepts cashFlowCategory "INVESTING"', () => {
+      const result = createAccountSchema.safeParse({
+        name: "Investments",
+        number: "10200",
+        type: "ASSET",
+        cashFlowCategory: "INVESTING",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('accepts cashFlowCategory "FINANCING"', () => {
+      const result = createAccountSchema.safeParse({
+        name: "Loans Payable",
+        number: "20200",
+        type: "LIABILITY",
+        cashFlowCategory: "FINANCING",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('accepts cashFlowCategory "EXCLUDED"', () => {
+      const result = createAccountSchema.safeParse({
+        name: "Cash",
+        number: "10100",
+        type: "ASSET",
+        cashFlowCategory: "EXCLUDED",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects invalid cashFlowCategory values", () => {
+      const result = createAccountSchema.safeParse({
+        name: "Cash",
+        number: "10100",
+        type: "ASSET",
+        cashFlowCategory: "INVALID",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("allows omitting cashFlowCategory (optional)", () => {
+      const result = createAccountSchema.safeParse({
+        name: "Revenue",
+        number: "40000",
+        type: "INCOME",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("accepts isContra: true", () => {
+      const result = createAccountSchema.safeParse({
+        name: "Accumulated Depreciation",
+        number: "10700",
+        type: "ASSET",
+        isContra: true,
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("accepts isContra: false", () => {
+      const result = createAccountSchema.safeParse({
+        name: "Cash",
+        number: "10100",
+        type: "ASSET",
+        isContra: false,
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("updateAccountSchema accepts cashFlowCategory and isContra as optional", () => {
+      const result = updateAccountSchema.safeParse({
+        cashFlowCategory: "OPERATING",
+        isContra: true,
+      });
+      expect(result.success).toBe(true);
+    });
   });
 });

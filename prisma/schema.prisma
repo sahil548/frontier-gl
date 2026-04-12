@@ -44,26 +44,30 @@ model Entity {
   eliminationRulesAsA  EliminationRule[]    @relation("EliminationRuleEntityA")
   eliminationRulesAsB  EliminationRule[]    @relation("EliminationRuleEntityB")
   categorizationRules  CategorizationRule[]
+  columnMappings       ColumnMapping[]
+  wizardProgress       Json?
 
   @@index([createdById])
   @@index([isActive])
 }
 
 model Account {
-  id          String             @id @default(cuid())
-  entityId    String
-  number      String
-  name        String
-  type        AccountType
-  description String?
-  parentId    String?
-  isActive    Boolean            @default(true)
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-  balance     AccountBalance?
-  entity      Entity             @relation(fields: [entityId], references: [id])
-  parent      Account?           @relation("AccountHierarchy", fields: [parentId], references: [id])
-  children    Account[]          @relation("AccountHierarchy")
+  id               String             @id @default(cuid())
+  entityId         String
+  number           String
+  name             String
+  type             AccountType
+  description      String?
+  parentId         String?
+  isActive         Boolean            @default(true)
+  cashFlowCategory CashFlowCategory?
+  isContra         Boolean            @default(false)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  balance          AccountBalance?
+  entity           Entity             @relation(fields: [entityId], references: [id])
+  parent           Account?           @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children         Account[]          @relation("AccountHierarchy")
   lineItems      JournalEntryLine[]
   templateLines  JournalEntryTemplateLine[]
   subledgerItems SubledgerItem[]
@@ -596,4 +600,26 @@ model CategorizationRule {
 
   @@index([entityId, isActive])
   @@map("categorization_rules")
+}
+
+enum CashFlowCategory {
+  OPERATING
+  INVESTING
+  FINANCING
+  EXCLUDED
+}
+
+model ColumnMapping {
+  id         String   @id @default(cuid())
+  entityId   String
+  sourceName String
+  importType String
+  mapping    Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  entity     Entity   @relation(fields: [entityId], references: [id])
+
+  @@unique([entityId, sourceName, importType])
+  @@index([entityId])
+  @@map("column_mappings")
 }

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AccountType } from "@/generated/prisma/enums";
+import { AccountType, CashFlowCategory } from "@/generated/prisma/enums";
 
 // ─── Create Account Schema ────────────────────────────────
 
@@ -20,6 +20,8 @@ export const createAccountSchema = z.object({
     .max(500, "Description must be 500 characters or fewer")
     .optional(),
   parentId: z.string().cuid().optional(),
+  cashFlowCategory: z.nativeEnum(CashFlowCategory).optional(),
+  isContra: z.boolean().optional(),
 });
 
 // ─── Update Account Schema ────────────────────────────────
