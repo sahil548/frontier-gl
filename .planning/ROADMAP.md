@@ -169,12 +169,14 @@ Plans:
 ### Phase 10: Positions Model & Holdings Overhaul
 
 **Goal:** Holdings contain positions (cash, securities, LP interests, etc.), and positions — not holdings — link to GL accounts. Holding types expanded for family office use cases (lending, operating businesses, insurance). GL accounts auto-created at position level.
-**Requirements**: TBD
+**Requirements:** POS-01, POS-02, POS-03, POS-04, POS-05, POS-06, POS-07, POS-08
 **Depends on:** Phase 9
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 10 to break down)
+- [ ] 10-01-PLAN.md — Schema expansion (13 holding types, Position.accountId), shared constants, GL account creation helpers, updated subledger + position API routes
+- [ ] 10-02-PLAN.md — Data migration script for existing holdings, bank transaction posting updated to position-level GL accounts
+- [ ] 10-03-PLAN.md — Holdings page restructured with 13-type grouping, aggregate totals, position GL display, AddPositionsPrompt
 
 ### Phase 11: Categorization UX & Opening Balances
 

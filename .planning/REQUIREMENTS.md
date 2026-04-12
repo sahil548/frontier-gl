@@ -1,7 +1,7 @@
 # Requirements: Frontier GL
 
 **Defined:** 2026-03-26
-**Updated:** 2026-03-29 — Phase 4 complete; adding phases 5–10 requirements
+**Updated:** 2026-04-12 — Phase 10 redefined: Positions Model & Holdings Overhaul (replaces Capital Accounts)
 **Core Value:** Accountants can view, manage, and close books across all family office entities in one fast, purpose-built GL — eliminating the per-entity cost and friction of QuickBooks Online.
 
 ## v1 Requirements
@@ -34,7 +34,7 @@
 
 - [x] **JE-01**: User can create journal entries with date, description/memo, and 2+ line items
 - [x] **JE-02**: System enforces double-entry: total debits must equal total credits
-- [x] **JE-03**: Journal entries support Draft → Approved → Posted workflow states
+- [x] **JE-03**: Journal entries support Draft -> Approved -> Posted workflow states
 - [x] **JE-04**: User can edit and delete draft entries; posted entries are immutable
 - [x] **JE-05**: User can create reversing entries (one-click offsetting JE linked to original)
 - [x] **JE-06**: System prevents posting to closed periods
@@ -195,13 +195,16 @@
 
 ---
 
-## Phase 10 Requirements — Family Office II: Capital Accounts
+## Phase 10 Requirements — Positions Model & Holdings Overhaul
 
-- [ ] **CAP-01**: User can define partners (name, ownership %) for LP/Partnership entities
-- [ ] **CAP-02**: System tracks each partner's capital account balance (contributions, distributions, allocated income)
-- [ ] **CAP-03**: User can generate a capital account statement for any period showing opening balance, activity, closing balance per partner
-- [ ] **CAP-04**: Income allocation to partners follows ownership % (pro-rata) or a custom waterfall defined by user
-- [ ] **CAP-05**: Capital account statements are exportable as CSV and PDF
+- [ ] **POS-01**: SubledgerItemType enum expanded from 7 to 13 holding types covering all family office asset classes
+- [ ] **POS-02**: Position model has accountId FK as the primary GL anchor (positions link to GL accounts, not holdings)
+- [ ] **POS-03**: Creating a position auto-creates a GL leaf account under the holding's summary account (3-level COA hierarchy)
+- [ ] **POS-04**: Creating a holding auto-creates a parent summary GL account and a default position with its own GL leaf account
+- [ ] **POS-05**: Data migration auto-backfills default positions for existing holdings and transfers GL accounts to position level
+- [ ] **POS-06**: After holding creation, user is immediately prompted to add positions via a multi-row form
+- [ ] **POS-07**: Holdings page groups holdings by type with collapsible sections, aggregate totals, and position-level GL account display
+- [ ] **POS-08**: Bank transactions post against position-level GL accounts (not holding summary accounts)
 
 ---
 
@@ -221,43 +224,38 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01–03 | Phase 1 | Complete |
-| ENTM-01–05 | Phase 1 | Complete |
-| DI-01–02 | Phase 1 | Complete |
+| AUTH-01--03 | Phase 1 | Complete |
+| ENTM-01--05 | Phase 1 | Complete |
+| DI-01--02 | Phase 1 | Complete |
 | UI-01 | Phase 1 | Complete |
-| API-01–03 | Phase 1 | Complete |
-| COA-01–07 | Phase 2 | Complete |
-| JE-01–08 | Phase 2 | Complete |
-| DI-03–05 | Phase 2 | Complete |
-| LED-01–05 | Phase 3 | Complete |
-| TB-01–06 | Phase 3 | Complete |
+| API-01--03 | Phase 1 | Complete |
+| COA-01--07 | Phase 2 | Complete |
+| JE-01--08 | Phase 2 | Complete |
+| DI-03--05 | Phase 2 | Complete |
+| LED-01--05 | Phase 3 | Complete |
+| TB-01--06 | Phase 3 | Complete |
 | UI-03 | Phase 3 | Complete |
-| DASH-01–02, DASH-04–05 | Phase 4 | Complete |
-| PC-01–04 | Phase 4 | Complete |
-| RPT-01–05 | Phase 4 | Complete |
-| HOLD-01–05 | Phase 4 | Complete |
-| TMPL-01–05 | Phase 4 | Complete |
-| ACC-01–02 | Phase 4 | Complete |
+| DASH-01--02, DASH-04--05 | Phase 4 | Complete |
+| PC-01--04 | Phase 4 | Complete |
+| RPT-01--05 | Phase 4 | Complete |
+| HOLD-01--05 | Phase 4 | Complete |
+| TMPL-01--05 | Phase 4 | Complete |
+| ACC-01--02 | Phase 4 | Complete |
 | DASH-03 | Phase 5 | Complete |
 | UI-02 | Phase 5 | Complete |
-| AUDT-01–02 | Phase 5 | Pending |
-| ATTCH-01–03 | Phase 5 | Pending |
-| RECR-01–05 | Phase 5 | Pending |
-| CLASS-01–05 | Phase 6 | Pending |
-| BUDG-01–05 | Phase 7 | Pending |
-| CONS-01–05 | Phase 8 | Pending |
-| BANK-01–05 | Phase 9 | Pending |
-| CAP-01–05 | Phase 10 | Pending |
+| AUDT-01--02 | Phase 5 | Complete |
+| ATTCH-01--03 | Phase 5 | Complete |
+| RECR-01--05 | Phase 5 | Complete |
+| CLASS-01--05 | Phase 6 | Complete |
+| BUDG-01--05 | Phase 7 | Complete |
+| CONS-01--05 | Phase 8 | Complete |
+| BANK-01--05 | Phase 9 | Complete |
+| POS-01--08 | Phase 10 | Pending |
 
 **Coverage:**
-- Phases 1–4: Complete
-- Phase 5 requirements: 12 total — Pending
-- Phase 6 requirements: 5 total — Pending
-- Phase 7 requirements: 5 total — Pending
-- Phase 8 requirements: 5 total — Pending
-- Phase 9 requirements (BANK): 5 total — Pending
-- Phase 10 requirements (CAP): 5 total — Pending
+- Phases 1--9: Complete
+- Phase 10 requirements (POS): 8 total -- Pending
 
 ---
 *Requirements defined: 2026-03-26*
-*Last updated: 2026-03-29 — Phase 4 complete; phases 5–10 defined*
+*Last updated: 2026-04-12 -- Phase 10 redefined: Positions Model & Holdings Overhaul*
