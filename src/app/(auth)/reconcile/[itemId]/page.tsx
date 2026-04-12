@@ -42,6 +42,7 @@ import { cn } from "@/lib/utils";
 
 interface SubledgerItem {
   id: string;
+  entityId: string;
   name: string;
   itemType: string;
   accountId: string;
@@ -354,6 +355,29 @@ export default function ReconcilePage() {
     setStatementDate(lastDay.toISOString().split("T")[0]);
   }, [selectedYear, selectedMonth]);
 
+  // Load existing bank transactions as statement lines
+  useEffect(() => {
+    if (!item?.entityId || !itemId) return;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/entities/${item.entityId}/bank-transactions?subledgerItemId=${itemId}`
+        );
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!json.success || !json.data) return;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const lines: StatementLine[] = json.data.map((t: any) => ({
+          id: t.id,
+          date: new Date(t.date).toLocaleDateString("en-US", { year: "numeric", month: "2-digit", day: "2-digit" }),
+          description: t.description,
+          amount: t.amount,
+        }));
+        if (lines.length > 0) setStmtLines(lines);
+      } catch { /* ignore */ }
+    })();
+  }, [item?.entityId, itemId]);
+
   // Recompute matches whenever stmtLines or ledgerData changes
   useEffect(() => {
     if (!ledgerData) return;
@@ -363,12 +387,14 @@ export default function ReconcilePage() {
   }, [stmtLines, ledgerData]);
 
   // ─── CSV import ──────────────────────────────────────
+  // Routes through the bank feed API so transactions are persisted as
+  // BankTransaction records and visible in both /bank-feed and /reconcile.
 
   function handleCsvFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       const text = ev.target?.result as string;
       const parsed = parseCsv(text);
       if (parsed.length === 0) {
@@ -377,11 +403,36 @@ export default function ReconcilePage() {
         );
         return;
       }
+
+      // Save to bank feed (BankTransaction records) via API
+      if (item?.entityId && itemId) {
+        try {
+          const res = await fetch(
+            `/api/entities/${item.entityId}/bank-transactions`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                subledgerItemId: itemId,
+                csv: text,
+              }),
+            }
+          );
+          const json = await res.json();
+          if (res.ok && json.success) {
+            toast.success(`Imported ${json.data?.imported ?? parsed.length} transactions to Bank Feed`);
+          } else {
+            toast.error(json.error ?? "Failed to save to bank feed");
+          }
+        } catch {
+          toast.error("Failed to save to bank feed");
+        }
+      }
+
+      // Also populate the local statement lines for reconciliation matching
       setStmtLines(parsed);
-      toast.success(`Imported ${parsed.length} lines from CSV`);
     };
     reader.readAsText(file);
-    // Reset input so the same file can be re-imported
     e.target.value = "";
   }
 

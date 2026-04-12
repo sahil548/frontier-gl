@@ -94,13 +94,10 @@ function formatCurrency(value: string): string {
 }
 
 /**
- * Flatten accounts into tree-order: parent first, then children sorted by number.
+ * Flatten accounts into tree-order with depth tracking.
+ * Recursively walks the full hierarchy (supports unlimited nesting depth).
  */
-function flattenAccounts(accounts: SerializedAccount[]): SerializedAccount[] {
-  const parents = accounts
-    .filter((a) => a.parentId === null)
-    .sort((a, b) => a.number.localeCompare(b.number));
-
+function flattenAccounts(accounts: SerializedAccount[]): (SerializedAccount & { _depth: number })[] {
   const childrenMap = new Map<string, SerializedAccount[]>();
   for (const account of accounts) {
     if (account.parentId) {
@@ -110,14 +107,20 @@ function flattenAccounts(accounts: SerializedAccount[]): SerializedAccount[] {
     }
   }
 
-  const result: SerializedAccount[] = [];
-  for (const parent of parents) {
-    result.push(parent);
-    const children = childrenMap.get(parent.id) || [];
-    children.sort((a, b) => a.number.localeCompare(b.number));
-    result.push(...children);
+  const result: (SerializedAccount & { _depth: number })[] = [];
+
+  function walk(parentId: string | null, depth: number) {
+    const items = parentId === null
+      ? accounts.filter((a) => a.parentId === null)
+      : childrenMap.get(parentId) || [];
+    items.sort((a, b) => a.number.localeCompare(b.number));
+    for (const item of items) {
+      result.push({ ...item, _depth: depth });
+      walk(item.id, depth + 1);
+    }
   }
 
+  walk(null, 0);
   return result;
 }
 
@@ -370,11 +373,12 @@ export function AccountTable({
               </TableRow>
             ) : (
               flattenedAccounts.map((account) => {
-                const isChild = account.parentId !== null;
+                const depth = account._depth;
                 const isParent = accounts.some(
                   (a) => a.parentId === account.id
                 );
                 const displayBalance = getDisplayBalance(account, accounts);
+                const indentPx = depth * 20;
 
                 return (
                   <TableRow
@@ -383,17 +387,12 @@ export function AccountTable({
                   >
                     {/* Number */}
                     <TableCell
-                      className={isChild ? "pl-8" : ""}
+                      style={depth > 0 ? { paddingLeft: `${8 + indentPx}px` } : undefined}
                     >
                       <Link
                         href={`/gl-ledger/${account.id}`}
                         className={`text-primary underline-offset-4 hover:underline ${isParent ? "font-semibold" : ""}`}
                       >
-                        {isChild && (
-                          <span className="text-muted-foreground mr-1">
-                            {"  "}
-                          </span>
-                        )}
                         {account.number}
                       </Link>
                     </TableCell>
@@ -457,8 +456,8 @@ export function AccountTable({
                               View Ledger
                             </DropdownMenuItem>
 
-                            {/* Add Sub-Account: only for top-level accounts */}
-                            {!isChild && (
+                            {/* Add Sub-Account */}
+                            {depth === 0 && (
                               <DropdownMenuItem
                                 onClick={() =>
                                   handleAddSubAccount(account.id)

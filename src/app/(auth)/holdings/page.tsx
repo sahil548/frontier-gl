@@ -157,7 +157,7 @@ const QUANTIFIABLE_TYPES = new Set([
   "PRIVATE_EQUITY",
 ]);
 
-type FilterTab = "all" | "BANK_ACCOUNT" | "INVESTMENT" | "REAL_ESTATE" | "LOAN" | "OTHER";
+type FilterTab = "all" | "BANK_ACCOUNT" | "INVESTMENT" | "REAL_ESTATE" | "LOAN" | "PRIVATE_EQUITY" | "RECEIVABLE" | "OTHER";
 
 const FILTER_TABS: { value: FilterTab; label: string }[] = [
   { value: "all", label: "All" },
@@ -165,8 +165,22 @@ const FILTER_TABS: { value: FilterTab; label: string }[] = [
   { value: "INVESTMENT", label: "Investments" },
   { value: "REAL_ESTATE", label: "Real Estate" },
   { value: "LOAN", label: "Loans" },
+  { value: "PRIVATE_EQUITY", label: "Private Equity" },
+  { value: "RECEIVABLE", label: "Receivables" },
   { value: "OTHER", label: "Other" },
 ];
+
+// ─── GL parent auto-detection by holding type ──────────────────
+// When a holding is created, a GL account is auto-created under this parent.
+const HOLDING_GL_PARENT: Record<string, { number: string; label: string }> = {
+  BANK_ACCOUNT: { number: "11000", label: "Cash & Cash Equivalents" },
+  INVESTMENT: { number: "12000", label: "Investments" },
+  REAL_ESTATE: { number: "16000", label: "Property, Plant & Equipment" },
+  LOAN: { number: "22000", label: "Long-Term Liabilities" },
+  PRIVATE_EQUITY: { number: "13000", label: "Private Investments" },
+  RECEIVABLE: { number: "14000", label: "Receivables" },
+  OTHER: { number: "18000", label: "Other Long-Term Assets" },
+};
 
 // ─── Positions sub-table ─────────────────────────────────
 
@@ -543,7 +557,6 @@ export default function HoldingsPage() {
   const { currentEntityId, entities, isLoading } = useEntityContext();
   const router = useRouter();
   const [items, setItems] = useState<HoldingItem[]>([]);
-  const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterTab>("all");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -555,7 +568,6 @@ export default function HoldingsPage() {
   // Form state
   const [formName, setFormName] = useState("");
   const [formType, setFormType] = useState("BANK_ACCOUNT");
-  const [formAccountId, setFormAccountId] = useState("");
   const [formBalance, setFormBalance] = useState("");
   const [formCounterparty, setFormCounterparty] = useState("");
   const [formRef, setFormRef] = useState("");
@@ -576,32 +588,16 @@ export default function HoldingsPage() {
     finally { setLoading(false); }
   }, [currentEntityId]);
 
-  const fetchAccounts = useCallback(async () => {
-    if (!currentEntityId || currentEntityId === "all") return;
-    try {
-      const res = await fetch(`/api/entities/${currentEntityId}/accounts`);
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success) {
-          setAccounts(
-            json.data.filter(
-              (a: AccountOption) => a.type === "ASSET" || a.type === "LIABILITY"
-            )
-          );
-        }
-      }
-    } catch { /* ignore */ }
-  }, [currentEntityId]);
+  // accounts are auto-created with holdings — no need to fetch for form dropdown
 
   useEffect(() => {
     fetchItems();
-    fetchAccounts();
-  }, [fetchItems, fetchAccounts]);
+  }, [fetchItems]);
 
   // ─── Handlers ──────────────────────────────────────
 
   function resetForm() {
-    setFormName(""); setFormType("BANK_ACCOUNT"); setFormAccountId("");
+    setFormName(""); setFormType("BANK_ACCOUNT");
     setFormBalance(""); setFormCounterparty(""); setFormRef("");
     setFormCostBasis(""); setFormNotes("");
   }
@@ -609,7 +605,6 @@ export default function HoldingsPage() {
   function openEdit(item: HoldingItem) {
     setFormName(item.name);
     setFormType(item.itemType);
-    setFormAccountId(item.accountId);
     setFormBalance(item.currentBalance);
     setFormCounterparty(item.counterparty ?? "");
     setFormRef(item.referenceNumber ?? "");
@@ -628,7 +623,7 @@ export default function HoldingsPage() {
   }
 
   async function handleSave() {
-    if (!formName.trim() || !formAccountId) return;
+    if (!formName.trim()) return;
     setSaving(true);
     const isEdit = !!editItem;
     const url = isEdit
@@ -640,7 +635,6 @@ export default function HoldingsPage() {
         method: isEdit ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          accountId: formAccountId,
           name: formName.trim(),
           itemType: formType,
           currentBalance: parseFloat(formBalance) || 0,
@@ -702,25 +696,23 @@ export default function HoldingsPage() {
   // ─── Computed values ───────────────────────────────
 
   const bankItems = items.filter((i) => i.itemType === "BANK_ACCOUNT");
-  const investItems = items.filter((i) =>
-    ["INVESTMENT", "PRIVATE_EQUITY"].includes(i.itemType)
-  );
+  const investItems = items.filter((i) => i.itemType === "INVESTMENT");
   const reItems = items.filter((i) => i.itemType === "REAL_ESTATE");
   const loanItems = items.filter((i) => i.itemType === "LOAN");
 
   const sum = (arr: HoldingItem[]) =>
     arr.reduce((s, i) => s + parseFloat(i.currentBalance || "0"), 0);
 
+  const peItems = items.filter((i) => i.itemType === "PRIVATE_EQUITY");
+
   const filtered =
     filter === "all"
       ? items
-      : filter === "INVESTMENT"
-        ? investItems
-        : filter === "OTHER"
-          ? items.filter((i) =>
-              !["BANK_ACCOUNT", "INVESTMENT", "PRIVATE_EQUITY", "REAL_ESTATE", "LOAN"].includes(i.itemType)
-            )
-          : items.filter((i) => i.itemType === filter);
+      : filter === "OTHER"
+        ? items.filter((i) =>
+            !["BANK_ACCOUNT", "INVESTMENT", "PRIVATE_EQUITY", "REAL_ESTATE", "LOAN", "RECEIVABLE"].includes(i.itemType)
+          )
+        : items.filter((i) => i.itemType === filter);
 
   const showCostBasis = ["INVESTMENT", "REAL_ESTATE", "PRIVATE_EQUITY"].includes(formType);
 
@@ -749,21 +741,13 @@ export default function HoldingsPage() {
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>GL Account</Label>
-          <Select value={formAccountId} onValueChange={(v) => setFormAccountId(v as string)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select account">
-                {formAccountId
-                  ? (() => { const a = accounts.find(acc => acc.id === formAccountId); return a ? `${a.number} — ${a.name}` : "Select account"; })()
-                  : undefined}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {accounts.map((a) => (
-                <SelectItem key={a.id} value={a.id}>{a.number} — {a.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label className="text-muted-foreground">GL Category</Label>
+          <p className="text-sm font-medium pt-2">
+            {HOLDING_GL_PARENT[formType]?.number} — {HOLDING_GL_PARENT[formType]?.label}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            A GL account will be created automatically
+          </p>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -817,7 +801,7 @@ export default function HoldingsPage() {
             </DialogHeader>
             {formContent}
             <DialogFooter>
-              <Button onClick={handleSave} disabled={saving || !formName.trim() || !formAccountId}>
+              <Button onClick={handleSave} disabled={saving || !formName.trim()}>
                 {saving ? "Adding..." : "Add Holding"}
               </Button>
             </DialogFooter>
@@ -826,7 +810,7 @@ export default function HoldingsPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Bank Accounts</CardTitle>
@@ -845,6 +829,16 @@ export default function HoldingsPage() {
           <CardContent>
             <div className="text-xl font-bold text-green-600">{formatCurrency(sum(investItems))}</div>
             <p className="text-xs text-muted-foreground">{investItems.length} holding{investItems.length !== 1 ? "s" : ""}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Private Equity</CardTitle>
+            <TrendingUp className="h-4 w-4 text-purple-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold text-purple-600">{formatCurrency(sum(peItems))}</div>
+            <p className="text-xs text-muted-foreground">{peItems.length} holding{peItems.length !== 1 ? "s" : ""}</p>
           </CardContent>
         </Card>
         <Card>
@@ -888,7 +882,7 @@ export default function HoldingsPage() {
                 {tab.value === "INVESTMENT"
                   ? investItems.length
                   : tab.value === "OTHER"
-                    ? items.filter((i) => !["BANK_ACCOUNT", "INVESTMENT", "PRIVATE_EQUITY", "REAL_ESTATE", "LOAN"].includes(i.itemType)).length
+                    ? items.filter((i) => !["BANK_ACCOUNT", "INVESTMENT", "PRIVATE_EQUITY", "REAL_ESTATE", "LOAN", "RECEIVABLE"].includes(i.itemType)).length
                     : items.filter((i) => i.itemType === tab.value).length}
               </span>
             )}
@@ -915,7 +909,7 @@ export default function HoldingsPage() {
                 <TableHead className="w-8" />
                 <TableHead className="sticky left-0 z-10 bg-background">Name</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>GL Account</TableHead>
+                <TableHead>GL Category</TableHead>
                 <TableHead>Counterparty</TableHead>
                 <TableHead className="text-right">Balance / MV</TableHead>
                 <TableHead>Status</TableHead>
