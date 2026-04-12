@@ -15,6 +15,11 @@ import {
   ChevronRight,
   Trash2,
   BarChart2,
+  CreditCard,
+  Wrench,
+  Home,
+  Building,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useEntityContext } from "@/providers/entity-provider";
@@ -56,8 +61,21 @@ import { formatCurrency } from "@/lib/utils/accounting";
 import { cn } from "@/lib/utils";
 import { ConnectBankFeed } from "@/components/holdings/connect-bank-feed";
 import { InlineBankTransactions } from "@/components/holdings/inline-bank-transactions";
+import { AddPositionsPrompt } from "@/components/holdings/add-positions-prompt";
+import {
+  HOLDING_TYPE_TO_GL,
+  DEFAULT_POSITION_TYPE,
+} from "@/lib/holdings/constants";
 
 // ─── Types ──────────────────────────────────────────────
+
+interface PositionSummary {
+  id: string;
+  name: string;
+  accountId: string | null;
+  positionType: string;
+  marketValue: string;
+}
 
 interface HoldingItem {
   id: string;
@@ -80,6 +98,7 @@ interface HoldingItem {
     lastSyncAt: string | null;
     error: string | null;
   } | null;
+  positions?: PositionSummary[];
 }
 
 interface Position {
@@ -97,6 +116,7 @@ interface Position {
   acquiredDate: string | null;
   notes: string | null;
   isActive: boolean;
+  account?: { id: string; number: string; name: string } | null;
 }
 
 interface AccountOption {
@@ -108,31 +128,61 @@ interface AccountOption {
 
 // ─── Constants ──────────────────────────────────────────
 
+// All 13 new canonical types + 3 legacy mappings
 const ITEM_TYPES = [
   { value: "BANK_ACCOUNT", label: "Bank Account", icon: Landmark },
-  { value: "INVESTMENT", label: "Investment", icon: TrendingUp },
+  { value: "BROKERAGE_ACCOUNT", label: "Brokerage Account", icon: TrendingUp },
+  { value: "CREDIT_CARD", label: "Credit Card", icon: CreditCard },
   { value: "REAL_ESTATE", label: "Real Estate", icon: Building2 },
+  { value: "EQUIPMENT", label: "Equipment", icon: Wrench },
   { value: "LOAN", label: "Loan", icon: Wallet },
-  { value: "PRIVATE_EQUITY", label: "Private Equity", icon: TrendingUp },
-  { value: "RECEIVABLE", label: "Receivable", icon: Wallet },
-  { value: "OTHER", label: "Other", icon: Wallet },
+  { value: "PRIVATE_FUND", label: "Private Fund", icon: TrendingUp },
+  { value: "MORTGAGE", label: "Mortgage", icon: Home },
+  { value: "LINE_OF_CREDIT", label: "Line of Credit", icon: Wallet },
+  { value: "TRUST_ACCOUNT", label: "Trust Account", icon: ShieldCheck },
+  { value: "OPERATING_BUSINESS", label: "Operating Business", icon: Building },
+  { value: "NOTES_RECEIVABLE", label: "Notes Receivable", icon: FileText },
+  { value: "OTHER", label: "Other", icon: BarChart2 },
+  // Legacy types (display only for existing data)
+  { value: "INVESTMENT", label: "Investment (Legacy)", icon: TrendingUp },
+  { value: "PRIVATE_EQUITY", label: "Private Equity (Legacy)", icon: TrendingUp },
+  { value: "RECEIVABLE", label: "Receivable (Legacy)", icon: Wallet },
 ];
+
+// Only canonical 13 types shown in the creation form
+const NEW_ITEM_TYPES = ITEM_TYPES.filter(
+  (t) => !["INVESTMENT", "PRIVATE_EQUITY", "RECEIVABLE"].includes(t.value)
+);
 
 const TYPE_LABELS: Record<string, string> = Object.fromEntries(
   ITEM_TYPES.map((t) => [t.value, t.label])
 );
 
+const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = Object.fromEntries(
+  ITEM_TYPES.map((t) => [t.value, t.icon])
+);
+
 const TYPE_COLORS: Record<string, string> = {
   BANK_ACCOUNT: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  INVESTMENT: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  BROKERAGE_ACCOUNT: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  CREDIT_CARD: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
   REAL_ESTATE: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+  EQUIPMENT: "bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200",
   LOAN: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  PRIVATE_FUND: "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200",
+  MORTGAGE: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
+  LINE_OF_CREDIT: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
+  TRUST_ACCOUNT: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
+  OPERATING_BUSINESS: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
+  NOTES_RECEIVABLE: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+  OTHER: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
+  // Legacy colors
+  INVESTMENT: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   PRIVATE_EQUITY: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
   RECEIVABLE: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-  OTHER: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
 };
 
-const POSITION_TYPES = [
+export const POSITION_TYPES = [
   { value: "CASH", label: "Cash" },
   { value: "PUBLIC_EQUITY", label: "Public Equity" },
   { value: "FIXED_INCOME", label: "Fixed Income" },
@@ -144,12 +194,12 @@ const POSITION_TYPES = [
   { value: "OTHER", label: "Other" },
 ];
 
-const POSITION_TYPE_LABELS: Record<string, string> = Object.fromEntries(
+export const POSITION_TYPE_LABELS: Record<string, string> = Object.fromEntries(
   POSITION_TYPES.map((t) => [t.value, t.label])
 );
 
 // Position types where quantity/price make sense
-const QUANTIFIABLE_TYPES = new Set([
+export const QUANTIFIABLE_TYPES = new Set([
   "PUBLIC_EQUITY",
   "FIXED_INCOME",
   "MUTUAL_FUND",
@@ -157,30 +207,60 @@ const QUANTIFIABLE_TYPES = new Set([
   "PRIVATE_EQUITY",
 ]);
 
-type FilterTab = "all" | "BANK_ACCOUNT" | "INVESTMENT" | "REAL_ESTATE" | "LOAN" | "PRIVATE_EQUITY" | "RECEIVABLE" | "OTHER";
+type FilterTab = "all" | string;
 
 const FILTER_TABS: { value: FilterTab; label: string }[] = [
   { value: "all", label: "All" },
   { value: "BANK_ACCOUNT", label: "Bank Accounts" },
-  { value: "INVESTMENT", label: "Investments" },
+  { value: "BROKERAGE_ACCOUNT", label: "Brokerage" },
+  { value: "CREDIT_CARD", label: "Credit Cards" },
   { value: "REAL_ESTATE", label: "Real Estate" },
+  { value: "EQUIPMENT", label: "Equipment" },
   { value: "LOAN", label: "Loans" },
-  { value: "PRIVATE_EQUITY", label: "Private Equity" },
-  { value: "RECEIVABLE", label: "Receivables" },
+  { value: "PRIVATE_FUND", label: "Private Funds" },
+  { value: "MORTGAGE", label: "Mortgages" },
+  { value: "LINE_OF_CREDIT", label: "Lines of Credit" },
+  { value: "TRUST_ACCOUNT", label: "Trust Accounts" },
+  { value: "OPERATING_BUSINESS", label: "Operating Businesses" },
+  { value: "NOTES_RECEIVABLE", label: "Notes Receivable" },
   { value: "OTHER", label: "Other" },
 ];
 
-// ─── GL parent auto-detection by holding type ──────────────────
-// When a holding is created, a GL account is auto-created under this parent.
+// GL parent mapping from shared constants (for display in form)
 const HOLDING_GL_PARENT: Record<string, { number: string; label: string }> = {
   BANK_ACCOUNT: { number: "11000", label: "Cash & Cash Equivalents" },
-  INVESTMENT: { number: "12000", label: "Investments" },
+  BROKERAGE_ACCOUNT: { number: "12000", label: "Brokerage Accounts" },
+  CREDIT_CARD: { number: "21000", label: "Credit Cards" },
   REAL_ESTATE: { number: "16000", label: "Property, Plant & Equipment" },
-  LOAN: { number: "22000", label: "Long-Term Liabilities" },
+  EQUIPMENT: { number: "17000", label: "Equipment" },
+  LOAN: { number: "22000", label: "Loans Payable" },
+  PRIVATE_FUND: { number: "13000", label: "Private Investments" },
+  MORTGAGE: { number: "23000", label: "Mortgages" },
+  LINE_OF_CREDIT: { number: "24000", label: "Lines of Credit" },
+  TRUST_ACCOUNT: { number: "12500", label: "Trust Accounts" },
+  OPERATING_BUSINESS: { number: "18000", label: "Operating Businesses" },
+  NOTES_RECEIVABLE: { number: "14000", label: "Notes Receivable" },
+  OTHER: { number: "19000", label: "Other Long-Term Assets" },
+  // Legacy
+  INVESTMENT: { number: "12000", label: "Investments" },
   PRIVATE_EQUITY: { number: "13000", label: "Private Investments" },
   RECEIVABLE: { number: "14000", label: "Receivables" },
-  OTHER: { number: "18000", label: "Other Long-Term Assets" },
 };
+
+// ─── Aggregate helpers ─────────────────────────────────
+
+/** Compute aggregate totals from a holding's positions array */
+function holdingAggregates(item: HoldingItem) {
+  const positions = item.positions ?? [];
+  const totalMV = positions.reduce(
+    (s, p) => s + parseFloat(p.marketValue || "0"),
+    0
+  );
+  // Use currentBalance as a fallback for cost basis aggregation
+  const totalBalance = parseFloat(item.currentBalance || "0");
+  const totalCostBasis = item.costBasis ? parseFloat(item.costBasis) : 0;
+  return { totalMV, totalBalance, totalCostBasis, posCount: positions.length };
+}
 
 // ─── Positions sub-table ─────────────────────────────────
 
@@ -319,7 +399,7 @@ function PositionsRow({ entityId, item, onBalanceUpdated }: PositionsRowProps) {
 
   const isQuantifiable = QUANTIFIABLE_TYPES.has(posType);
 
-  // Compute market value from qty × unit price when both entered
+  // Compute market value from qty x unit price when both entered
   const computedMV =
     isQuantifiable && posQuantity && posUnitPrice
       ? (parseFloat(posQuantity) * parseFloat(posUnitPrice)).toFixed(2)
@@ -427,7 +507,7 @@ function PositionsRow({ entityId, item, onBalanceUpdated }: PositionsRowProps) {
 
   return (
     <TableRow className="bg-muted/30 hover:bg-muted/40">
-      <TableCell colSpan={7} className="py-0 px-0">
+      <TableCell colSpan={8} className="py-0 px-0">
         <div className="border-l-2 border-primary/20 ml-8 my-2 mr-4">
           <div className="flex items-center justify-between px-4 pt-3 pb-2">
             <div className="flex items-center gap-4 text-sm">
@@ -451,7 +531,7 @@ function PositionsRow({ entityId, item, onBalanceUpdated }: PositionsRowProps) {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Add Position — {item.name}</DialogTitle>
+                  <DialogTitle>Add Position -- {item.name}</DialogTitle>
                   <DialogDescription>Add an individual security, property, or cash position.</DialogDescription>
                 </DialogHeader>
                 {posFormContent}
@@ -465,7 +545,7 @@ function PositionsRow({ entityId, item, onBalanceUpdated }: PositionsRowProps) {
           </div>
 
           {loading ? (
-            <div className="px-4 pb-3 text-sm text-muted-foreground animate-pulse">Loading positions…</div>
+            <div className="px-4 pb-3 text-sm text-muted-foreground animate-pulse">Loading positions...</div>
           ) : positions.length === 0 ? (
             <div className="px-4 pb-3 text-sm text-muted-foreground">
               No positions yet. Add individual securities, cash sweeps, or properties.
@@ -476,12 +556,16 @@ function PositionsRow({ entityId, item, onBalanceUpdated }: PositionsRowProps) {
                 <thead>
                   <tr className="border-b">
                     <th className="text-left py-1.5 font-medium text-muted-foreground">Name</th>
+                    <th className="text-left py-1.5 font-medium text-muted-foreground">GL Account</th>
                     <th className="text-left py-1.5 font-medium text-muted-foreground">Type</th>
                     <th className="text-left py-1.5 font-medium text-muted-foreground">Ticker</th>
                     <th className="text-right py-1.5 font-medium text-muted-foreground">Qty</th>
+                    <th className="text-right py-1.5 font-medium text-muted-foreground">Unit Cost</th>
+                    <th className="text-right py-1.5 font-medium text-muted-foreground">Unit Price</th>
                     <th className="text-right py-1.5 font-medium text-muted-foreground">Cost Basis</th>
                     <th className="text-right py-1.5 font-medium text-muted-foreground">Market Value</th>
-                    <th className="text-right py-1.5 font-medium text-muted-foreground">P&L</th>
+                    <th className="text-right py-1.5 font-medium text-muted-foreground">Gain/Loss</th>
+                    <th className="text-left py-1.5 font-medium text-muted-foreground">Asset Class</th>
                     <th />
                   </tr>
                 </thead>
@@ -492,20 +576,44 @@ function PositionsRow({ entityId, item, onBalanceUpdated }: PositionsRowProps) {
                     const pnl = cb > 0 ? mv - cb : null;
                     return (
                       <tr key={p.id} className="border-b last:border-0 hover:bg-muted/20">
-                        <td className="py-1.5 font-medium">{p.name}</td>
-                        <td className="py-1.5 text-muted-foreground">{POSITION_TYPE_LABELS[p.positionType] ?? p.positionType}</td>
-                        <td className="py-1.5 font-mono text-xs text-muted-foreground">{p.ticker ?? "—"}</td>
+                        <td className="py-1.5">
+                          <div>
+                            <span className="font-medium">{p.name}</span>
+                          </div>
+                        </td>
+                        <td className="py-1.5">
+                          {p.account ? (
+                            <span className="font-mono text-xs text-muted-foreground">{p.account.number}</span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">--</span>
+                          )}
+                        </td>
+                        <td className="py-1.5 text-muted-foreground text-xs">{POSITION_TYPE_LABELS[p.positionType] ?? p.positionType}</td>
+                        <td className="py-1.5 font-mono text-xs text-muted-foreground">{p.ticker ?? "--"}</td>
                         <td className="py-1.5 text-right font-mono text-xs text-muted-foreground">
-                          {p.quantity ? parseFloat(p.quantity).toLocaleString() : "—"}
+                          {p.quantity ? parseFloat(p.quantity).toLocaleString() : "--"}
+                        </td>
+                        <td className="py-1.5 text-right font-mono text-xs text-muted-foreground">
+                          {p.unitCost ? formatCurrency(parseFloat(p.unitCost)) : "--"}
+                        </td>
+                        <td className="py-1.5 text-right font-mono text-xs text-muted-foreground">
+                          {p.unitPrice ? formatCurrency(parseFloat(p.unitPrice)) : "--"}
                         </td>
                         <td className="py-1.5 text-right font-mono text-xs">
-                          {cb > 0 ? formatCurrency(cb) : "—"}
+                          {cb > 0 ? formatCurrency(cb) : "--"}
                         </td>
                         <td className="py-1.5 text-right font-mono font-medium">
                           {formatCurrency(mv)}
                         </td>
                         <td className={cn("py-1.5 text-right font-mono text-xs", pnl === null ? "text-muted-foreground" : pnl >= 0 ? "text-green-600" : "text-red-600")}>
-                          {pnl !== null ? `${pnl >= 0 ? "+" : ""}${formatCurrency(pnl)}` : "—"}
+                          {pnl !== null ? `${pnl >= 0 ? "+" : ""}${formatCurrency(pnl)}` : "--"}
+                        </td>
+                        <td className="py-1.5">
+                          {p.assetClass ? (
+                            <Badge variant="outline" className="text-xs">{p.assetClass}</Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">--</span>
+                          )}
                         </td>
                         <td className="py-1.5 text-right">
                           <div className="flex justify-end gap-1">
@@ -560,10 +668,14 @@ export default function HoldingsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterTab>("all");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   // Dialog state
   const [addOpen, setAddOpen] = useState(false);
   const [editItem, setEditItem] = useState<HoldingItem | null>(null);
+
+  // AddPositionsPrompt state -- triggered after holding creation
+  const [promptHolding, setPromptHolding] = useState<{ id: string; name: string; type: string } | null>(null);
 
   // Form state
   const [formName, setFormName] = useState("");
@@ -587,8 +699,6 @@ export default function HoldingsPage() {
     } catch { /* ignore */ }
     finally { setLoading(false); }
   }, [currentEntityId]);
-
-  // accounts are auto-created with holdings — no need to fetch for form dropdown
 
   useEffect(() => {
     fetchItems();
@@ -622,6 +732,15 @@ export default function HoldingsPage() {
     });
   }
 
+  function toggleGroup(type: string) {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      return next;
+    });
+  }
+
   async function handleSave() {
     if (!formName.trim()) return;
     setSaving(true);
@@ -646,9 +765,19 @@ export default function HoldingsPage() {
       });
       const json = await res.json();
       if (res.ok && json.success) {
-        toast.success(isEdit ? "Holding updated" : "Holding added");
+        if (isEdit) {
+          toast.success("Holding updated");
+          setEditItem(null);
+        } else {
+          toast.success("Holding created");
+          // After creation, trigger the AddPositionsPrompt
+          setPromptHolding({
+            id: json.data.id,
+            name: json.data.name,
+            type: json.data.itemType,
+          });
+        }
         setAddOpen(false);
-        setEditItem(null);
         resetForm();
         fetchItems();
       } else {
@@ -695,30 +824,51 @@ export default function HoldingsPage() {
 
   // ─── Computed values ───────────────────────────────
 
-  const bankItems = items.filter((i) => i.itemType === "BANK_ACCOUNT");
-  const investItems = items.filter((i) => i.itemType === "INVESTMENT");
-  const reItems = items.filter((i) => i.itemType === "REAL_ESTATE");
-  const loanItems = items.filter((i) => i.itemType === "LOAN");
-
-  const sum = (arr: HoldingItem[]) =>
-    arr.reduce((s, i) => s + parseFloat(i.currentBalance || "0"), 0);
-
-  const peItems = items.filter((i) => i.itemType === "PRIVATE_EQUITY");
-
+  // Filter holdings by tab
   const filtered =
     filter === "all"
       ? items
-      : filter === "OTHER"
-        ? items.filter((i) =>
-            !["BANK_ACCOUNT", "INVESTMENT", "PRIVATE_EQUITY", "REAL_ESTATE", "LOAN", "RECEIVABLE"].includes(i.itemType)
-          )
-        : items.filter((i) => i.itemType === filter);
+      : items.filter((i) => i.itemType === filter);
 
-  const showCostBasis = ["INVESTMENT", "REAL_ESTATE", "PRIVATE_EQUITY"].includes(formType);
+  // Group filtered holdings by itemType
+  const grouped = new Map<string, HoldingItem[]>();
+  for (const item of filtered) {
+    const list = grouped.get(item.itemType) ?? [];
+    list.push(item);
+    grouped.set(item.itemType, list);
+  }
 
-  // Whether a holding can have positions drilled into
-  const canExpand = (item: HoldingItem) =>
-    ["INVESTMENT", "PRIVATE_EQUITY", "REAL_ESTATE", "BANK_ACCOUNT"].includes(item.itemType);
+  // Determine order: use FILTER_TABS order (skip "all"), then any remaining types
+  const typeOrder = FILTER_TABS.filter((t) => t.value !== "all").map((t) => t.value);
+  const orderedTypes = typeOrder.filter((t) => grouped.has(t));
+  // Add any types present in data but not in the tabs (e.g., legacy types)
+  for (const t of grouped.keys()) {
+    if (!orderedTypes.includes(t)) orderedTypes.push(t);
+  }
+
+  // Compute summary card data (group liabilities vs assets)
+  const assetItems = items.filter((i) => {
+    const gl = HOLDING_TYPE_TO_GL[i.itemType];
+    return !gl || gl.accountType === "ASSET";
+  });
+  const liabilityItems = items.filter((i) => {
+    const gl = HOLDING_TYPE_TO_GL[i.itemType];
+    return gl && gl.accountType === "LIABILITY";
+  });
+
+  const sumMV = (arr: HoldingItem[]) =>
+    arr.reduce((s, i) => {
+      const agg = holdingAggregates(i);
+      return s + (agg.posCount > 0 ? agg.totalMV : parseFloat(i.currentBalance || "0"));
+    }, 0);
+
+  const totalAssets = sumMV(assetItems);
+  const totalLiabilities = sumMV(liabilityItems);
+
+  const showCostBasis = ["BROKERAGE_ACCOUNT", "INVESTMENT", "REAL_ESTATE", "PRIVATE_EQUITY", "PRIVATE_FUND", "EQUIPMENT", "OPERATING_BUSINESS"].includes(formType);
+
+  // All holdings can have positions expanded
+  const canExpand = () => true;
 
   // ─── Form dialog content ───────────────────────────
 
@@ -734,7 +884,7 @@ export default function HoldingsPage() {
           <Select value={formType} onValueChange={(v) => setFormType(v as string)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              {ITEM_TYPES.map((t) => (
+              {NEW_ITEM_TYPES.map((t) => (
                 <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
               ))}
             </SelectContent>
@@ -743,7 +893,7 @@ export default function HoldingsPage() {
         <div className="space-y-2">
           <Label className="text-muted-foreground">GL Category</Label>
           <p className="text-sm font-medium pt-2">
-            {HOLDING_GL_PARENT[formType]?.number} — {HOLDING_GL_PARENT[formType]?.label}
+            {HOLDING_GL_PARENT[formType]?.number} -- {HOLDING_GL_PARENT[formType]?.label}
           </p>
           <p className="text-xs text-muted-foreground">
             A GL account will be created automatically
@@ -810,223 +960,267 @@ export default function HoldingsPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Bank Accounts</CardTitle>
-            <Landmark className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-blue-600">{formatCurrency(sum(bankItems))}</div>
-            <p className="text-xs text-muted-foreground">{bankItems.length} account{bankItems.length !== 1 ? "s" : ""}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Investments</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Assets</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-bold text-green-600">{formatCurrency(sum(investItems))}</div>
-            <p className="text-xs text-muted-foreground">{investItems.length} holding{investItems.length !== 1 ? "s" : ""}</p>
+            <div className="text-xl font-bold text-green-600">{formatCurrency(totalAssets)}</div>
+            <p className="text-xs text-muted-foreground">{assetItems.length} holding{assetItems.length !== 1 ? "s" : ""}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Private Equity</CardTitle>
-            <TrendingUp className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-purple-600">{formatCurrency(sum(peItems))}</div>
-            <p className="text-xs text-muted-foreground">{peItems.length} holding{peItems.length !== 1 ? "s" : ""}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Real Estate</CardTitle>
-            <Building2 className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-amber-600">{formatCurrency(sum(reItems))}</div>
-            <p className="text-xs text-muted-foreground">{reItems.length} propert{reItems.length !== 1 ? "ies" : "y"}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Loans & Liabilities</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Liabilities</CardTitle>
             <Wallet className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-bold text-red-600">{formatCurrency(sum(loanItems))}</div>
-            <p className="text-xs text-muted-foreground">{loanItems.length} loan{loanItems.length !== 1 ? "s" : ""}</p>
+            <div className="text-xl font-bold text-red-600">{formatCurrency(totalLiabilities)}</div>
+            <p className="text-xs text-muted-foreground">{liabilityItems.length} holding{liabilityItems.length !== 1 ? "s" : ""}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Net Position</CardTitle>
+            <BarChart2 className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className={cn("text-xl font-bold", totalAssets - totalLiabilities >= 0 ? "text-blue-600" : "text-red-600")}>
+              {formatCurrency(totalAssets - totalLiabilities)}
+            </div>
+            <p className="text-xs text-muted-foreground">{items.length} total holding{items.length !== 1 ? "s" : ""}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filter tabs */}
       <div className="flex gap-1 border-b overflow-x-auto">
-        {FILTER_TABS.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => setFilter(tab.value)}
-            className={cn(
-              "px-3 py-2 text-sm font-medium transition-colors border-b-2",
-              filter === tab.value
-                ? "border-primary text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {tab.label}
-            {tab.value !== "all" && (
-              <span className="ml-1.5 text-xs text-muted-foreground">
-                {tab.value === "INVESTMENT"
-                  ? investItems.length
-                  : tab.value === "OTHER"
-                    ? items.filter((i) => !["BANK_ACCOUNT", "INVESTMENT", "PRIVATE_EQUITY", "REAL_ESTATE", "LOAN", "RECEIVABLE"].includes(i.itemType)).length
-                    : items.filter((i) => i.itemType === tab.value).length}
-              </span>
-            )}
-          </button>
-        ))}
+        {FILTER_TABS.map((tab) => {
+          const count = tab.value === "all"
+            ? items.length
+            : items.filter((i) => i.itemType === tab.value).length;
+          // Only show tabs that have holdings (plus "all")
+          if (tab.value !== "all" && count === 0) return null;
+          return (
+            <button
+              key={tab.value}
+              onClick={() => setFilter(tab.value)}
+              className={cn(
+                "px-3 py-2 text-sm font-medium transition-colors border-b-2 whitespace-nowrap",
+                filter === tab.value
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {tab.label}
+              {tab.value !== "all" && (
+                <span className="ml-1.5 text-xs text-muted-foreground">{count}</span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Table */}
+      {/* Grouped holdings sections */}
       {loading ? (
-        <div className="space-y-3 animate-pulse">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-14 rounded-md bg-muted" />
+        <div className="space-y-4 animate-pulse">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader>
+                <div className="h-5 w-40 rounded bg-muted" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {Array.from({ length: 2 }).map((_, j) => (
+                    <div key={j} className="h-12 rounded-md bg-muted" />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-md border py-12 text-center">
           <p className="text-muted-foreground">No holdings found. Add one to get started.</p>
+          <Button
+            variant="outline"
+            className="mt-4"
+            onClick={() => setAddOpen(true)}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add Holding
+          </Button>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-md border">
-          <Table className="w-max min-w-full">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-8" />
-                <TableHead className="sticky left-0 z-10 bg-background">Name</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>GL Category</TableHead>
-                <TableHead>Counterparty</TableHead>
-                <TableHead className="text-right">Balance / MV</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((item) => {
-                const isExpanded = expandedIds.has(item.id);
-                const expandable = canExpand(item);
-                return (
-                  <React.Fragment key={item.id}>
-                    <TableRow className={cn(isExpanded && "bg-muted/20")}>
-                      <TableCell className="w-8 px-2">
-                        {expandable && (
-                          <button
-                            onClick={() => toggleExpand(item.id)}
-                            className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent"
-                          >
-                            {isExpanded
-                              ? <ChevronDown className="h-3.5 w-3.5" />
-                              : <ChevronRight className="h-3.5 w-3.5" />}
-                          </button>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          {item.name}
-                          {expandable && (
-                            <BarChart2 className="h-3 w-3 text-muted-foreground/50" />
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className={cn("border-0 text-xs", TYPE_COLORS[item.itemType] ?? "")}>
-                          {TYPE_LABELS[item.itemType] ?? item.itemType}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {item.account && (
-                          <button
-                            onClick={() => window.location.href = `/gl-ledger/${item.account!.id}`}
-                            className="text-sm text-primary hover:underline"
-                          >
-                            {item.account.number} {item.account.name}
-                          </button>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {item.counterparty ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-sm font-medium">
-                        {formatCurrency(parseFloat(item.currentBalance))}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-1">
-                          {item._reconciliationCount > 0 ? (
-                            <Badge variant="secondary" className="gap-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                              <ShieldCheck className="h-3 w-3" /> Reconciled
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="gap-1 text-xs">
-                              <AlertCircle className="h-3 w-3" /> Unreconciled
-                            </Badge>
-                          )}
-                          {item.itemType === "BANK_ACCOUNT" && (
-                            <ConnectBankFeed
-                              subledgerItemId={item.id}
-                              connectionStatus={item.plaidConnection?.status ?? null}
-                              institutionName={item.plaidConnection?.institutionName}
-                              lastSyncAt={item.plaidConnection?.lastSyncAt}
-                              error={item.plaidConnection?.error}
-                              onSyncComplete={fetchItems}
-                            />
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon-xs" onClick={() => openEdit(item)}>
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="xs"
-                            onClick={() => router.push(`/reconcile/${item.id}`)}
-                          >
-                            Reconcile
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                    {isExpanded && expandable && (
-                      <>
-                        <PositionsRow
-                          key={`pos-${item.id}`}
-                          entityId={currentEntityId}
-                          item={item}
-                          onBalanceUpdated={fetchItems}
-                        />
-                        {item.itemType === "BANK_ACCOUNT" && (
-                          <TableRow key={`txns-${item.id}`}>
-                            <TableCell colSpan={8} className="p-0">
-                              <div className="border-t bg-muted/10 px-6 py-4">
-                                <h4 className="text-sm font-medium mb-3">Recent Transactions</h4>
-                                <InlineBankTransactions entityId={currentEntityId} subledgerItemId={item.id} />
-                              </div>
-                            </TableCell>
+        <div className="space-y-4">
+          {orderedTypes.map((type) => {
+            const groupItems = grouped.get(type) ?? [];
+            if (groupItems.length === 0) return null;
+            const isCollapsed = collapsedGroups.has(type);
+            const IconComp = TYPE_ICONS[type] ?? BarChart2;
+            const groupLabel = TYPE_LABELS[type] ?? type;
+            const groupColor = TYPE_COLORS[type] ?? "";
+            const groupTotalMV = groupItems.reduce((s, i) => {
+              const agg = holdingAggregates(i);
+              return s + (agg.posCount > 0 ? agg.totalMV : parseFloat(i.currentBalance || "0"));
+            }, 0);
+
+            return (
+              <Card key={type}>
+                <CardHeader className="pb-3">
+                  <button
+                    onClick={() => toggleGroup(type)}
+                    className="flex items-center justify-between w-full text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      {isCollapsed
+                        ? <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                      <IconComp className="h-4 w-4 text-muted-foreground" />
+                      <CardTitle className="text-base">{groupLabel}</CardTitle>
+                      <Badge variant="secondary" className={cn("text-xs", groupColor)}>
+                        {groupItems.length}
+                      </Badge>
+                    </div>
+                    <span className="font-mono text-sm font-medium">
+                      {formatCurrency(groupTotalMV)}
+                    </span>
+                  </button>
+                </CardHeader>
+                {!isCollapsed && (
+                  <CardContent className="pt-0">
+                    <div className="overflow-x-auto rounded-md border">
+                      <Table className="w-max min-w-full">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-8" />
+                            <TableHead className="sticky left-0 z-10 bg-background">Name</TableHead>
+                            <TableHead>GL Account</TableHead>
+                            <TableHead>Counterparty</TableHead>
+                            <TableHead className="text-right">Positions</TableHead>
+                            <TableHead className="text-right">Market Value</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
                           </TableRow>
-                        )}
-                      </>
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </TableBody>
-          </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {groupItems.map((item) => {
+                            const isExpanded = expandedIds.has(item.id);
+                            const expandable = canExpand();
+                            const agg = holdingAggregates(item);
+                            const displayMV = agg.posCount > 0 ? agg.totalMV : parseFloat(item.currentBalance || "0");
+
+                            return (
+                              <React.Fragment key={item.id}>
+                                <TableRow className={cn(isExpanded && "bg-muted/20")}>
+                                  <TableCell className="w-8 px-2">
+                                    {expandable && (
+                                      <button
+                                        onClick={() => toggleExpand(item.id)}
+                                        className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent"
+                                      >
+                                        {isExpanded
+                                          ? <ChevronDown className="h-3.5 w-3.5" />
+                                          : <ChevronRight className="h-3.5 w-3.5" />}
+                                      </button>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="font-medium">
+                                    <div className="flex items-center gap-2">
+                                      {item.name}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    {item.account && (
+                                      <button
+                                        onClick={() => window.location.href = `/gl-ledger/${item.account!.id}`}
+                                        className="text-sm text-primary hover:underline font-mono"
+                                      >
+                                        {item.account.number}
+                                      </button>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-sm text-muted-foreground">
+                                    {item.counterparty ?? "--"}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <Badge variant="outline" className="text-xs font-mono">
+                                      {agg.posCount}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-right font-mono text-sm font-medium">
+                                    {formatCurrency(displayMV)}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex flex-col gap-1">
+                                      {item._reconciliationCount > 0 ? (
+                                        <Badge variant="secondary" className="gap-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                          <ShieldCheck className="h-3 w-3" /> Reconciled
+                                        </Badge>
+                                      ) : (
+                                        <Badge variant="outline" className="gap-1 text-xs">
+                                          <AlertCircle className="h-3 w-3" /> Unreconciled
+                                        </Badge>
+                                      )}
+                                      {item.itemType === "BANK_ACCOUNT" && (
+                                        <ConnectBankFeed
+                                          subledgerItemId={item.id}
+                                          connectionStatus={item.plaidConnection?.status ?? null}
+                                          institutionName={item.plaidConnection?.institutionName}
+                                          lastSyncAt={item.plaidConnection?.lastSyncAt}
+                                          error={item.plaidConnection?.error}
+                                          onSyncComplete={fetchItems}
+                                        />
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex justify-end gap-1">
+                                      <Button variant="ghost" size="icon-xs" onClick={() => openEdit(item)}>
+                                        <Pencil className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="xs"
+                                        onClick={() => router.push(`/reconcile/${item.id}`)}
+                                      >
+                                        Reconcile
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                                {isExpanded && expandable && (
+                                  <>
+                                    <PositionsRow
+                                      key={`pos-${item.id}`}
+                                      entityId={currentEntityId}
+                                      item={item}
+                                      onBalanceUpdated={fetchItems}
+                                    />
+                                    {item.itemType === "BANK_ACCOUNT" && (
+                                      <TableRow key={`txns-${item.id}`}>
+                                        <TableCell colSpan={8} className="p-0">
+                                          <div className="border-t bg-muted/10 px-6 py-4">
+                                            <h4 className="text-sm font-medium mb-3">Recent Transactions</h4>
+                                            <InlineBankTransactions entityId={currentEntityId} subledgerItemId={item.id} />
+                                          </div>
+                                        </TableCell>
+                                      </TableRow>
+                                    )}
+                                  </>
+                                )}
+                              </React.Fragment>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                )}
+              </Card>
+            );
+          })}
         </div>
       )}
 
@@ -1046,6 +1240,21 @@ export default function HoldingsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Add Positions Prompt -- shown after holding creation */}
+      {promptHolding && (
+        <AddPositionsPrompt
+          entityId={currentEntityId}
+          holdingId={promptHolding.id}
+          holdingName={promptHolding.name}
+          holdingType={promptHolding.type}
+          open={!!promptHolding}
+          onClose={() => setPromptHolding(null)}
+          onPositionsAdded={() => {
+            setPromptHolding(null);
+            fetchItems();
+          }}
+        />
+      )}
     </div>
   );
 }
