@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-03-PLAN.md
-last_updated: "2026-04-12T21:22:11.067Z"
+stopped_at: Completed 12-02-PLAN.md
+last_updated: "2026-04-12T21:33:48.892Z"
 last_activity: 2026-04-12 -- Rate-based budget computation utility, API endpoint, and budget page UI with recalculate
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 47
-  completed_plans: 43
+  completed_plans: 44
   percent: 91
 ---
 
@@ -92,6 +92,7 @@ Progress: [█████████░] 91%
 | Phase 12 P00 | 3min | 2 tasks | 9 files |
 | Phase 12 P01 | 8min | 2 tasks | 8 files |
 | Phase 12 P03 | 5min | 2 tasks | 5 files |
+| Phase 12 P02 | 8min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -206,6 +207,9 @@ Recent decisions affecting current work:
 - [Phase 12-03]: computeMonthlyBudget uses Decimal.js with 4 decimal precision matching DB Decimal(19,4)
 - [Phase 12-03]: No separate recalculate endpoint; same POST with upsert overwrites previous budget amounts
 - [Phase 12-03]: Holdings sourced from /subledger endpoint, filtered to items with fairMarketValue
+- [Phase 12]: Extracted classifyCashFlowRow as pure function for testability rather than testing through DB
+- [Phase 12]: Contra netting uses Math.abs for consistent deduction, display-only grouping preserves raw balances
+- [Phase 12]: Balance sheet SQL extended with isContra/parentId for contra display support
 
 ### Pending Todos
 
@@ -218,6 +222,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-12T21:29:29Z
-Stopped at: Completed 12-03-PLAN.md
+Last session: 2026-04-12T21:33:48.890Z
+Stopped at: Completed 12-02-PLAN.md
 Resume file: None

@@ -34,8 +34,9 @@ const COLUMN_PATTERNS: Record<string, string[]> = {
 /**
  * Detects which header maps to which role.
  * Returns a mapping from role -> actual header name.
+ * Exported for use as heuristic fallback in the LLM column detection flow.
  */
-function detectColumns(
+export function detectColumns(
   headers: string[]
 ): { date: string; description: string; amount?: string; debit?: string; credit?: string; reference?: string } {
   const normalized = headers.map((h) => h.trim().toLowerCase());
@@ -111,9 +112,10 @@ function parseAmount(value: string | number | undefined | null): number {
  *
  * For debit/credit split: debit values become negative, credit values become positive.
  *
+ * @param columnMapping - Optional pre-confirmed column mapping from ColumnMappingUI. If provided, skips auto-detection.
  * @throws Error if CSV is empty or required columns cannot be detected
  */
-export function parseBankStatementCsv(csvText: string): ParsedBankRow[] {
+export function parseBankStatementCsv(csvText: string, columnMapping?: Record<string, string>): ParsedBankRow[] {
   if (!csvText || !csvText.trim()) {
     throw new Error("CSV content is empty");
   }
@@ -132,7 +134,10 @@ export function parseBankStatementCsv(csvText: string): ParsedBankRow[] {
     throw new Error("CSV has no data rows");
   }
 
-  const columns = detectColumns(parsed.meta.fields);
+  // Use provided column mapping or auto-detect
+  const columns = columnMapping
+    ? (columnMapping as { date: string; description: string; amount?: string; debit?: string; credit?: string; reference?: string })
+    : detectColumns(parsed.meta.fields);
   const rows: ParsedBankRow[] = [];
 
   for (const row of parsed.data) {

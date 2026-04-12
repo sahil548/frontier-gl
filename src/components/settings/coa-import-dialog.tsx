@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Upload } from "lucide-react";
 import { toast } from "sonner";
+import Papa from "papaparse";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,6 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ColumnMappingUI } from "@/components/csv-import/column-mapping-ui";
 
 interface CoaImportDialogProps {
   entityId: string;
@@ -25,6 +27,11 @@ export function CoaImportDialog({ entityId, onSuccess }: CoaImportDialogProps) {
   const [csvText, setCsvText] = useState("");
   const [preview, setPreview] = useState<string[][]>([]);
   const [importing, setImporting] = useState(false);
+
+  // Column mapping state
+  const [showMapping, setShowMapping] = useState(false);
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+  const [csvSampleRows, setCsvSampleRows] = useState<string[][]>([]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -40,19 +47,39 @@ export function CoaImportDialog({ entityId, onSuccess }: CoaImportDialogProps) {
       setPreview(
         lines.map((line) => line.split(",").map((c) => c.trim().replace(/"/g, "")))
       );
+
+      // Parse for column mapping UI
+      const parsed = Papa.parse<Record<string, string>>(text, {
+        header: true,
+        skipEmptyLines: true,
+        dynamicTyping: false,
+      });
+
+      if (parsed.meta.fields && parsed.meta.fields.length > 0) {
+        setCsvHeaders(parsed.meta.fields);
+        const rows = parsed.data.slice(0, 5).map((row) =>
+          parsed.meta.fields!.map((h) => row[h] ?? "")
+        );
+        setCsvSampleRows(rows);
+      }
     };
     reader.readAsText(file);
   };
 
-  const handleImport = async () => {
+  const handleShowMapping = () => {
     if (!csvText) return;
+    setShowMapping(true);
+  };
+
+  const handleMappingConfirm = async (mapping: Record<string, string>) => {
+    setShowMapping(false);
     setImporting(true);
 
     try {
       const res = await fetch(`/api/entities/${entityId}/accounts/import`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ csv: csvText }),
+        body: JSON.stringify({ csv: csvText, columnMapping: mapping }),
       });
       const json = await res.json();
 
@@ -64,6 +91,8 @@ export function CoaImportDialog({ entityId, onSuccess }: CoaImportDialogProps) {
         setOpen(false);
         setCsvText("");
         setPreview([]);
+        setCsvHeaders([]);
+        setCsvSampleRows([]);
         onSuccess();
       } else {
         toast.error(json.error || "Import failed");
@@ -73,6 +102,10 @@ export function CoaImportDialog({ entityId, onSuccess }: CoaImportDialogProps) {
     } finally {
       setImporting(false);
     }
+  };
+
+  const handleMappingCancel = () => {
+    setShowMapping(false);
   };
 
   return (
@@ -93,51 +126,68 @@ export function CoaImportDialog({ entityId, onSuccess }: CoaImportDialogProps) {
         </DialogHeader>
 
         <div className="space-y-4">
-          <input
-            type="file"
-            accept=".csv"
-            onChange={handleFileChange}
-            className="block w-full text-sm text-muted-foreground file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-foreground hover:file:bg-primary/80"
-          />
+          {!showMapping && (
+            <>
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleFileChange}
+                className="block w-full text-sm text-muted-foreground file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-foreground hover:file:bg-primary/80"
+              />
 
-          {preview.length > 0 && (
-            <div className="rounded-md border overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    {preview[0].map((header, i) => (
-                      <th key={i} className="px-3 py-2 text-left font-medium">
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {preview.slice(1).map((row, i) => (
-                    <tr key={i} className="border-b">
-                      {row.map((cell, j) => (
-                        <td key={j} className="px-3 py-2">
-                          {cell}
-                        </td>
+              {preview.length > 0 && (
+                <div className="rounded-md border overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        {preview[0].map((header, i) => (
+                          <th key={i} className="px-3 py-2 text-left font-medium">
+                            {header}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {preview.slice(1).map((row, i) => (
+                        <tr key={i} className="border-b">
+                          {row.map((cell, j) => (
+                            <td key={j} className="px-3 py-2">
+                              {cell}
+                            </td>
+                          ))}
+                        </tr>
                       ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <p className="px-3 py-2 text-xs text-muted-foreground">
-                Showing first {Math.min(preview.length - 1, 5)} rows of{" "}
-                {csvText.trim().split("\n").length - 1} total
-              </p>
-            </div>
+                    </tbody>
+                  </table>
+                  <p className="px-3 py-2 text-xs text-muted-foreground">
+                    Showing first {Math.min(preview.length - 1, 5)} rows of{" "}
+                    {csvText.trim().split("\n").length - 1} total
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+
+          {showMapping && csvHeaders.length > 0 && (
+            <ColumnMappingUI
+              headers={csvHeaders}
+              sampleRows={csvSampleRows}
+              importType="coa"
+              entityId={entityId}
+              onConfirm={handleMappingConfirm}
+              onCancel={handleMappingCancel}
+            />
           )}
         </div>
 
-        <DialogFooter>
-          <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
-          <Button onClick={handleImport} disabled={!csvText || importing}>
-            {importing ? "Importing..." : "Import Accounts"}
-          </Button>
-        </DialogFooter>
+        {!showMapping && (
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <Button onClick={handleShowMapping} disabled={!csvText || importing}>
+              {importing ? "Importing..." : "Review Column Mapping"}
+            </Button>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -166,7 +166,7 @@ export async function POST(
     return errorResponse("Validation failed", 400, parsed.error);
   }
 
-  const { csv, subledgerItemId } = parsed.data;
+  const { csv, subledgerItemId, columnMapping } = parsed.data;
 
   // Verify subledger item belongs to this entity and is a BANK_ACCOUNT
   const subledgerItem = await prisma.subledgerItem.findFirst({
@@ -184,7 +184,7 @@ export async function POST(
   // Parse CSV
   let rows;
   try {
-    rows = parseBankStatementCsv(csv);
+    rows = parseBankStatementCsv(csv, columnMapping);
   } catch (err) {
     return errorResponse(
       `CSV parsing failed: ${err instanceof Error ? err.message : "Unknown error"}`,

@@ -199,7 +199,7 @@ Plans:
 **Goal:** Cash flow classification uses cashFlowCategory enum field instead of name pattern matching. Contra account types via isContra boolean flag. Rate-based budget targets for investment returns. Onboarding wizard guides new entity setup (COA template, Holdings, Opening balances, First transactions). AI-powered CSV import with LLM column detection and saved mappings.
 **Requirements:** SCHEMA-01, CF-01, CF-02, CF-03, CONTRA-01, CONTRA-02, RATE-01, RATE-02, WIZ-01, WIZ-02, WIZ-03, CSV-01, CSV-02, CSV-03, CSV-04
 **Depends on:** Phase 11
-**Plans:** 3/6 plans executed
+**Plans:** 4/6 plans executed
 
 Plans:
 - [ ] 12-00-PLAN.md — Wave 0 test stubs for all phase requirements (Nyquist compliance)

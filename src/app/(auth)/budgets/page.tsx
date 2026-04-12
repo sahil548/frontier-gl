@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { getFiscalYearMonths, type FiscalYearMonth } from "@/lib/utils/fiscal-year";
+import { ColumnMappingUI } from "@/components/csv-import/column-mapping-ui";
+import Papa from "papaparse";
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -121,6 +123,11 @@ export default function BudgetsPage() {
   const [saving, setSaving] = useState(false);
   const [copying, setCopying] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [csvMappingData, setCsvMappingData] = useState<{
+    csvText: string;
+    headers: string[];
+    sampleRows: string[][];
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ─── Rate-based budget state ─────────────────────────
@@ -533,15 +540,48 @@ export default function BudgetsPage() {
 
   async function handleCsvImport(file: File) {
     if (!resolvedEntityId || resolvedEntityId === "all") return;
-    setImporting(true);
+
     try {
       const text = await file.text();
+      // Parse CSV to get headers and sample rows for mapping UI
+      const parsed = Papa.parse<Record<string, string>>(text, {
+        header: true,
+        skipEmptyLines: true,
+        dynamicTyping: false,
+      });
+
+      if (!parsed.meta.fields || parsed.meta.fields.length === 0) {
+        toast.error("CSV has no headers");
+        return;
+      }
+
+      const headers = parsed.meta.fields;
+      const sampleRows = parsed.data.slice(0, 5).map((row) =>
+        headers.map((h) => row[h] ?? "")
+      );
+
+      setCsvMappingData({ csvText: text, headers, sampleRows });
+    } catch {
+      toast.error("Failed to read CSV file");
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }
+
+  async function handleBudgetMappingConfirm(mapping: Record<string, string>) {
+    if (!resolvedEntityId || resolvedEntityId === "all" || !csvMappingData) return;
+
+    setImporting(true);
+    setCsvMappingData(null);
+    try {
       const res = await fetch(
         `/api/entities/${resolvedEntityId}/budgets/import`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ csv: text }),
+          body: JSON.stringify({ csv: csvMappingData.csvText, columnMapping: mapping }),
         }
       );
 
@@ -567,10 +607,6 @@ export default function BudgetsPage() {
       toast.error("Import failed");
     } finally {
       setImporting(false);
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
     }
   }
 
@@ -837,6 +873,18 @@ export default function BudgetsPage() {
           {saving ? "Saving..." : "Save"}
         </Button>
       </div>
+
+      {/* Column mapping UI for budget CSV import */}
+      {csvMappingData && resolvedEntityId && resolvedEntityId !== "all" && (
+        <ColumnMappingUI
+          headers={csvMappingData.headers}
+          sampleRows={csvMappingData.sampleRows}
+          importType="budget"
+          entityId={resolvedEntityId}
+          onConfirm={handleBudgetMappingConfirm}
+          onCancel={() => setCsvMappingData(null)}
+        />
+      )}
 
       {/* Loading */}
       {loading && <BudgetSkeleton />}

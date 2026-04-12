@@ -22,6 +22,8 @@ import {
 import { SplitDialog } from "@/components/bank-feed/split-dialog";
 import { CategorizePrompt } from "@/components/bank-feed/categorize-prompt";
 import { ReconciliationSummary } from "@/components/bank-feed/reconciliation-summary";
+import { ColumnMappingUI } from "@/components/csv-import/column-mapping-ui";
+import Papa from "papaparse";
 
 // ---- Types ----------------------------------------------------------------
 
@@ -100,6 +102,13 @@ export default function BankFeedPage() {
     accountName: string;
     positionId?: string | null;
     positionLabel?: string | null;
+  } | null>(null);
+
+  // Column mapping state for CSV import
+  const [csvMappingData, setCsvMappingData] = useState<{
+    csvText: string;
+    headers: string[];
+    sampleRows: string[][];
   } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -224,17 +233,50 @@ export default function BankFeedPage() {
       return;
     }
 
-    setIsImporting(true);
     try {
       const text = await file.text();
+      // Parse CSV to extract headers and sample rows for mapping UI
+      const parsed = Papa.parse<Record<string, string>>(text, {
+        header: true,
+        skipEmptyLines: true,
+        dynamicTyping: false,
+      });
+
+      if (!parsed.meta.fields || parsed.meta.fields.length === 0) {
+        toast.error("CSV has no headers");
+        return;
+      }
+
+      const headers = parsed.meta.fields;
+      const sampleRows = parsed.data.slice(0, 5).map((row) =>
+        headers.map((h) => row[h] ?? "")
+      );
+
+      setCsvMappingData({ csvText: text, headers, sampleRows });
+    } catch {
+      toast.error("Failed to read CSV file");
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleMappingConfirm = async (mapping: Record<string, string>) => {
+    if (!entityId || !csvMappingData) return;
+
+    setIsImporting(true);
+    setCsvMappingData(null);
+    try {
       const res = await fetch(
         `/api/entities/${entityId}/bank-transactions`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            csv: text,
+            csv: csvMappingData.csvText,
             subledgerItemId: selectedBankAccountId,
+            columnMapping: mapping,
           }),
         }
       );
@@ -255,10 +297,6 @@ export default function BankFeedPage() {
       toast.error("Failed to import CSV");
     } finally {
       setIsImporting(false);
-      // Reset input so same file can be re-selected
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
     }
   };
 
@@ -486,6 +524,18 @@ export default function BankFeedPage() {
           </Button>
         </div>
       </div>
+
+      {/* Column mapping UI for CSV import */}
+      {csvMappingData && (
+        <ColumnMappingUI
+          headers={csvMappingData.headers}
+          sampleRows={csvMappingData.sampleRows}
+          importType="bank"
+          entityId={entityId}
+          onConfirm={handleMappingConfirm}
+          onCancel={() => setCsvMappingData(null)}
+        />
+      )}
 
       {/* Categorize prompt */}
       {categorizePrompt && (

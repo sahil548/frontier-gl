@@ -18,6 +18,7 @@ export type CsvRow = z.infer<typeof csvRowSchema>;
 export const csvImportSchema = z.object({
   csv: z.string().min(1, "CSV content is required"),
   subledgerItemId: z.string().min(1, "Subledger item ID is required"),
+  columnMapping: z.record(z.string(), z.string()).optional(),
 });
 
 export type CsvImport = z.infer<typeof csvImportSchema>;
