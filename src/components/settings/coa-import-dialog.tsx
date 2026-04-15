@@ -114,8 +114,8 @@ export function CoaImportDialog({ entityId, onSuccess }: CoaImportDialogProps) {
         <Upload className="mr-2 h-4 w-4" />
         Import Chart of Accounts
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="sticky top-0 bg-background z-10 pb-2">
           <DialogTitle>Import Chart of Accounts from CSV</DialogTitle>
           <DialogDescription>
             Upload a CSV file with columns: number, name, type, description

@@ -96,6 +96,12 @@ export function ColumnMappingUI({
           if (json.success && json.data) {
             setMapping(json.data.mapping || {});
             setSource(json.data.source || "heuristic");
+            // When a saved mapping matched (either by explicit sourceName
+            // or via header fingerprint), pre-fill the sourceName field so
+            // the user can see which saved mapping is being reused.
+            if (json.data.source === "saved" && json.data.sourceName) {
+              setSourceName(json.data.sourceName);
+            }
           }
         }
       } catch {
