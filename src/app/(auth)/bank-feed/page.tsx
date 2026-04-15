@@ -228,10 +228,10 @@ export default function BankFeedPage() {
     const file = e.target.files?.[0];
     if (!file || !entityId) return;
 
-    if (!selectedBankAccountId) {
-      toast.error("Please select a bank account before importing");
-      return;
-    }
+    // Phase 12-09: the bank-account selector is no longer required at file
+    // pick time. If the user maps an "Account" column in the Column Mapping
+    // UI they'll enter multi-account (per-row) mode; if not, we'll re-check
+    // selectedBankAccountId in handleMappingConfirm before submitting.
 
     try {
       const text = await file.text();
@@ -265,30 +265,69 @@ export default function BankFeedPage() {
   const handleMappingConfirm = async (mapping: Record<string, string>) => {
     if (!entityId || !csvMappingData) return;
 
+    // Phase 12-09: branch on whether user mapped the Account column.
+    // - With mapping.account: multi-account mode (per-row routing by name)
+    // - Without: legacy single-account mode (requires selectedBankAccountId)
+    const isMultiAccount = Boolean(mapping.account);
+
+    if (!isMultiAccount && !selectedBankAccountId) {
+      toast.error(
+        "Please select a bank account in the selector above, OR map the Account column for per-row routing."
+      );
+      return;
+    }
+
     setIsImporting(true);
     setCsvMappingData(null);
     try {
+      const body = isMultiAccount
+        ? {
+            csv: csvMappingData.csvText,
+            columnMapping: mapping,
+            accountResolution: {
+              strategy: "per-row" as const,
+              matchBy: "name" as const,
+            },
+          }
+        : {
+            csv: csvMappingData.csvText,
+            subledgerItemId: selectedBankAccountId,
+            columnMapping: mapping,
+          };
+
       const res = await fetch(
         `/api/entities/${entityId}/bank-transactions`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            csv: csvMappingData.csvText,
-            subledgerItemId: selectedBankAccountId,
-            columnMapping: mapping,
-          }),
+          body: JSON.stringify(body),
         }
       );
 
       const json = await res.json();
       if (json.success) {
-        const { imported, skipped, categorized } = json.data;
+        const { imported, skipped, categorized, errors } = json.data;
         const parts: string[] = [];
         if (imported > 0) parts.push(`Imported ${imported} transactions`);
         if (skipped > 0) parts.push(`${skipped} duplicates skipped`);
         if (categorized > 0) parts.push(`${categorized} auto-categorized`);
+        if (errors && errors.length > 0) {
+          parts.push(`${errors.length} rows could not be imported`);
+        }
         toast.success(parts.join(", ") || "Import complete");
+
+        // Surface unresolved-row errors so the user sees what was skipped.
+        if (errors && errors.length > 0) {
+          const preview = errors
+            .slice(0, 3)
+            .map((e: string) => `- ${e}`)
+            .join("\n");
+          const suffix = errors.length > 3 ? `\n…and ${errors.length - 3} more` : "";
+          toast.error(`Unresolved rows:\n${preview}${suffix}`, {
+            duration: 10000,
+          });
+        }
+
         refreshAll();
       } else {
         toast.error(json.error || "Import failed");
@@ -513,7 +552,7 @@ export default function BankFeedPage() {
           <Button
             variant="outline"
             onClick={handleImportCsv}
-            disabled={isImporting || !selectedBankAccountId}
+            disabled={isImporting}
           >
             {isImporting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

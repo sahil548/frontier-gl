@@ -19,6 +19,9 @@ const COLUMN_PATTERNS: Record<string, Record<string, string[]>> = {
     debit: ["debit", "debit amount", "withdrawal", "withdrawals"],
     credit: ["credit", "credit amount", "deposit", "deposits"],
     reference: ["reference", "ref", "check number", "check #", "confirmation"],
+    // Phase 12-09: optional per-row account routing. Detected when present so
+    // the ColumnMappingUI auto-fills it; the UI still treats it as optional.
+    account: ["account", "acct", "bank", "account name", "acct name"],
   },
   coa: {
     accountNumber: ["number", "account number", "acct no", "acct #", "account no", "code"],

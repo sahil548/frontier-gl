@@ -2,10 +2,20 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db/prisma";
 import { successResponse, errorResponse } from "@/lib/validators/api-response";
 import { getInternalUser } from "@/lib/db/entity-access";
-import { csvImportSchema } from "@/validators/bank-transaction";
-import { parseBankStatementCsv } from "@/lib/bank-transactions/csv-parser";
+import {
+  csvImportSchema,
+  isMultiAccountImport,
+} from "@/validators/bank-transaction";
+import {
+  parseBankStatementCsv,
+  type ParsedBankRow,
+} from "@/lib/bank-transactions/csv-parser";
 import { generateTransactionHash, findDuplicates } from "@/lib/bank-transactions/duplicate-check";
 import { matchRule } from "@/lib/bank-transactions/categorize";
+import {
+  resolveAccountRefs,
+  type ResolvedBankRow,
+} from "@/lib/bank-transactions/resolve-account-refs";
 import { Prisma } from "@/generated/prisma/client";
 
 // ---- Serialization Helpers ------------------------------------------------
@@ -166,7 +176,54 @@ export async function POST(
     return errorResponse("Validation failed", 400, parsed.error);
   }
 
-  const { csv, subledgerItemId, columnMapping } = parsed.data;
+  // Parse CSV once — shared by both branches.
+  const csv = parsed.data.csv;
+  const columnMapping = parsed.data.columnMapping;
+
+  let parsedRows: ParsedBankRow[];
+  try {
+    parsedRows = parseBankStatementCsv(csv, columnMapping);
+  } catch (err) {
+    return errorResponse(
+      `CSV parsing failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+      400
+    );
+  }
+
+  if (parsedRows.length === 0) {
+    return errorResponse("CSV contains no valid data rows", 400);
+  }
+
+  // Fetch active categorization rules for this entity (shared across branches).
+  const rules = await prisma.categorizationRule.findMany({
+    where: { entityId, isActive: true },
+    orderBy: { priority: "asc" },
+  });
+
+  // ---- Multi-account branch (Phase 12-09) ---------------------------------
+  if (isMultiAccountImport(parsed.data)) {
+    const { matchBy } = parsed.data.accountResolution;
+
+    const subledgerItems = await prisma.subledgerItem.findMany({
+      where: { entityId, isActive: true, itemType: "BANK_ACCOUNT" },
+      select: {
+        id: true,
+        name: true,
+        account: { select: { number: true } },
+      },
+    });
+
+    const { resolved, errors: resolutionErrors } = resolveAccountRefs(
+      parsedRows,
+      subledgerItems,
+      matchBy
+    );
+
+    return processMultiAccountRows(resolved, resolutionErrors, rules);
+  }
+
+  // ---- Legacy single-account branch ---------------------------------------
+  const { subledgerItemId } = parsed.data;
 
   // Verify subledger item belongs to this entity and is a BANK_ACCOUNT
   const subledgerItem = await prisma.subledgerItem.findFirst({
@@ -181,27 +238,12 @@ export async function POST(
     );
   }
 
-  // Parse CSV
-  let rows;
-  try {
-    rows = parseBankStatementCsv(csv, columnMapping);
-  } catch (err) {
-    return errorResponse(
-      `CSV parsing failed: ${err instanceof Error ? err.message : "Unknown error"}`,
-      400
-    );
-  }
-
-  if (rows.length === 0) {
-    return errorResponse("CSV contains no valid data rows", 400);
-  }
-
   // Generate hashes and check for duplicates
-  const hashMap = new Map<string, (typeof rows)[number]>();
+  const hashMap = new Map<string, (typeof parsedRows)[number]>();
   const hashList: string[] = [];
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
+  for (let i = 0; i < parsedRows.length; i++) {
+    const row = parsedRows[i];
     const hash = generateTransactionHash(
       row.date,
       String(row.amount),
@@ -214,12 +256,6 @@ export async function POST(
 
   const existingHashes = await findDuplicates(subledgerItemId, hashList);
   const skipped = existingHashes.size;
-
-  // Fetch active categorization rules for this entity
-  const rules = await prisma.categorizationRule.findMany({
-    where: { entityId, isActive: true },
-    orderBy: { priority: "asc" },
-  });
 
   // Create new transactions, auto-categorize if rule matches
   const errors: string[] = [];
@@ -270,6 +306,116 @@ export async function POST(
 
   if (createOperations.length > 0) {
     await prisma.bankTransaction.createMany({ data: createOperations });
+  }
+
+  return successResponse({
+    imported,
+    skipped,
+    categorized,
+    errors,
+  });
+}
+
+// ---- Multi-account helper -------------------------------------------------
+
+type CategorizationRuleRow = {
+  id: string;
+  pattern: string;
+  amountMin: Prisma.Decimal | null;
+  amountMax: Prisma.Decimal | null;
+  accountId: string | null;
+  dimensionTags: unknown;
+  isActive: boolean;
+  priority: number;
+};
+
+/**
+ * Runs duplicate-check + rule categorization + createMany PER subledgerItem
+ * group so duplicate scope stays per-account (a row under Account A is not
+ * collapsed as a duplicate of Account B). Returns the aggregated counts.
+ */
+async function processMultiAccountRows(
+  resolved: ResolvedBankRow[],
+  resolutionErrors: string[],
+  rules: CategorizationRuleRow[]
+) {
+  const errors: string[] = [...resolutionErrors];
+  let imported = 0;
+  let skipped = 0;
+  let categorized = 0;
+
+  // Group rows by the resolved subledgerItemId.
+  const groups = new Map<string, ResolvedBankRow[]>();
+  for (const row of resolved) {
+    const arr = groups.get(row.subledgerItemId) ?? [];
+    arr.push(row);
+    groups.set(row.subledgerItemId, arr);
+  }
+
+  for (const [subId, groupRows] of groups.entries()) {
+    // Generate hashes scoped to this subledgerItem (per-account dedup).
+    const hashMap = new Map<string, ResolvedBankRow>();
+    const hashList: string[] = [];
+
+    for (let i = 0; i < groupRows.length; i++) {
+      const row = groupRows[i];
+      const hash = generateTransactionHash(
+        row.date,
+        String(row.amount),
+        row.description,
+        i
+      );
+      hashMap.set(hash, row);
+      hashList.push(hash);
+    }
+
+    const existingHashes = await findDuplicates(subId, hashList);
+    skipped += existingHashes.size;
+
+    const createOperations: Prisma.BankTransactionCreateManyInput[] = [];
+
+    for (const [hash, row] of hashMap.entries()) {
+      if (existingHashes.has(hash)) continue;
+
+      const matchedRule = matchRule(
+        { description: row.description, amount: row.amount },
+        rules.map((r) => ({
+          id: r.id,
+          pattern: r.pattern,
+          amountMin: r.amountMin,
+          amountMax: r.amountMax,
+          accountId: r.accountId,
+          dimensionTags: r.dimensionTags,
+          isActive: r.isActive,
+          priority: r.priority,
+        }))
+      );
+
+      try {
+        createOperations.push({
+          subledgerItemId: subId,
+          externalId: hash,
+          date: new Date(row.date),
+          description: row.description,
+          amount: new Prisma.Decimal(String(row.amount)),
+          source: "CSV",
+          status: matchedRule ? "CATEGORIZED" : "PENDING",
+          accountId: matchedRule ? matchedRule.accountId : null,
+          ruleId: matchedRule ? matchedRule.id : null,
+        });
+
+        imported++;
+        if (matchedRule) categorized++;
+      } catch (err) {
+        errors.push(
+          `Row "${row.description}": ${err instanceof Error ? err.message : "Unknown error"}`
+        );
+      }
+    }
+
+    if (createOperations.length > 0) {
+      await prisma.bankTransaction.createMany({ data: createOperations });
+    }
   }
 
   return successResponse({

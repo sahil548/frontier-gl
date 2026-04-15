@@ -44,7 +44,17 @@ const COLUMN_PATTERNS: Record<string, string[]> = {
  */
 export function detectColumns(
   headers: string[]
-): { date: string; description: string; amount?: string; debit?: string; credit?: string; reference?: string } {
+): {
+  date: string;
+  description: string;
+  amount?: string;
+  debit?: string;
+  credit?: string;
+  reference?: string;
+  // Phase 12-09: heuristic does not detect account here (opt-in via UI); the
+  // field is typed so both branches in parseBankStatementCsv's union agree.
+  account?: string;
+} {
   const normalized = headers.map((h) => h.trim().toLowerCase());
 
   const findColumn = (role: string): string | undefined => {
@@ -193,8 +203,9 @@ export function parseBankStatementCsv(csvText: string, columnMapping?: Record<st
     // present. Blank cells yield an empty string so the resolver can flag the
     // row as unresolved rather than silently dropping it. Absence of
     // columns.account leaves accountRef undefined (backward compat).
-    if ("account" in columns && columns.account) {
-      result.accountRef = row[columns.account]?.trim() ?? "";
+    const accountColumn = columns.account;
+    if (accountColumn) {
+      result.accountRef = row[accountColumn]?.trim() ?? "";
     }
 
     rows.push(result);

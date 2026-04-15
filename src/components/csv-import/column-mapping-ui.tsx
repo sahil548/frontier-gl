@@ -27,6 +27,9 @@ const ROLE_LABELS: Record<string, Record<string, string>> = {
     debit: "Debit",
     credit: "Credit",
     reference: "Reference",
+    // Phase 12-09: optional per-row account routing. When mapped, the bank
+    // feed page switches from single-account to multi-account (per-row) mode.
+    account: "Account (optional)",
   },
   coa: {
     accountNumber: "Account Number",
@@ -190,6 +193,15 @@ export function ColumnMappingUI({
         Review and adjust how CSV columns map to data fields. Change any
         mapping that looks incorrect.
       </p>
+
+      {/* Phase 12-09: multi-account mode indicator */}
+      {importType === "bank" && mapping.account && (
+        <p className="text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">Multi-account mode:</span>{" "}
+          rows will route per the Account column. The bank-account selector
+          above is ignored for this import.
+        </p>
+      )}
 
       {/* Mapping table */}
       <div className="rounded-md border">
