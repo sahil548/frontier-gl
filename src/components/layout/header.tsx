@@ -4,13 +4,20 @@ import { UserButton } from "@clerk/nextjs";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { EntitySelector } from "@/components/layout/entity-selector";
 import { MobileSidebarTrigger } from "@/components/layout/sidebar";
+import { ReturnToWizardBanner } from "@/components/onboarding/return-to-wizard-banner";
+import { useEntityContext } from "@/providers/entity-provider";
 
 export function Header() {
+  const { currentEntityId } = useEntityContext();
+  const showReturnBanner = currentEntityId && currentEntityId !== "all";
+
   return (
     <header className="flex h-14 items-center gap-2 border-b bg-background px-4">
       <MobileSidebarTrigger />
 
       <div className="flex-1" />
+
+      {showReturnBanner && <ReturnToWizardBanner entityId={currentEntityId} />}
 
       <EntitySelector />
 
