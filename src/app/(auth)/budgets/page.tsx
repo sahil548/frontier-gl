@@ -25,6 +25,10 @@ import {
 import { cn } from "@/lib/utils";
 import { getFiscalYearMonths, type FiscalYearMonth } from "@/lib/utils/fiscal-year";
 import { ColumnMappingUI } from "@/components/csv-import/column-mapping-ui";
+import {
+  isHoldingEligibleForRateTarget,
+  computeEffectiveMarketValue,
+} from "@/lib/holdings/rate-target-eligibility";
 import Papa from "papaparse";
 
 // ─── Types ──────────────────────────────────────────────
@@ -50,6 +54,13 @@ interface HoldingRow {
   name: string;
   itemType: string;
   fairMarketValue: string | null;
+  positions: Array<{
+    id: string;
+    name: string;
+    accountId: string | null;
+    positionType: string;
+    marketValue: string;
+  }>;
 }
 
 interface RateTargetEntry {
@@ -184,7 +195,7 @@ export default function BudgetsPage() {
         const json = await res.json();
         if (json.success) {
           const items = (json.data as HoldingRow[]).filter(
-            (h) => h.fairMarketValue !== null
+            isHoldingEligibleForRateTarget,
           );
           setHoldings(items);
         }
@@ -738,12 +749,15 @@ export default function BudgetsPage() {
                     <SelectValue placeholder="Select holding..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {holdings.map((h) => (
-                      <SelectItem key={h.id} value={h.id}>
-                        {h.name} ({h.itemType}) - $
-                        {parseFloat(h.fairMarketValue ?? "0").toLocaleString()}
-                      </SelectItem>
-                    ))}
+                    {holdings.map((h) => {
+                      const effectiveFmv = computeEffectiveMarketValue(h);
+                      return (
+                        <SelectItem key={h.id} value={h.id}>
+                          {h.name} ({h.itemType}) - $
+                          {effectiveFmv.toLocaleString()}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
                 {holdings.length === 0 && (

@@ -6,6 +6,7 @@ import { successResponse, errorResponse } from "@/lib/validators/api-response";
 import { getInternalUser } from "@/lib/db/entity-access";
 import { getFiscalYearMonths } from "@/lib/utils/fiscal-year";
 import { computeMonthlyBudget } from "@/lib/budgets/rate-based";
+import { computeEffectiveMarketValue } from "@/lib/holdings/rate-target-eligibility";
 import Decimal from "decimal.js";
 
 /**
@@ -69,20 +70,36 @@ export async function POST(
 
   const { holdingId, accountId, annualRate, fiscalYear } = parsed.data;
 
-  // Fetch the holding to get its market value
+  // Fetch the holding + its active positions so we can derive an effective
+  // market value: holding-level FMV wins when non-zero, else sum of active
+  // position marketValues. Family office / hedge fund workflows typically
+  // leave holding.fairMarketValue null and set marketValue on positions.
   const holding = await prisma.subledgerItem.findFirst({
     where: { id: holdingId, entityId },
+    include: {
+      positions: {
+        where: { isActive: true },
+        select: { marketValue: true },
+      },
+    },
   });
   if (!holding) {
     return errorResponse("Holding not found", 404);
   }
-  if (holding.fairMarketValue === null) {
+
+  const effectiveMarketValue = computeEffectiveMarketValue({
+    fairMarketValue: holding.fairMarketValue?.toString() ?? null,
+    positions: holding.positions.map((p) => ({
+      marketValue: p.marketValue?.toString() ?? "0",
+    })),
+  });
+  if (effectiveMarketValue <= 0) {
     return errorResponse("Holding has no market value", 400);
   }
 
   // Compute the monthly budget amount
   const monthlyAmount = computeMonthlyBudget({
-    holdingMarketValue: new Decimal(holding.fairMarketValue.toString()),
+    holdingMarketValue: new Decimal(effectiveMarketValue),
     annualReturnRate: annualRate,
   });
 
