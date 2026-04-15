@@ -18,6 +18,7 @@ interface AccountRow {
   number: string;
   name: string;
   type: string;
+  parentId: string | null;
 }
 
 interface WizardBalancesStepProps {
@@ -98,10 +99,17 @@ export function WizardBalancesStep({
         if (res.ok) {
           const json = await res.json();
           if (!cancelled && json.success) {
-            const bsAccounts = (json.data as AccountRow[]).filter((a) =>
-              TYPE_ORDER.includes(a.type)
+            const allAccounts = json.data as AccountRow[];
+            // Build set of parent IDs (any account referenced as parentId)
+            const parentIds = new Set<string>();
+            for (const a of allAccounts) {
+              if (a.parentId) parentIds.add(a.parentId);
+            }
+            // Only leaf balance-sheet accounts are postable
+            const bsLeafAccounts = allAccounts.filter(
+              (a) => TYPE_ORDER.includes(a.type) && !parentIds.has(a.id)
             );
-            setAccounts(bsAccounts);
+            setAccounts(bsLeafAccounts);
           }
         }
       } catch {

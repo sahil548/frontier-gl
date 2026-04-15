@@ -54,8 +54,8 @@ export async function generateOpeningBalanceJE(
 ): Promise<{ journalEntryId: string }> {
   const lineItems: Array<{
     accountId: string;
-    debit: number;
-    credit: number;
+    debit: string;
+    credit: string;
     memo: string;
   }> = [];
 
@@ -69,15 +69,18 @@ export async function generateOpeningBalanceJE(
   }
 
   for (const accountId of accountIds) {
-    const debitVal = parseFloat(gridState.get(`${accountId}-debit`) ?? "") || 0;
-    const creditVal = parseFloat(gridState.get(`${accountId}-credit`) ?? "") || 0;
+    const debitStr = gridState.get(`${accountId}-debit`) ?? "";
+    const creditStr = gridState.get(`${accountId}-credit`) ?? "";
+    const debitVal = parseFloat(debitStr) || 0;
+    const creditVal = parseFloat(creditStr) || 0;
 
     if (debitVal === 0 && creditVal === 0) continue;
 
     lineItems.push({
       accountId,
-      debit: debitVal,
-      credit: creditVal,
+      // Schema expects decimal-format strings (e.g. "1000" or "0")
+      debit: debitVal > 0 ? debitVal.toString() : "0",
+      credit: creditVal > 0 ? creditVal.toString() : "0",
       memo: "Opening Balance",
     });
   }
