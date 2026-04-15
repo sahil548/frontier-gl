@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-05-PLAN.md
-last_updated: "2026-04-14T21:30:00.000Z"
-last_activity: 2026-04-14 -- Onboarding wizard with COA / Holdings / Opening Balances / First Transactions steps; progress persistence; dashboard setup banner
+stopped_at: Completed 12-06-PLAN.md
+last_updated: "2026-04-15T04:21:35.665Z"
+last_activity: 2026-04-15 -- Rate-target eligibility + effective FMV helpers; Budgets slide-over now uses holding FMV OR positions sum; UAT Test 5 gap closed
 progress:
   total_phases: 12
   completed_phases: 9
-  total_plans: 47
-  completed_plans: 46
-  percent: 93
+  total_plans: 51
+  completed_plans: 48
+  percent: 92
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 12 of 12 (Reporting Fixes & Onboarding Wizard)
-Plan: 5 of 6 complete
+Plan: 8 of 10 complete (12-06 and 12-07 commits exist, summaries pending; 12-09 remaining)
 Status: Executing
-Last activity: 2026-04-14 -- Onboarding wizard with 4 skippable steps, progress persistence, dashboard setup banner, and verified end-to-end in Chrome
+Last activity: 2026-04-15 -- Rate-target eligibility + effective FMV helpers; Budgets slide-over now uses holding FMV OR positions sum; UAT Test 5 gap closed
 
-Progress: [█████████░] 93%
+Progress: [█████████░] 92%
 
 ## Performance Metrics
 
@@ -95,6 +95,8 @@ Progress: [█████████░] 93%
 | Phase 12 P02 | 8min | 2 tasks | 8 files |
 | Phase 12 P04 | 11min | 2 tasks | 13 files |
 | Phase 12 P05 | ~45min | 2 tasks + 1 fix | 14 files |
+| Phase 12 P08 | 3min | 2 tasks | 4 files |
+| Phase 12 P06 | 4min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -220,6 +222,10 @@ Recent decisions affecting current work:
 - [Phase 12-05]: Opening balance grid filters to leaf accounts only — parents rejected by JE API
 - [Phase 12-05]: Zod schema requires decimal-format strings for debit/credit; serialize numbers via .toString()
 - [Phase 12-05]: Fiscal-year-aware default JE date (fiscal-year-start for non-calendar entities)
+- [Phase 12-08]: Eligibility + effective FMV extracted to pure helpers — single source of truth for UI filter and server rate-target lookup
+- [Phase 12-08]: Holding FMV wins when non-zero, else SUM of active position marketValues (Phase 10 positions-overhaul compatibility)
+- [Phase 12-08]: rate-target API fetches holding.positions with isActive filter and derives effective FMV server-side rather than requiring holding.fairMarketValue
+- [Phase 12-06]: Saved mapping reuse via server-side header-fingerprint match (superset of stored headers), ordered by updatedAt desc; no client-side mapping list fetch needed
 
 ### Pending Todos
 
@@ -232,6 +238,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-14T21:30:00.000Z
-Stopped at: Completed 12-05-PLAN.md (onboarding wizard end-to-end verified in Chrome)
+Last session: 2026-04-15T04:21:26.035Z
+Stopped at: Completed 12-06-PLAN.md
 Resume file: None
