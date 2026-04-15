@@ -13,15 +13,72 @@ export const csvRowSchema = z.object({
 export type CsvRow = z.infer<typeof csvRowSchema>;
 
 /**
- * Validates the CSV import request body.
+ * Legacy single-account CSV import body.
+ * All parsed rows are routed to the single `subledgerItemId`.
  */
-export const csvImportSchema = z.object({
+const legacyCsvImportSchema = z.object({
   csv: z.string().min(1, "CSV content is required"),
   subledgerItemId: z.string().min(1, "Subledger item ID is required"),
   columnMapping: z.record(z.string(), z.string()).optional(),
+  // Multi-account fields are forbidden on the legacy branch so a body with
+  // BOTH shapes can only ever validate down one branch (mutually exclusive).
+  accountResolution: z.undefined().optional(),
 });
 
+/**
+ * Phase 12-09: Multi-account CSV import body.
+ *
+ * When the ColumnMappingUI maps the "account" role, the Bank Feed page sends
+ * this shape. `parseBankStatementCsv` extracts `accountRef` per row; the API
+ * resolves each `accountRef` to a `subledgerItemId` using `matchBy`:
+ *  - "name"   — match against `subledgerItem.name`
+ *  - "number" — match against linked `account.number`
+ *
+ * Unresolved rows are returned in the errors array (not imported).
+ */
+const multiAccountCsvImportSchema = z.object({
+  csv: z.string().min(1, "CSV content is required"),
+  columnMapping: z
+    .record(z.string(), z.string())
+    .refine(
+      (m) => typeof m["account"] === "string" && m["account"].length > 0,
+      {
+        message:
+          "Multi-account import requires columnMapping.account to be mapped to a CSV column",
+      }
+    ),
+  accountResolution: z.object({
+    strategy: z.literal("per-row"),
+    matchBy: z.enum(["name", "number"]),
+  }),
+  // Legacy field is forbidden on this branch to enforce mutual exclusivity.
+  subledgerItemId: z.undefined().optional(),
+});
+
+/**
+ * Validates the CSV import request body.
+ * Accepts either the legacy single-account shape or the Phase 12-09
+ * multi-account shape (mutually exclusive).
+ */
+export const csvImportSchema = z.union([
+  legacyCsvImportSchema,
+  multiAccountCsvImportSchema,
+]);
+
 export type CsvImport = z.infer<typeof csvImportSchema>;
+
+/**
+ * Discriminates a parsed csvImportSchema body.
+ * Returns true when the body is a multi-account import (has accountResolution).
+ */
+export function isMultiAccountImport(
+  parsed: CsvImport
+): parsed is z.infer<typeof multiAccountCsvImportSchema> {
+  return (
+    typeof (parsed as Record<string, unknown>).accountResolution === "object" &&
+    (parsed as Record<string, unknown>).accountResolution !== null
+  );
+}
 
 /**
  * Validates bank transaction create/update fields.

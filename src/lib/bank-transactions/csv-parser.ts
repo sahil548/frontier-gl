@@ -3,12 +3,18 @@ import { csvRowSchema } from "@/validators/bank-transaction";
 
 /**
  * Parsed bank statement row.
+ *
+ * `accountRef` is populated only when the caller passes a `columnMapping` with
+ * an "account" role (Phase 12-09 multi-account import). Downstream callers
+ * resolve the value to a subledgerItem; blank/missing cells produce an empty
+ * string and are flagged as unresolved by the resolver (not silently dropped).
  */
 export interface ParsedBankRow {
   date: string;
   description: string;
   amount: number;
   reference?: string;
+  accountRef?: string;
 }
 
 /**
@@ -136,7 +142,15 @@ export function parseBankStatementCsv(csvText: string, columnMapping?: Record<st
 
   // Use provided column mapping or auto-detect
   const columns = columnMapping
-    ? (columnMapping as { date: string; description: string; amount?: string; debit?: string; credit?: string; reference?: string })
+    ? (columnMapping as {
+        date: string;
+        description: string;
+        amount?: string;
+        debit?: string;
+        credit?: string;
+        reference?: string;
+        account?: string;
+      })
     : detectColumns(parsed.meta.fields);
   const rows: ParsedBankRow[] = [];
 
@@ -173,6 +187,14 @@ export function parseBankStatementCsv(csvText: string, columnMapping?: Record<st
 
     if (columns.reference && row[columns.reference]) {
       result.reference = row[columns.reference].trim();
+    }
+
+    // Phase 12-09: surface per-row account reference when mapping.account is
+    // present. Blank cells yield an empty string so the resolver can flag the
+    // row as unresolved rather than silently dropping it. Absence of
+    // columns.account leaves accountRef undefined (backward compat).
+    if ("account" in columns && columns.account) {
+      result.accountRef = row[columns.account]?.trim() ?? "";
     }
 
     rows.push(result);
