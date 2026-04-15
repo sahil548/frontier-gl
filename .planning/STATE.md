@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-04-PLAN.md
-last_updated: "2026-04-12T21:37:25.630Z"
-last_activity: 2026-04-12 -- LLM-powered CSV column detection with mapping confirmation UI across all import flows
+stopped_at: Completed 12-05-PLAN.md
+last_updated: "2026-04-14T21:30:00.000Z"
+last_activity: 2026-04-14 -- Onboarding wizard with COA / Holdings / Opening Balances / First Transactions steps; progress persistence; dashboard setup banner
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 47
-  completed_plans: 45
-  percent: 91
+  completed_plans: 46
+  percent: 93
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 12 of 12 (Reporting Fixes & Onboarding Wizard)
-Plan: 4 of 6 complete
+Plan: 5 of 6 complete
 Status: Executing
-Last activity: 2026-04-12 -- LLM-powered CSV column detection with mapping confirmation UI across all import flows
+Last activity: 2026-04-14 -- Onboarding wizard with 4 skippable steps, progress persistence, dashboard setup banner, and verified end-to-end in Chrome
 
-Progress: [█████████░] 91%
+Progress: [█████████░] 93%
 
 ## Performance Metrics
 
@@ -94,6 +94,7 @@ Progress: [█████████░] 91%
 | Phase 12 P03 | 5min | 2 tasks | 5 files |
 | Phase 12 P02 | 8min | 2 tasks | 8 files |
 | Phase 12 P04 | 11min | 2 tasks | 13 files |
+| Phase 12 P05 | ~45min | 2 tasks + 1 fix | 14 files |
 
 ## Accumulated Context
 
@@ -215,6 +216,10 @@ Recent decisions affecting current work:
 - [Phase 12]: Heuristic patterns duplicated in csv-column-map API route for import-type-specific detection
 - [Phase 12]: ColumnMappingUI fetches mapping from API on mount, falls back to empty on error
 - [Phase 12]: detectColumns exported from csv-parser for heuristic fallback reuse
+- [Phase 12-05]: Wizard progress as JSON blob on Entity ({ currentStep, completedSteps[], skippedSteps[] }) — simpler than normalizing
+- [Phase 12-05]: Opening balance grid filters to leaf accounts only — parents rejected by JE API
+- [Phase 12-05]: Zod schema requires decimal-format strings for debit/credit; serialize numbers via .toString()
+- [Phase 12-05]: Fiscal-year-aware default JE date (fiscal-year-start for non-calendar entities)
 
 ### Pending Todos
 
@@ -227,6 +232,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-12T21:37:25.627Z
-Stopped at: Completed 12-04-PLAN.md
+Last session: 2026-04-14T21:30:00.000Z
+Stopped at: Completed 12-05-PLAN.md (onboarding wizard end-to-end verified in Chrome)
 Resume file: None

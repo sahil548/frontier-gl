@@ -199,14 +199,14 @@ Plans:
 **Goal:** Cash flow classification uses cashFlowCategory enum field instead of name pattern matching. Contra account types via isContra boolean flag. Rate-based budget targets for investment returns. Onboarding wizard guides new entity setup (COA template, Holdings, Opening balances, First transactions). AI-powered CSV import with LLM column detection and saved mappings.
 **Requirements:** SCHEMA-01, CF-01, CF-02, CF-03, CONTRA-01, CONTRA-02, RATE-01, RATE-02, WIZ-01, WIZ-02, WIZ-03, CSV-01, CSV-02, CSV-03, CSV-04
 **Depends on:** Phase 11
-**Plans:** 5/6 plans executed
+**Plans:** 6/6 plans executed
 
 Plans:
-- [ ] 12-00-PLAN.md — Wave 0 test stubs for all phase requirements (Nyquist compliance)
-- [ ] 12-01-PLAN.md — Schema migration (CashFlowCategory enum, isContra, ColumnMapping, wizardProgress), validators, backfill utility, COA templates, API routes
-- [ ] 12-02-PLAN.md — Cash flow report refactor (field-based classification), account form extensions (cashFlowCategory dropdown, isContra toggle), balance sheet contra netting
-- [ ] 12-03-PLAN.md — Rate-based budget computation utility, rate-target API endpoint, budget page UI integration
-- [ ] 12-04-PLAN.md — LLM column mapper with Anthropic SDK, mapping persistence store, confirmation UI, integration into all 3 CSV import flows
-- [ ] 12-05-PLAN.md — Onboarding wizard (4-step: COA template, holdings, opening balances, first transactions), wizard progress API, entity form redirect
+- [x] 12-00-PLAN.md — Wave 0 test stubs for all phase requirements (Nyquist compliance)
+- [x] 12-01-PLAN.md — Schema migration (CashFlowCategory enum, isContra, ColumnMapping, wizardProgress), validators, backfill utility, COA templates, API routes
+- [x] 12-02-PLAN.md — Cash flow report refactor (field-based classification), account form extensions (cashFlowCategory dropdown, isContra toggle), balance sheet contra netting
+- [x] 12-03-PLAN.md — Rate-based budget computation utility, rate-target API endpoint, budget page UI integration
+- [x] 12-04-PLAN.md — LLM column mapper with Anthropic SDK, mapping persistence store, confirmation UI, integration into all 3 CSV import flows
+- [x] 12-05-PLAN.md — Onboarding wizard (4-step: COA template, holdings, opening balances, first transactions), wizard progress API, entity form redirect
 
 ---
