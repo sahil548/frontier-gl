@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-07-PLAN.md
-last_updated: "2026-04-15T04:23:37.844Z"
-last_activity: "2026-04-15 -- Wizard UX gap closure (12-07): ReturnToWizardBanner in header, backfill pre-existing entities to all-complete, opening balance JE date fidelity (form date == stored date)"
+stopped_at: Completed 12-09-PLAN.md
+last_updated: "2026-04-15T00:53:00.000Z"
+last_activity: "2026-04-15 -- Multi-account bank CSV import gap closure (12-09): ParsedBankRow.accountRef, csvImportSchema union, resolveAccountRefs helper, per-group dedup + createMany, Column Mapping UI Account role, Bank Feed UX gating. Chrome-verified on Three Pagodas (Citibank Checking / Savings) end-to-end."
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 51
-  completed_plans: 49
-  percent: 92
+  completed_plans: 50
+  percent: 94
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 12 of 12 (Reporting Fixes & Onboarding Wizard)
-Plan: 12-07 complete (SUMMARY written); 12-06 summary written; 12-08 summary written; 12-09 remaining
-Status: Executing
-Last activity: 2026-04-15 -- Wizard UX gap closure (12-07): ReturnToWizardBanner in header, backfill pre-existing entities to all-complete, opening balance JE date fidelity (form date == stored date)
+Plan: 12-09 complete (SUMMARY written, Chrome-verified); 12-06/07/08 complete
+Status: Executing -- Wave 2 gap-closure plans all complete, ready for phase roll-up / verifier
+Last activity: 2026-04-15 -- Multi-account bank CSV import gap closure (12-09): ParsedBankRow.accountRef, csvImportSchema union, resolveAccountRefs helper, per-group dedup + createMany, Column Mapping UI Account role, Bank Feed UX gating. Chrome-verified on Three Pagodas (Citibank Checking / Savings) end-to-end.
 
-Progress: [█████████░] 92%
+Progress: [█████████░] 94%
 
 ## Performance Metrics
 
@@ -98,6 +98,7 @@ Progress: [█████████░] 92%
 | Phase 12 P08 | 3min | 2 tasks | 4 files |
 | Phase 12 P06 | 4min | 2 tasks | 6 files |
 | Phase 12-reporting-fixes-onboarding-wizard P07 | 6min | 2 tasks | 9 files |
+| Phase 12 P09 | 5min+checkpoint | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -233,6 +234,11 @@ Recent decisions affecting current work:
 - [Phase 12-reporting-fixes-onboarding-wizard]: [Phase 12-07]: Backfill-on-demand on first GET (write-through) rather than migration script — self-healing for pre-existing entities
 - [Phase 12-reporting-fixes-onboarding-wizard]: [Phase 12-07]: generateOpeningBalanceJE signature changed from Date to YYYY-MM-DD string to eliminate UTC/local timezone shift
 - [Phase 12-reporting-fixes-onboarding-wizard]: [Phase 12-07]: ReturnToWizardBanner mounted in Header, renders null during initial fetch to prevent flicker
+- [Phase 12-09]: Account is a mappable column role, not a new endpoint — parity with Date/Amount/Description avoids forking the import UX
+- [Phase 12-09]: Schema is z.union with mutually-exclusive top-level fields; either subledgerItemId OR accountResolution, never both
+- [Phase 12-09]: resolveAccountRefs is a pure helper (case-insensitive + trimmed name/number lookup) consumed by the route, unit tests, and verification scripts alike
+- [Phase 12-09]: Duplicate detection scopes PER subledgerItem group so the same hash under Account A is not collapsed as a dupe of Account B
+- [Phase 12-09]: Unresolved accountRef values return as errors rather than silently dropping rows or failing the whole batch
 
 ### Pending Todos
 
@@ -245,6 +251,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-15T04:23:37.841Z
-Stopped at: Completed 12-07-PLAN.md
+Last session: 2026-04-15T00:53:00.000Z
+Stopped at: Completed 12-09-PLAN.md (last plan for Phase 12 gap closure; Chrome verification resolved human-verify checkpoint)
 Resume file: None
