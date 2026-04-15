@@ -5,14 +5,10 @@ import Link from "next/link";
 import { ArrowRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-
-interface WizardProgress {
-  coaComplete: boolean;
-  holdingsComplete: boolean;
-  balancesComplete: boolean;
-  transactionsComplete: boolean;
-  dismissedAt?: string;
-}
+import {
+  isWizardInProgress,
+  type WizardProgress,
+} from "@/lib/onboarding/wizard-progress";
 
 interface SetupBannerProps {
   entityId: string;
@@ -54,10 +50,13 @@ export function SetupBanner({ entityId, entityName }: SetupBannerProps) {
 
   if (loading || !progress) return null;
 
-  // Don't show if dismissed
-  if (progress.dismissedAt || dismissed) return null;
+  // Client-side dismiss toggle (immediate UX; PATCH below persists).
+  if (dismissed) return null;
 
-  // Count completed steps
+  // Centralized truth: hide when complete OR server-side dismissedAt is set.
+  if (!isWizardInProgress(progress)) return null;
+
+  // Compute completed count for the "N of 4 steps complete" line (display only).
   const steps = [
     progress.coaComplete,
     progress.holdingsComplete,
@@ -66,9 +65,6 @@ export function SetupBanner({ entityId, entityName }: SetupBannerProps) {
   ];
   const completedCount = steps.filter(Boolean).length;
   const totalSteps = steps.length;
-
-  // Don't show if all steps complete
-  if (completedCount === totalSteps) return null;
 
   const handleDismiss = async () => {
     setDismissed(true);

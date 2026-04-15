@@ -153,9 +153,11 @@ export function WizardBalancesStep({
       const result = await generateOpeningBalanceJE(
         entityId,
         gridState,
-        new Date(jeDate)
+        jeDate
       );
-      toast.success(`Opening balance JE created (${result.journalEntryId})`);
+      toast.success(
+        `Opening balance JE created for ${jeDate} (${result.journalEntryId})`
+      );
       onComplete();
     } catch (err) {
       toast.error(

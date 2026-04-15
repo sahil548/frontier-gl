@@ -44,13 +44,15 @@ export function getBalanceCheck(gridState: Map<string, string>): BalanceCheckRes
  *
  * @param entityId - Target entity
  * @param gridState - Map keyed by `${accountId}-debit` / `${accountId}-credit`
- * @param jeDate - Date for the journal entry
+ * @param jeDate - YYYY-MM-DD string for the journal entry (passed through
+ *   unchanged to the API; no Date-object round-trip that could shift to the
+ *   prior day via UTC/local midnight).
  * @returns Created JE id
  */
 export async function generateOpeningBalanceJE(
   entityId: string,
   gridState: Map<string, string>,
-  jeDate: Date,
+  jeDate: string,
 ): Promise<{ journalEntryId: string }> {
   const lineItems: Array<{
     accountId: string;
@@ -93,7 +95,11 @@ export async function generateOpeningBalanceJE(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      date: jeDate.toISOString().split("T")[0],
+      // Pass the YYYY-MM-DD string through as-is so the stored JE date
+      // matches exactly what the user picked in the form. Wrapping it in
+      // `new Date(...)` first would interpret it as UTC midnight and shift
+      // it to the prior day for users in negative-UTC-offset timezones.
+      date: jeDate,
       description: "Opening Balances",
       lineItems,
     }),
