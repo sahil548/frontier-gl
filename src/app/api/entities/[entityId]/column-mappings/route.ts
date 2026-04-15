@@ -8,9 +8,10 @@ import { z } from "zod";
  * GET /api/entities/:entityId/column-mappings
  *
  * Returns all saved column mappings for the entity.
+ * Optionally filter by ?importType=bank|coa|budget.
  */
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ entityId: string }> }
 ) {
   const { userId } = await auth();
@@ -20,8 +21,16 @@ export async function GET(
   const entity = await findAccessibleEntity(entityId, userId);
   if (!entity) return errorResponse("Entity not found", 404);
 
+  const url = new URL(request.url);
+  const importTypeParam = url.searchParams.get("importType");
+  const allowedTypes = new Set(["bank", "coa", "budget"]);
+  const importType =
+    importTypeParam && allowedTypes.has(importTypeParam)
+      ? importTypeParam
+      : undefined;
+
   const mappings = await prisma.columnMapping.findMany({
-    where: { entityId },
+    where: importType ? { entityId, importType } : { entityId },
     orderBy: { updatedAt: "desc" },
   });
 

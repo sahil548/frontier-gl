@@ -2,7 +2,10 @@ import { auth } from "@clerk/nextjs/server";
 import { findAccessibleEntity } from "@/lib/db/entity-access";
 import { successResponse, errorResponse } from "@/lib/validators/api-response";
 import { inferColumnMapping } from "@/lib/bank-transactions/llm-column-mapper";
-import { getSavedMapping } from "@/lib/bank-transactions/column-mapping-store";
+import {
+  getSavedMapping,
+  findMappingByHeaders,
+} from "@/lib/bank-transactions/column-mapping-store";
 import { z } from "zod";
 
 /**
@@ -66,9 +69,10 @@ const requestSchema = z.object({
  * POST /api/entities/:entityId/csv-column-map
  *
  * Infers column mappings for a CSV file. Tries in order:
- * 1. Saved mapping (if sourceName provided)
- * 2. LLM inference
- * 3. Heuristic pattern matching
+ * 1. Saved mapping by sourceName (explicit match, if sourceName provided)
+ * 2. Saved mapping by header fingerprint (fallback when sourceName absent)
+ * 3. LLM inference
+ * 4. Heuristic pattern matching
  */
 export async function POST(
   request: Request,
@@ -99,17 +103,33 @@ export async function POST(
   if (sourceName) {
     const saved = await getSavedMapping(entityId, sourceName, importType);
     if (saved) {
-      return successResponse({ mapping: saved, source: "saved" });
+      return successResponse({ mapping: saved, source: "saved", sourceName });
     }
   }
 
-  // 2. Try LLM inference
+  // 2. Header-fingerprint fallback: match an existing saved mapping by the
+  //    set of headers when no explicit sourceName was supplied. Surfaces the
+  //    original sourceName so the UI can pre-fill it and show the "Saved" badge.
+  const fingerprintMatch = await findMappingByHeaders(
+    entityId,
+    importType,
+    headers
+  );
+  if (fingerprintMatch) {
+    return successResponse({
+      mapping: fingerprintMatch.mapping,
+      source: "saved",
+      sourceName: fingerprintMatch.sourceName,
+    });
+  }
+
+  // 3. Try LLM inference
   const llmMapping = await inferColumnMapping(headers, sampleRows, importType);
   if (llmMapping && Object.keys(llmMapping).length > 0) {
     return successResponse({ mapping: llmMapping, source: "llm" });
   }
 
-  // 3. Fall back to heuristic pattern matching
+  // 4. Fall back to heuristic pattern matching
   const heuristic = heuristicDetect(headers, importType);
   return successResponse({ mapping: heuristic, source: "heuristic" });
 }
