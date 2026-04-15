@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 12-06-PLAN.md
-last_updated: "2026-04-15T04:21:37.948Z"
-last_activity: 2026-04-15 -- Saved CSV column-mapping reuse via header fingerprint match (UAT Test 9 closed); CoA Import dialog constrained to max-h-[90vh] with sticky header (UAT Test 7 closed)
+stopped_at: Completed 12-07-PLAN.md
+last_updated: "2026-04-15T04:23:37.844Z"
+last_activity: "2026-04-15 -- Wizard UX gap closure (12-07): ReturnToWizardBanner in header, backfill pre-existing entities to all-complete, opening balance JE date fidelity (form date == stored date)"
 progress:
   total_phases: 12
   completed_phases: 9
   total_plans: 51
-  completed_plans: 48
+  completed_plans: 49
   percent: 92
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 12 of 12 (Reporting Fixes & Onboarding Wizard)
-Plan: 12-06 complete (SUMMARY written); 12-07 commits exist (SUMMARY pending); 12-08 summary written; 12-09 remaining
+Plan: 12-07 complete (SUMMARY written); 12-06 summary written; 12-08 summary written; 12-09 remaining
 Status: Executing
-Last activity: 2026-04-15 -- Saved CSV column-mapping reuse via header fingerprint match (UAT Test 9 closed); CoA Import dialog constrained to max-h-[90vh] with sticky header (UAT Test 7 closed)
+Last activity: 2026-04-15 -- Wizard UX gap closure (12-07): ReturnToWizardBanner in header, backfill pre-existing entities to all-complete, opening balance JE date fidelity (form date == stored date)
 
 Progress: [█████████░] 92%
 
@@ -97,6 +97,7 @@ Progress: [█████████░] 92%
 | Phase 12 P05 | ~45min | 2 tasks + 1 fix | 14 files |
 | Phase 12 P08 | 3min | 2 tasks | 4 files |
 | Phase 12 P06 | 4min | 2 tasks | 6 files |
+| Phase 12-reporting-fixes-onboarding-wizard P07 | 6min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -228,6 +229,10 @@ Recent decisions affecting current work:
 - [Phase 12-06]: Saved mapping reuse via server-side header-fingerprint match (superset of stored headers), ordered by updatedAt desc; no client-side mapping list fetch needed
 - [Phase 12-06]: csv-column-map route returns sourceName on both explicit and fingerprint 'saved' hits for symmetric UI pre-fill contract
 - [Phase 12-06]: Dialog with dynamic-growth content: max-h-[90vh] overflow-y-auto on DialogContent + sticky top-0 on DialogHeader (reusable modal pattern)
+- [Phase 12-reporting-fixes-onboarding-wizard]: [Phase 12-07]: Pure wizard-progress helpers take pre-fetched counts as input (no Prisma mocks needed for unit tests)
+- [Phase 12-reporting-fixes-onboarding-wizard]: [Phase 12-07]: Backfill-on-demand on first GET (write-through) rather than migration script — self-healing for pre-existing entities
+- [Phase 12-reporting-fixes-onboarding-wizard]: [Phase 12-07]: generateOpeningBalanceJE signature changed from Date to YYYY-MM-DD string to eliminate UTC/local timezone shift
+- [Phase 12-reporting-fixes-onboarding-wizard]: [Phase 12-07]: ReturnToWizardBanner mounted in Header, renders null during initial fetch to prevent flicker
 
 ### Pending Todos
 
@@ -240,6 +245,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-15T04:21:26.035Z
-Stopped at: Completed 12-06-PLAN.md
+Last session: 2026-04-15T04:23:37.841Z
+Stopped at: Completed 12-07-PLAN.md
 Resume file: None
