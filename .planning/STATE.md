@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 12-06-PLAN.md
-last_updated: "2026-04-15T04:21:35.665Z"
-last_activity: 2026-04-15 -- Rate-target eligibility + effective FMV helpers; Budgets slide-over now uses holding FMV OR positions sum; UAT Test 5 gap closed
+last_updated: "2026-04-15T04:21:37.948Z"
+last_activity: 2026-04-15 -- Saved CSV column-mapping reuse via header fingerprint match (UAT Test 9 closed); CoA Import dialog constrained to max-h-[90vh] with sticky header (UAT Test 7 closed)
 progress:
   total_phases: 12
   completed_phases: 9
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 12 of 12 (Reporting Fixes & Onboarding Wizard)
-Plan: 8 of 10 complete (12-06 and 12-07 commits exist, summaries pending; 12-09 remaining)
+Plan: 12-06 complete (SUMMARY written); 12-07 commits exist (SUMMARY pending); 12-08 summary written; 12-09 remaining
 Status: Executing
-Last activity: 2026-04-15 -- Rate-target eligibility + effective FMV helpers; Budgets slide-over now uses holding FMV OR positions sum; UAT Test 5 gap closed
+Last activity: 2026-04-15 -- Saved CSV column-mapping reuse via header fingerprint match (UAT Test 9 closed); CoA Import dialog constrained to max-h-[90vh] with sticky header (UAT Test 7 closed)
 
 Progress: [█████████░] 92%
 
@@ -226,6 +226,8 @@ Recent decisions affecting current work:
 - [Phase 12-08]: Holding FMV wins when non-zero, else SUM of active position marketValues (Phase 10 positions-overhaul compatibility)
 - [Phase 12-08]: rate-target API fetches holding.positions with isActive filter and derives effective FMV server-side rather than requiring holding.fairMarketValue
 - [Phase 12-06]: Saved mapping reuse via server-side header-fingerprint match (superset of stored headers), ordered by updatedAt desc; no client-side mapping list fetch needed
+- [Phase 12-06]: csv-column-map route returns sourceName on both explicit and fingerprint 'saved' hits for symmetric UI pre-fill contract
+- [Phase 12-06]: Dialog with dynamic-growth content: max-h-[90vh] overflow-y-auto on DialogContent + sticky top-0 on DialogHeader (reusable modal pattern)
 
 ### Pending Todos
 
