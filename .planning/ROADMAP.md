@@ -19,7 +19,7 @@ Frontier GL delivers a multi-entity general ledger that replaces QuickBooks Onli
 - [x] **Phase 11: Categorization UX & Opening Balances** — Position-first categorization, auto-generated opening balance JEs, bank-feed reconciliation integration (completed 2026-04-14)
 - [x] **Phase 12: Reporting Fixes & Onboarding Wizard** — Cash flow enum, contra accounts, rate-based budgets, onboarding wizard, AI CSV column mapping, multi-account CSV import (completed 2026-04-15)
 - [x] **Phase 13: Test Coverage Gaps** — Backfill missing Phase 6 dimension tests (CLASS-03/04/05) + replace Phase 11 `it.todo` stubs with real assertions (completed 2026-04-16)
-- [ ] **Phase 14: Code Hygiene & Wizard Behavioral Fix** — Resolve Phase 9 `applyRules` orphan, refactor bank-tx POST to delegate to `postJournalEntry`, align Wizard OB JE behavior with Holdings OBE, sweep 7 deferred TS/test issues
+- [x] **Phase 14: Code Hygiene & Wizard Behavioral Fix** — Resolve Phase 9 `applyRules` orphan, refactor bank-tx POST to delegate to `postJournalEntry`, align Wizard OB JE behavior with Holdings OBE, sweep 7 deferred TS/test issues (completed 2026-04-16)
 - [ ] **Phase 15: Verification & Planning Docs Refresh** — Generate missing `10-VERIFICATION.md` + `12-VERIFICATION.md`, refresh 9 stale VALIDATION.md frontmatter entries, update REQUIREMENTS.md traceability for Phases 10–12
 
 ---
@@ -249,7 +249,7 @@ Plans:
 ### Phase 14: Code Hygiene & Wizard Behavioral Fix
 
 **Goal:** Remove orphan production code in Phase 9 bank-transactions, eliminate AccountBalance maintenance-coupling risk by delegating to `postJournalEntry`, align Wizard opening-balance JE behavior with the Holdings OBE path (auto-post or UI disclaimer), and sweep the 7 pre-existing TypeScript/test issues catalogued in `deferred-items.md`.
-**Status:** Pending — gap closure from v1.0 milestone audit
+**Status:** Complete (2026-04-16)
 **Depends on:** Phase 13
 **Requirements:** BANK-03, BANK-04, WIZ-03 (behavioral/refactor refinements; REQs already satisfied)
 **Gap Closure:** Closes Phase 9 hygiene items, Phase 12 WIZ-03 behavioral gap, and all 7 deferred TS/test items from `.planning/v1.0-MILESTONE-AUDIT.md`
@@ -261,14 +261,14 @@ Plans:
 4. Deferred-items.md items #1, #3, #5, #6, #7 resolved (Select `onValueChange` types, `SerializedAccount` duplicate, `localStorage.clear` jsdom, column-mapping-ui `string | null`, blob-storage test mock)
 5. `tsc --noEmit` passes clean across touched files; full test suite green
 
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans executed (Phase complete 2026-04-16)
 
 Plans:
 - [x] 14-01-PLAN.md — Extract postJournalEntryInTx from postJournalEntry (Wave 1; foundation for 14-02 + 14-03)
-- [ ] 14-02-PLAN.md — JE POST API auto-post-when-balanced + manual JE form audit-switch + 2 Wave 0 regression tests (Wave 2; closes WIZ-03)
-- [ ] 14-03-PLAN.md — Bank-tx POST route delegation to postJournalEntryInTx + audit-ordering test (Wave 2; closes BANK-03)
+- [x] 14-02-PLAN.md — JE POST API auto-post-when-balanced + manual JE form audit-switch + 2 Wave 0 regression tests (Wave 2; closes WIZ-03)
+- [x] 14-03-PLAN.md — Bank-tx POST route delegation to postJournalEntryInTx + audit-ordering test (Wave 2; closes BANK-03)
 - [x] 14-04-PLAN.md — Delete applyRules + TransactionInput orphan + clean test suites (Wave 1; closes BANK-04)
-- [ ] 14-05-PLAN.md — TS/test sweep: 5 deferred-items.md fixes + Node 25 localStorage flag + SerializedAccount canonical (Wave 1; closes success criterion #4)
+- [x] 14-05-PLAN.md — TS/test sweep: 5 deferred-items.md fixes + Node 25 localStorage flag + SerializedAccount canonical (Wave 1; closes success criterion #4)
 
 ---
 

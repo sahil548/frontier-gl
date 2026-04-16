@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Completed 14-03-PLAN.md (BANK-03 audit-flagged item closed)
-last_updated: "2026-04-16T13:47:30.426Z"
-last_activity: "2026-04-16 -- Phase 14 Plan 05: closed all 5 remaining Phase 12 deferred items (#1, #3, #5, #6, #7) — tsc clean across 6 touched files; new src/types/account.ts canonical type; NODE_OPTIONS in test script recovered 7 use-entity tests; vi.mocked in blob-storage; full suite 538 passed."
+status: Phase 14 Wave 2 complete — 14-02 (WIZ-03 auto-post default) closed; 02-05 remains the only outstanding plan
+stopped_at: Completed 14-02-PLAN.md (WIZ-03 closed)
+last_updated: "2026-04-16T13:52:20.265Z"
+last_activity: "2026-04-16 -- Phase 14 Plan 02: JE POST API auto-post-when-balanced default + WIZ-03 closure; manual JE form audit-switched; 2 new Wave 0 regression tests; full suite 543 passed; tsc clean."
 progress:
   total_phases: 15
-  completed_phases: 11
+  completed_phases: 12
   total_plans: 58
-  completed_plans: 56
-  percent: 95
+  completed_plans: 57
+  percent: 98
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 
 ## Current Position
 
-Phase: 14 of 15 (Code Hygiene & Wizard Behavioral Fix) — in progress
-Plan: 14-01 + 14-04 + 14-05 complete; 14-02 (auto-post default) and 14-03 (bank-tx delegation) pending
-Status: Phase 14 advancing — 14-05 deferred-items sweep complete (5 Phase 12 TS/test issues closed, +7 use-entity tests recovered, single-source SerializedAccount); waiting on 14-02 + 14-03
-Last activity: 2026-04-16 -- Phase 14 Plan 05: closed all 5 remaining Phase 12 deferred items (#1, #3, #5, #6, #7) — tsc clean across 6 touched files; new src/types/account.ts canonical type; NODE_OPTIONS in test script recovered 7 use-entity tests; vi.mocked in blob-storage; full suite 538 passed.
+Phase: 14 of 15 (Code Hygiene & Wizard Behavioral Fix) — Wave 2 complete (14-02 + 14-03 done)
+Plan: 14-01 + 14-02 + 14-03 + 14-04 + 14-05 all complete; 02-05 (only pre-existing outstanding plan) is the lone remaining gap
+Status: Phase 14 Wave 2 complete — 14-02 (WIZ-03 auto-post default) closed; manual JE form audit-switched to status: "DRAFT"; full suite 543 passed; tsc clean
+Last activity: 2026-04-16 -- Phase 14 Plan 02: JE POST API auto-post-when-balanced default + WIZ-03 closure; manual JE form audit-switched; 2 new Wave 0 regression tests; full suite 543 passed; tsc clean.
 
-Progress: [██████████] 95%
+Progress: [██████████] 98%
 
 ## Performance Metrics
 
@@ -105,6 +105,7 @@ Progress: [██████████] 95%
 | Phase 14-code-hygiene-wizard-fix P04 | 4min | 2 tasks | 2 files |
 | Phase 14 P05 | 7 min | 6 tasks | 8 files |
 | Phase 14-code-hygiene-wizard-fix P03 | 3 min | 2 tasks tasks | 2 files files |
+| Phase 14 P02 | 6 min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -262,6 +263,10 @@ Recent decisions affecting current work:
 - [Phase 14-05]: NODE_OPTIONS=--no-experimental-webstorage in package.json scripts.test (not vitest.config.ts) — issue is Node 25 global, not jsdom URL; spelled-out flag for maintainer discoverability
 - [Phase 14-code-hygiene-wizard-fix]: [Phase 14-03]: Bank-tx POST handler delegates to postJournalEntryInTx — JE created as DRAFT, helper flips to POSTED + writes balance upserts + POSTED audit; CREATED audit moved before post call (CREATED→POSTED ordering); response status coalesced to POSTED when postImmediately=true (Rule 1 fix for stale local snapshot)
 - [Phase 14-code-hygiene-wizard-fix]: [Phase 14-03]: Pattern A mirror-inline test for bank-tx POST audit ordering — recreate the post-refactor inner sequence in tests/bank-transactions/create-je.test.ts against a tx mock; assert call order on a captured array (not on individual mock arity)
+- [Phase 14-code-hygiene-wizard-fix]: [Phase 14-02]: status: z.enum(['DRAFT', 'POSTED']).optional() — handler-side default (shouldPost = status !== 'DRAFT') instead of Zod .default('POSTED') so opt-out semantics live where the handler enforces them
+- [Phase 14-code-hygiene-wizard-fix]: [Phase 14-02]: JE create still hardcodes status: 'DRAFT' inside the transaction; postJournalEntryInTx flips to POSTED when shouldPost is true — preserves single source of truth for the POSTED transition (lock + balance upsert + audit)
+- [Phase 14-code-hygiene-wizard-fix]: [Phase 14-02]: Manual JE form audit-switch spreads ...data and adds explicit status: 'DRAFT' on the fetch body (POST and PUT) — opts out of new POSTED-when-balanced API default to preserve draft → approve → post UX
+- [Phase 14-code-hygiene-wizard-fix]: [Phase 14-02]: Component test scaffold pattern — vi.mock children that fetch their own data (JELineItems, useIsBalanced) + window.location.href stub + initialLines prop to seed balanced form state without combobox interaction
 
 ### Pending Todos
 
@@ -274,6 +279,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-16T13:47:30.423Z
-Stopped at: Completed 14-03-PLAN.md (BANK-03 audit-flagged item closed)
+Last session: 2026-04-16T13:52:20.262Z
+Stopped at: Completed 14-02-PLAN.md (WIZ-03 closed)
 Resume file: None
