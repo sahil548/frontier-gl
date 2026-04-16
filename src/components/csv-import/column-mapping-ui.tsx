@@ -227,7 +227,7 @@ export function ColumnMappingUI({
                   <td className="px-3 py-2">
                     <Select
                       value={selectedHeader || "__none__"}
-                      onValueChange={(val) => handleRoleChange(role, val)}
+                      onValueChange={(val) => handleRoleChange(role, val ?? "__none__")}
                     >
                       <SelectTrigger size="sm">
                         <SelectValue />
