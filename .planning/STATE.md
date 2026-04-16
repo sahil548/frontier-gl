@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Phase 15 context gathered
-last_updated: "2026-04-16T14:55:08.113Z"
-last_activity: "2026-04-16 -- Phase 14 Plan 02: JE POST API auto-post-when-balanced default + WIZ-03 closure; manual JE form audit-switched; 2 new Wave 0 regression tests; full suite 543 passed; tsc clean."
+stopped_at: Completed 15-03-PLAN.md (REQUIREMENTS.md refresh)
+last_updated: "2026-04-16T15:30:37.318Z"
+last_activity: "2026-04-16 -- Phase 15 Plan 03: REQUIREMENTS.md refresh — promoted Phase 11 (8 REQ-IDs) + Phase 12 (15 REQ-IDs) to first-class entries; 99 unique REQ-IDs now documented; POS-01--08 flipped to Complete; CAT-02/CAT-04/OBE-04 correctly excluded."
 progress:
   total_phases: 15
   completed_phases: 12
-  total_plans: 58
-  completed_plans: 57
+  total_plans: 61
+  completed_plans: 58
   percent: 98
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Accountants can view, manage, and close books across all family office entities in one fast, purpose-built GL -- eliminating the per-entity cost and friction of QuickBooks Online.
-**Current focus:** Phase 12 -- Reporting Fixes & Onboarding Wizard
+**Current focus:** Phase 15 -- Verification & Planning Docs Refresh (v1.0 milestone close-out)
 
 ## Current Position
 
-Phase: 14 of 15 (Code Hygiene & Wizard Behavioral Fix) — Wave 2 complete (14-02 + 14-03 done)
-Plan: 14-01 + 14-02 + 14-03 + 14-04 + 14-05 all complete; 02-05 (only pre-existing outstanding plan) is the lone remaining gap
-Status: Phase 14 Wave 2 complete — 14-02 (WIZ-03 auto-post default) closed; manual JE form audit-switched to status: "DRAFT"; full suite 543 passed; tsc clean
-Last activity: 2026-04-16 -- Phase 14 Plan 02: JE POST API auto-post-when-balanced default + WIZ-03 closure; manual JE form audit-switched; 2 new Wave 0 regression tests; full suite 543 passed; tsc clean.
+Phase: 15 of 15 (Verification & Planning Docs Refresh) — Wave 1 in progress
+Plan: 15-03 complete (REQUIREMENTS.md refresh); 15-01 (Phase 10/12 VERIFICATION.md generation) and 15-02 (9 VALIDATION.md refreshes) remain in same wave
+Status: Phase 15 Plan 03 complete — Phase 11/12 sections added to REQUIREMENTS.md, POS-01--08 flipped to Complete, 10 new traceability rows, Coverage + footer refreshed for v1.0 milestone close-out
+Last activity: 2026-04-16 -- Phase 15 Plan 03: REQUIREMENTS.md refresh — promoted Phase 11 (8 REQ-IDs) + Phase 12 (15 REQ-IDs) to first-class entries; 99 unique REQ-IDs now documented; CAT-02/CAT-04/OBE-04 correctly excluded.
 
-Progress: [██████████] 98%
+Progress: [██████████] 95%
 
 ## Performance Metrics
 
@@ -106,6 +106,7 @@ Progress: [██████████] 98%
 | Phase 14 P05 | 7 min | 6 tasks | 8 files |
 | Phase 14-code-hygiene-wizard-fix P03 | 3 min | 2 tasks tasks | 2 files files |
 | Phase 14 P02 | 6 min | 3 tasks | 6 files |
+| Phase 15-verification-docs-refresh P03 | 2min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -267,6 +268,9 @@ Recent decisions affecting current work:
 - [Phase 14-code-hygiene-wizard-fix]: [Phase 14-02]: JE create still hardcodes status: 'DRAFT' inside the transaction; postJournalEntryInTx flips to POSTED when shouldPost is true — preserves single source of truth for the POSTED transition (lock + balance upsert + audit)
 - [Phase 14-code-hygiene-wizard-fix]: [Phase 14-02]: Manual JE form audit-switch spreads ...data and adds explicit status: 'DRAFT' on the fetch body (POST and PUT) — opts out of new POSTED-when-balanced API default to preserve draft → approve → post UX
 - [Phase 14-code-hygiene-wizard-fix]: [Phase 14-02]: Component test scaffold pattern — vi.mock children that fetch their own data (JELineItems, useIsBalanced) + window.location.href stub + initialLines prop to seed balanced form state without combobox interaction
+- [Phase 15-verification-docs-refresh]: [Phase 15-03]: Flat bullet list chosen for Phase 11/12 sections (matching Phase 6/7/8/9/10 style) — simpler than Phase 5 subsection-heading style for mixed-prefix REQ-ID groups
+- [Phase 15-verification-docs-refresh]: [Phase 15-03]: Used Edit tool single-point updates for all 6 REQUIREMENTS.md mutations (not MultiEdit) — each old_string was unique enough to match exactly once; Steps 1-2 line-shift concern addressed via content-based anchors in Steps 3-6
+- [Phase 15-verification-docs-refresh]: [Phase 15-03]: 99 REQ-ID count used verbatim from v1.0-MILESTONE-AUDIT.md per 15-RESEARCH.md §P7 — did NOT recount; audit is authoritative
 
 ### Pending Todos
 
@@ -279,6 +283,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-16T14:55:08.108Z
-Stopped at: Phase 15 context gathered
-Resume file: .planning/phases/15-verification-docs-refresh/15-CONTEXT.md
+Last session: 2026-04-16T15:30:29.042Z
+Stopped at: Completed 15-03-PLAN.md (REQUIREMENTS.md refresh)
+Resume file: None
