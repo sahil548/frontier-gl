@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Phase 14 context gathered
-last_updated: "2026-04-16T05:43:40.949Z"
-last_activity: "2026-04-15 -- Phase 12 roll-up: 10/10 plans complete, all 7 UAT gaps closed via plans 12-06/07/08/09, ROADMAP advanced, full test suite passes (504/504 active; 7 pre-existing deferred-items.md failures unchanged)."
+status: Phase 13 advancing — dimensions tests shipped, bank-transactions tests shipped, VALIDATION sign-off pending
+stopped_at: Completed 13-01-PLAN.md
+last_updated: "2026-04-16T06:01:42.511Z"
+last_activity: "2026-04-16 -- Phase 13 Plan 01: 3 new dimensions test files (CLASS-03/04/05) with 10 live assertions, +26 passing suite-wide (10 from this plan + 16 sibling-agent Plan 02); 7 pre-existing deferred-items.md failures unchanged."
 progress:
   total_phases: 15
   completed_phases: 10
-  total_plans: 52
-  completed_plans: 50
-  percent: 100
+  total_plans: 53
+  completed_plans: 51
+  percent: 96
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 
 ## Current Position
 
-Phase: 12 of 12 (Reporting Fixes & Onboarding Wizard) — complete
-Plan: all 10 plans complete (12-00..12-09); 7 UAT gaps closed
-Status: Milestone v1.0 complete — ready for audit / next milestone cycle
-Last activity: 2026-04-15 -- Phase 12 roll-up: 10/10 plans complete, all 7 UAT gaps closed via plans 12-06/07/08/09, ROADMAP advanced, full test suite passes (504/504 active; 7 pre-existing deferred-items.md failures unchanged).
+Phase: 13 of 15 (Test Coverage Gaps) — in progress
+Plan: 13-01 complete (CLASS-03/04/05 regression tests); Plan 13-02 landed in parallel by sibling agent
+Status: Phase 13 advancing — dimensions tests shipped, bank-transactions tests shipped, VALIDATION sign-off pending
+Last activity: 2026-04-16 -- Phase 13 Plan 01: 3 new dimensions test files (CLASS-03/04/05) with 10 live assertions, +26 passing suite-wide (10 from this plan + 16 sibling-agent Plan 02); 7 pre-existing deferred-items.md failures unchanged.
 
-Progress: [██████████] 100%
+Progress: [██████████] 96%
 
 ## Performance Metrics
 
@@ -99,6 +99,7 @@ Progress: [██████████] 100%
 | Phase 12 P06 | 4min | 2 tasks | 6 files |
 | Phase 12-reporting-fixes-onboarding-wizard P07 | 6min | 2 tasks | 9 files |
 | Phase 12 P09 | 5min+checkpoint | 3 tasks | 12 files |
+| Phase 13-test-coverage-gaps P01 | 8min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -239,6 +240,9 @@ Recent decisions affecting current work:
 - [Phase 12-09]: resolveAccountRefs is a pure helper (case-insensitive + trimmed name/number lookup) consumed by the route, unit tests, and verification scripts alike
 - [Phase 12-09]: Duplicate detection scopes PER subledgerItem group so the same hash under Account A is not collapsed as a dupe of Account B
 - [Phase 12-09]: Unresolved accountRef values return as errors rather than silently dropping rows or failing the whole batch
+- [Phase 13-test-coverage-gaps]: [Phase 13-01]: vi.hoisted() pattern required for Prisma $queryRaw mocks via @/ alias; top-level const refs fail with ReferenceError due to vi.mock hoisting
+- [Phase 13-test-coverage-gaps]: [Phase 13-01]: Public getIncomeStatement(..., dimensionId) dispatcher called for CLASS-03/05 tests — private getIncomeStatementByDimension stays unexported (no production refactor)
+- [Phase 13-test-coverage-gaps]: [Phase 13-01]: Snake_case mock row shape + two sequential mockResolvedValueOnce calls (rows + allTags) — codified as reusable test pattern for dimensioned report queries
 
 ### Pending Todos
 
@@ -251,6 +255,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-16T05:43:40.945Z
-Stopped at: Phase 14 context gathered
-Resume file: .planning/phases/14-code-hygiene-wizard-fix/14-CONTEXT.md
+Last session: 2026-04-16T06:01:42.508Z
+Stopped at: Completed 13-01-PLAN.md
+Resume file: None
