@@ -18,7 +18,7 @@ Frontier GL delivers a multi-entity general ledger that replaces QuickBooks Onli
 - [x] **Phase 10: Positions Model & Holdings Overhaul** — Position model, 13 holding types, GL account hierarchy, holdings page restructure (completed 2026-04-12)
 - [x] **Phase 11: Categorization UX & Opening Balances** — Position-first categorization, auto-generated opening balance JEs, bank-feed reconciliation integration (completed 2026-04-14)
 - [x] **Phase 12: Reporting Fixes & Onboarding Wizard** — Cash flow enum, contra accounts, rate-based budgets, onboarding wizard, AI CSV column mapping, multi-account CSV import (completed 2026-04-15)
-- [ ] **Phase 13: Test Coverage Gaps** — Backfill missing Phase 6 dimension tests (CLASS-03/04/05) + replace Phase 11 `it.todo` stubs with real assertions
+- [x] **Phase 13: Test Coverage Gaps** — Backfill missing Phase 6 dimension tests (CLASS-03/04/05) + replace Phase 11 `it.todo` stubs with real assertions (completed 2026-04-16)
 - [ ] **Phase 14: Code Hygiene & Wizard Behavioral Fix** — Resolve Phase 9 `applyRules` orphan, refactor bank-tx POST to delegate to `postJournalEntry`, align Wizard OB JE behavior with Holdings OBE, sweep 7 deferred TS/test issues
 - [ ] **Phase 15: Verification & Planning Docs Refresh** — Generate missing `10-VERIFICATION.md` + `12-VERIFICATION.md`, refresh 9 stale VALIDATION.md frontmatter entries, update REQUIREMENTS.md traceability for Phases 10–12
 
@@ -238,7 +238,7 @@ Plans:
 5. CAT-03 position-targeted rule cases live in `tests/bank-transactions/categorize.test.ts` with real assertions
 6. `npm test` passes green with new tests included
 
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 13-01-PLAN.md — Create 3 new dimension test files (CLASS-03/04/05) via Prisma $queryRaw mocks

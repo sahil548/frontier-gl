@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Phase 13 advancing — dimensions tests shipped, bank-transactions tests shipped, VALIDATION sign-off pending
-stopped_at: Completed 13-01-PLAN.md
-last_updated: "2026-04-16T06:01:42.511Z"
+stopped_at: Completed 13-02-PLAN.md
+last_updated: "2026-04-16T06:03:33.245Z"
 last_activity: "2026-04-16 -- Phase 13 Plan 01: 3 new dimensions test files (CLASS-03/04/05) with 10 live assertions, +26 passing suite-wide (10 from this plan + 16 sibling-agent Plan 02); 7 pre-existing deferred-items.md failures unchanged."
 progress:
   total_phases: 15
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 53
-  completed_plans: 51
+  completed_plans: 52
   percent: 96
 ---
 
@@ -100,6 +100,7 @@ Progress: [██████████] 96%
 | Phase 12-reporting-fixes-onboarding-wizard P07 | 6min | 2 tasks | 9 files |
 | Phase 12 P09 | 5min+checkpoint | 3 tasks | 12 files |
 | Phase 13-test-coverage-gaps P01 | 8min | 3 tasks | 3 files |
+| Phase 13-test-coverage-gaps P02 | 9min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -243,6 +244,9 @@ Recent decisions affecting current work:
 - [Phase 13-test-coverage-gaps]: [Phase 13-01]: vi.hoisted() pattern required for Prisma $queryRaw mocks via @/ alias; top-level const refs fail with ReferenceError due to vi.mock hoisting
 - [Phase 13-test-coverage-gaps]: [Phase 13-01]: Public getIncomeStatement(..., dimensionId) dispatcher called for CLASS-03/05 tests — private getIncomeStatementByDimension stays unexported (no production refactor)
 - [Phase 13-test-coverage-gaps]: [Phase 13-01]: Snake_case mock row shape + two sequential mockResolvedValueOnce calls (rows + allTags) — codified as reusable test pattern for dimensioned report queries
+- [Phase 13-02]: Mirror-inline pattern for non-extractable route/component logic (REC-01 route handler, REC-04 component useMemo): captures shape contract in test file without touching production
+- [Phase 13-02]: CAT-03 applyRules test asserts matched-bucket membership only (not positionId propagation); propagation is Phase 14 orphan-applyRules scope
+- [Phase 13-02]: OBE-03 uses vi.mock("@/lib/journal-entries/auto-number") module-level mock instead of tx.journalEntry.findFirst stubbing (Blocker #5)
 
 ### Pending Todos
 
@@ -255,6 +259,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-16T06:01:42.508Z
-Stopped at: Completed 13-01-PLAN.md
+Last session: 2026-04-16T06:03:33.242Z
+Stopped at: Completed 13-02-PLAN.md
 Resume file: None
