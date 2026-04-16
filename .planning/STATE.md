@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Phase 14 advancing — 14-05 deferred-items sweep complete (5 Phase 12 TS/test issues closed, +7 use-entity tests recovered, single-source SerializedAccount); waiting on 14-02 + 14-03
-stopped_at: Completed 14-05-PLAN.md
-last_updated: "2026-04-16T13:39:21.547Z"
+status: completed
+stopped_at: Completed 14-03-PLAN.md (BANK-03 audit-flagged item closed)
+last_updated: "2026-04-16T13:47:30.426Z"
 last_activity: "2026-04-16 -- Phase 14 Plan 05: closed all 5 remaining Phase 12 deferred items (#1, #3, #5, #6, #7) — tsc clean across 6 touched files; new src/types/account.ts canonical type; NODE_OPTIONS in test script recovered 7 use-entity tests; vi.mocked in blob-storage; full suite 538 passed."
 progress:
   total_phases: 15
   completed_phases: 11
   total_plans: 58
-  completed_plans: 55
-  percent: 91
+  completed_plans: 56
+  percent: 95
 ---
 
 # Project State
@@ -104,6 +104,7 @@ Progress: [██████████] 95%
 | Phase 14-code-hygiene-wizard-fix P01 | 3min | 2 tasks | 2 files |
 | Phase 14-code-hygiene-wizard-fix P04 | 4min | 2 tasks | 2 files |
 | Phase 14 P05 | 7 min | 6 tasks | 8 files |
+| Phase 14-code-hygiene-wizard-fix P03 | 3 min | 2 tasks tasks | 2 files files |
 
 ## Accumulated Context
 
@@ -259,6 +260,8 @@ Recent decisions affecting current work:
 - [Phase 14-05]: Single-source-of-truth canonical SerializedAccount in src/types/account.ts (deep import @/types/account; matches @/types/SerializedEntity pattern)
 - [Phase 14-05]: vi.mocked(fn)(...args) over (fn as ReturnType<typeof vi.fn>)(...) for vitest 4 callable mock invocation; reserve cast pattern for assertion access only
 - [Phase 14-05]: NODE_OPTIONS=--no-experimental-webstorage in package.json scripts.test (not vitest.config.ts) — issue is Node 25 global, not jsdom URL; spelled-out flag for maintainer discoverability
+- [Phase 14-code-hygiene-wizard-fix]: [Phase 14-03]: Bank-tx POST handler delegates to postJournalEntryInTx — JE created as DRAFT, helper flips to POSTED + writes balance upserts + POSTED audit; CREATED audit moved before post call (CREATED→POSTED ordering); response status coalesced to POSTED when postImmediately=true (Rule 1 fix for stale local snapshot)
+- [Phase 14-code-hygiene-wizard-fix]: [Phase 14-03]: Pattern A mirror-inline test for bank-tx POST audit ordering — recreate the post-refactor inner sequence in tests/bank-transactions/create-je.test.ts against a tx mock; assert call order on a captured array (not on individual mock arity)
 
 ### Pending Todos
 
@@ -271,6 +274,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-16T13:39:21.544Z
-Stopped at: Completed 14-05-PLAN.md
+Last session: 2026-04-16T13:47:30.423Z
+Stopped at: Completed 14-03-PLAN.md (BANK-03 audit-flagged item closed)
 Resume file: None
