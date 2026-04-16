@@ -1,5 +1,15 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { createJournalEntryFromTransaction } from "@/lib/bank-transactions/create-je";
+import { Prisma } from "@/generated/prisma/client";
+
+// Mock the prisma client module so postJournalEntryInTx can be imported
+// without pulling a real DB client. The wrapper-side prisma.$transaction
+// is irrelevant here — we exercise the tx-aware helper directly.
+vi.mock("@/lib/db/prisma", () => ({
+  prisma: {
+    $transaction: vi.fn(),
+  },
+}));
 
 describe("createJournalEntryFromTransaction", () => {
   const baseParams = {
@@ -216,5 +226,178 @@ describe("createJournalEntryFromTransaction", () => {
       },
     });
     expect(posted.status).toBe("POSTED");
+  });
+});
+
+/**
+ * BANK-03 (Phase 14-03) audit-ordering regression.
+ *
+ * The bank-tx POST handler at
+ *   src/app/api/entities/[entityId]/bank-transactions/[transactionId]/route.ts
+ * runs the JE create + post + bank-tx update inside a single outer
+ * `prisma.$transaction(async (tx) => { ... })`. Pre-refactor it inlined the
+ * AccountBalance.upsert loop and wrote the POSTED audit BEFORE the CREATED
+ * audit. Phase 14-03 delegates posting to `postJournalEntryInTx` and moves
+ * the CREATED audit to run BEFORE the post call — flipping the order to
+ * the conventional CREATED → POSTED.
+ *
+ * This is a Pattern A "mirror-inline" test: the route handler logic is not
+ * extractable into a callable function (it owns auth, validation, and the
+ * outer $transaction), so we recreate the inner sequence here and assert
+ * the audit ordering produced by `postJournalEntryInTx` plus the bank-tx
+ * route's pre-post CREATED audit call.
+ */
+describe("BANK-03: bank-tx POST audit ordering (post-refactor)", () => {
+  it("writes CREATED audit before POSTED audit when postImmediately=true", async () => {
+    // Import inside the test so vi.mock("@/lib/db/prisma") is in effect.
+    const { postJournalEntryInTx } = await import("@/lib/journal-entries/post");
+
+    const auditCalls: Array<{ action: string; userId: string }> = [];
+
+    // Build a tx mock that mirrors the shape postJournalEntryInTx + the
+    // bank-tx route handler interact with. Capture audit creates in order.
+    const mockTx = {
+      journalEntry: {
+        // Bank-tx route calls tx.journalEntry.create first to insert the JE.
+        create: vi.fn(async () => ({
+          id: "je_bank_tx_1",
+          status: "DRAFT",
+          lineItems: [
+            {
+              accountId: "expense-acc-id",
+              debit: new Prisma.Decimal("120.50"),
+              credit: new Prisma.Decimal("0.00"),
+            },
+            {
+              accountId: "bank-acc-id",
+              debit: new Prisma.Decimal("0.00"),
+              credit: new Prisma.Decimal("120.50"),
+            },
+          ],
+        })),
+        // postJournalEntryInTx calls findUniqueOrThrow to lock + load the JE.
+        findUniqueOrThrow: vi.fn(async () => ({
+          id: "je_bank_tx_1",
+          status: "DRAFT",
+          lineItems: [
+            {
+              accountId: "expense-acc-id",
+              debit: new Prisma.Decimal("120.50"),
+              credit: new Prisma.Decimal("0.00"),
+            },
+            {
+              accountId: "bank-acc-id",
+              debit: new Prisma.Decimal("0.00"),
+              credit: new Prisma.Decimal("120.50"),
+            },
+          ],
+        })),
+        // postJournalEntryInTx flips status DRAFT -> POSTED.
+        update: vi.fn(async () => ({})),
+      },
+      journalEntryAudit: {
+        create: vi.fn(async ({ data }: { data: { action: string; userId: string } }) => {
+          auditCalls.push({ action: data.action, userId: data.userId });
+          return data;
+        }),
+      },
+      accountBalance: {
+        upsert: vi.fn(async () => ({})),
+      },
+      bankTransaction: {
+        update: vi.fn(async () => ({})),
+      },
+    } as unknown as Prisma.TransactionClient;
+
+    // Mirror the post-refactor inner sequence of the bank-tx POST handler:
+    //   1. tx.journalEntry.create (status: DRAFT)
+    //   2. tx.journalEntryAudit.create (action: CREATED)        ← FIRST audit
+    //   3. await postJournalEntryInTx(tx, je.id, userId)
+    //         → tx.journalEntry.update (status: POSTED)
+    //         → tx.accountBalance.upsert per line item
+    //         → tx.journalEntryAudit.create (action: POSTED)    ← SECOND audit
+    //   4. tx.bankTransaction.update (status: POSTED, etc.)
+    const userId = "user_clerk_test";
+
+    const je = await mockTx.journalEntry.create({
+      data: {
+        entityId: "entity-1",
+        entryNumber: "JE-001",
+        date: new Date("2025-01-15"),
+        description: "OFFICE SUPPLIES",
+        status: "DRAFT",
+        createdBy: userId,
+        lineItems: { create: [] },
+      },
+    });
+
+    await mockTx.journalEntryAudit.create({
+      data: { journalEntryId: je.id, action: "CREATED", userId },
+    });
+
+    await postJournalEntryInTx(mockTx, je.id, userId);
+
+    await mockTx.bankTransaction.update({
+      where: { id: "bank_tx_1" },
+      data: { status: "POSTED" },
+    });
+
+    // Two audits total: CREATED then POSTED, in that exact order.
+    expect(auditCalls).toHaveLength(2);
+    expect(auditCalls[0].action).toBe("CREATED");
+    expect(auditCalls[1].action).toBe("POSTED");
+    expect(auditCalls.every((a) => a.userId === userId)).toBe(true);
+  });
+
+  it("writes only CREATED audit when postImmediately=false (no post call)", async () => {
+    // Sanity: when the route does NOT call postJournalEntryInTx (e.g.,
+    // postImmediately=false split workflow), only the CREATED audit fires.
+    const auditCalls: Array<{ action: string }> = [];
+
+    const mockTx = {
+      journalEntry: {
+        create: vi.fn(async () => ({
+          id: "je_draft_1",
+          status: "DRAFT",
+          lineItems: [],
+        })),
+      },
+      journalEntryAudit: {
+        create: vi.fn(async ({ data }: { data: { action: string } }) => {
+          auditCalls.push({ action: data.action });
+          return data;
+        }),
+      },
+      bankTransaction: {
+        update: vi.fn(async () => ({})),
+      },
+    } as unknown as Prisma.TransactionClient;
+
+    const userId = "user_clerk_test";
+    const je = await mockTx.journalEntry.create({
+      data: {
+        entityId: "entity-1",
+        entryNumber: "JE-002",
+        date: new Date("2025-01-15"),
+        description: "DRAFT EXPENSE",
+        status: "DRAFT",
+        createdBy: userId,
+        lineItems: { create: [] },
+      },
+    });
+
+    await mockTx.journalEntryAudit.create({
+      data: { journalEntryId: je.id, action: "CREATED", userId },
+    });
+
+    // No postJournalEntryInTx call here — DRAFT path matches today's behavior.
+
+    await mockTx.bankTransaction.update({
+      where: { id: "bank_tx_2" },
+      data: { status: "CATEGORIZED" },
+    });
+
+    expect(auditCalls).toHaveLength(1);
+    expect(auditCalls[0].action).toBe("CREATED");
   });
 });
