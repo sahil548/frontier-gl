@@ -1,36 +1,36 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-milestone_name: milestone
-status: verifying
-stopped_at: Completed 15-01-PLAN.md — 10-VERIFICATION.md (8/8 POS-01..POS-08) + 12-VERIFICATION.md (15/15 SCHEMA/CF/CONTRA/RATE/WIZ/CSV, cites 12-UAT.md 15x) generated via inline verifier role; 2 commits (941cd90, fb4bffb); verification_coverage 11/11
-last_updated: "2026-04-16T15:42:28.305Z"
-last_activity: "2026-04-16 -- Phase 15 Plan 01: 10-VERIFICATION.md (8/8 POS-01..POS-08) + 12-VERIFICATION.md (15/15 SCHEMA/CF/CONTRA/RATE/WIZ/CSV, cites 12-UAT.md 15x) generated via inline gsd-verifier role; 2 commits (941cd90, fb4bffb); verification_coverage advanced from 9/11 to 11/11."
+milestone_name: MVP
+status: shipped
+stopped_at: v1.0 MVP shipped 2026-04-16 — 15 phases, 60/61 plans, 99/99 REQ-IDs, tagged v1.0, deploy ● Ready on Vercel. Awaiting /gsd:new-milestone for v1.1 planning.
+last_updated: "2026-04-16T19:15:00.000Z"
+last_activity: "2026-04-16 -- v1.0 MVP milestone complete: archived ROADMAP + REQUIREMENTS to milestones/, PROJECT.md evolved (Active → Validated + v1.1 candidates), ROADMAP.md reorganized with milestone grouping, RETROSPECTIVE.md v1.0 section written, REQUIREMENTS.md deleted (fresh for v1.1). Phase 14 UAT test data cleaned from shared Neon branch."
 progress:
   total_phases: 15
-  completed_phases: 13
+  completed_phases: 15
   total_plans: 61
   completed_plans: 60
-  percent: 98
+  percent: 100
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-26)
+See: .planning/PROJECT.md (updated 2026-04-16)
 
 **Core value:** Accountants can view, manage, and close books across all family office entities in one fast, purpose-built GL -- eliminating the per-entity cost and friction of QuickBooks Online.
-**Current focus:** Phase 15 -- Verification & Planning Docs Refresh (v1.0 milestone close-out)
+**Current focus:** v1.0 MVP shipped — awaiting `/gsd:new-milestone` for v1.1 planning.
 
 ## Current Position
 
-Phase: 15 of 15 (Verification & Planning Docs Refresh) — Wave 1 complete, Phase 15 complete
-Plan: 15-01 + 15-02 + 15-03 all complete — Streams A (VERIFICATION), B (VALIDATION), C (REQUIREMENTS) of v1.0-MILESTONE-AUDIT.md documentation hygiene closed. 02-05 remains the lone pre-existing outstanding plan gap.
-Status: Phase 15 complete — verification_coverage 11/11 (10-VERIFICATION.md + 12-VERIFICATION.md generated via inline gsd-verifier role, both human_needed terminal status), Nyquist frontmatter current (8 compliant + Phase 06 non-compliant with Phase 13 pointer), REQUIREMENTS.md at 99 unique REQ-IDs with Phase 11/12 sections + traceability + footer refreshed. 9 Chrome-verifiable visual items catalogued in human_verification frontmatter arrays for post-phase follow-up.
-Last activity: 2026-04-16 -- Phase 15 Plan 01: 10-VERIFICATION.md (8/8 POS-01..POS-08) + 12-VERIFICATION.md (15/15 SCHEMA/CF/CONTRA/RATE/WIZ/CSV, cites 12-UAT.md 15x) generated via inline gsd-verifier role; 2 commits (941cd90, fb4bffb); verification_coverage advanced from 9/11 to 11/11.
+Milestone: v1.0 MVP — shipped 2026-04-16, tagged `v1.0`
+Archived: `.planning/milestones/v1.0-ROADMAP.md`, `v1.0-REQUIREMENTS.md`, `v1.0-MILESTONE-AUDIT.md`
+Status: 15/15 phases complete, 60/61 plans executed, 99/99 REQ-IDs satisfied, 11/11 VERIFICATION.md coverage, 536 tests passing (7 pre-existing jsdom failures non-blocking, catalogued in Phase 14 deferred-items.md).
+Last activity: 2026-04-16 -- v1.0 MVP milestone archival complete (MILESTONES.md, PROJECT.md Active→Validated, ROADMAP.md reorganized with v1.0 <details> block, REQUIREMENTS.md deleted, RETROSPECTIVE.md v1.0 section written, Phase 14 UAT test data removed from shared Neon branch).
 
-Progress: [██████████] 98%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
