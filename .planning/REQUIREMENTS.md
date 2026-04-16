@@ -3,6 +3,7 @@
 **Defined:** 2026-03-26
 **Updated:** 2026-04-12 — Phase 10 redefined: Positions Model & Holdings Overhaul (replaces Capital Accounts)
 **Core Value:** Accountants can view, manage, and close books across all family office entities in one fast, purpose-built GL — eliminating the per-entity cost and friction of QuickBooks Online.
+**Total requirements:** 99 unique REQ-IDs across Phases 1–12, all Complete
 
 ## v1 Requirements
 
@@ -208,6 +209,39 @@
 
 ---
 
+## Phase 11 Requirements — Categorization UX & Opening Balances
+
+- [x] **CAT-01**: Position picker replaces raw GL account picker as default categorization target for bank transactions
+- [x] **CAT-03**: Categorization rules support optional positionId alongside existing accountId (GL resolved at apply-time)
+- [x] **OBE-01**: Opening Balance Equity account (3900) auto-created if it does not exist
+- [x] **OBE-02**: Opening balance JE auto-generated and posted immediately when holding created with non-zero balance
+- [x] **OBE-03**: Adjusting JE auto-generated for the difference when holding balance is edited
+- [x] **REC-01**: Posting a categorized bank transaction auto-marks it as RECONCILED (single and bulk paths)
+- [x] **REC-03**: Reconciliation status badges on each transaction row (Reconciled green, Pending yellow, Unmatched red)
+- [x] **REC-04**: Running reconciled vs unreconciled totals displayed at top of bank feed
+
+---
+
+## Phase 12 Requirements — Reporting Fixes & Onboarding Wizard
+
+- [x] **SCHEMA-01**: Account schema accepts cashFlowCategory (enum) and isContra (boolean) fields
+- [x] **CF-01**: Existing accounts receive correct cashFlowCategory via name-based inference backfill migration
+- [x] **CF-02**: Cash flow statement classifies accounts by cashFlowCategory field, not name matching
+- [x] **CF-03**: Account form shows cashFlowCategory dropdown only for ASSET/LIABILITY/EQUITY types
+- [x] **CONTRA-01**: isContra flag drives contra-netting display on Balance Sheet (parent shows gross, contra shows as deduction, net total rendered)
+- [x] **CONTRA-02**: Contra accounts render with "Less:" prefix and net total on Balance Sheet
+- [x] **RATE-01**: Rate-based budget computation = holdingValue × rate / 12, using Decimal.js 4-decimal precision
+- [x] **RATE-02**: Budget values snapshot at creation and do not auto-recalculate; manual recalculate via re-POST; holdings eligible if holding FMV OR sum of active position marketValues is non-zero
+- [x] **WIZ-01**: Onboarding wizard triggers automatically after creating any new entity
+- [x] **WIZ-02**: All four wizard steps (COA, Holdings, Opening Balances, First Transactions) are individually skippable with persistent progress
+- [x] **WIZ-03**: Opening balance grid enforces debit=credit balance before JE generation; stored JE date matches form date (no UTC shift)
+- [x] **CSV-01**: LLM-powered column mapping infers roles for non-standard CSV headers (bank, COA, budget imports)
+- [x] **CSV-02**: System falls back to heuristic COLUMN_PATTERNS when LLM unavailable (missing API key, error, timeout)
+- [x] **CSV-03**: User sees mapping confirmation UI before any CSV import proceeds; saved mappings auto-apply on header-fingerprint match; multi-account CSVs route per-row via Account column
+- [x] **CSV-04**: Confirmed mappings persist per entity/source/importType and reuse-by-fingerprint
+
+---
+
 ## Out of Scope
 
 | Feature | Reason |
@@ -250,12 +284,20 @@
 | BUDG-01--05 | Phase 7 | Complete |
 | CONS-01--05 | Phase 8 | Complete |
 | BANK-01--05 | Phase 9 | Complete |
-| POS-01--08 | Phase 10 | Pending |
+| POS-01--08 | Phase 10 | Complete |
+| CAT-01, CAT-03 | Phase 11 | Complete |
+| OBE-01--03 | Phase 11 | Complete |
+| REC-01, REC-03, REC-04 | Phase 11 | Complete |
+| SCHEMA-01 | Phase 12 | Complete |
+| CF-01--03 | Phase 12 | Complete |
+| CONTRA-01--02 | Phase 12 | Complete |
+| RATE-01--02 | Phase 12 | Complete |
+| WIZ-01--03 | Phase 12 | Complete |
+| CSV-01--04 | Phase 12 | Complete |
 
 **Coverage:**
-- Phases 1--9: Complete
-- Phase 10 requirements (POS): 8 total -- Pending
+- Phases 1–12: Complete — 99/99 REQ-IDs satisfied per v1.0 milestone audit
 
 ---
 *Requirements defined: 2026-03-26*
-*Last updated: 2026-04-12 -- Phase 10 redefined: Positions Model & Holdings Overhaul*
+*Last updated: 2026-04-16 — v1.0 milestone close-out*
