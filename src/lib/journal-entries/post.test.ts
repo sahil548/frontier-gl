@@ -1,6 +1,35 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Prisma } from "@/generated/prisma/client";
 
+// Mock the prisma client module before importing the SUT so that
+// `prisma.$transaction` is observable as a spy in the regression test.
+const transactionMock = vi.fn(async (cb: (tx: unknown) => Promise<unknown>) => {
+  // Default: invoke callback with a stub tx that records nothing.
+  // Individual tests override the implementation if they need real assertions.
+  return cb({
+    journalEntry: {
+      findUniqueOrThrow: vi.fn(async () => ({
+        id: "je_stub",
+        status: "DRAFT",
+        lineItems: [],
+      })),
+      update: vi.fn(async () => ({})),
+    },
+    accountBalance: {
+      upsert: vi.fn(async () => ({})),
+    },
+    journalEntryAudit: {
+      create: vi.fn(async () => ({})),
+    },
+  });
+});
+
+vi.mock("@/lib/db/prisma", () => ({
+  prisma: {
+    $transaction: transactionMock,
+  },
+}));
+
 /**
  * Tests for journal entry posting logic.
  *
@@ -98,5 +127,99 @@ describe("Journal Entry Posting", () => {
     expect(totalDebit.equals(totalCredit)).toBe(true);
     expect(totalDebit.toString()).toBe("6000");
     expect(totalCredit.toString()).toBe("6000");
+  });
+});
+
+describe("postJournalEntryInTx (tx-aware helper)", () => {
+  beforeEach(() => {
+    transactionMock.mockClear();
+  });
+
+  it("is exported as a named export from @/lib/journal-entries/post", async () => {
+    const mod = await import("./post");
+    expect(typeof mod.postJournalEntryInTx).toBe("function");
+  });
+
+  it("does NOT call prisma.$transaction when invoked directly with a tx client", async () => {
+    const { postJournalEntryInTx } = await import("./post");
+
+    // Build a tx-shaped mock that records the calls postJournalEntryInTx
+    // is expected to make against the caller-provided transaction.
+    const findUniqueOrThrow = vi.fn(async () => ({
+      id: "je_tx_test",
+      status: "DRAFT",
+      lineItems: [
+        {
+          accountId: "acct_a",
+          debit: new Prisma.Decimal("1000.00"),
+          credit: new Prisma.Decimal("0.00"),
+        },
+        {
+          accountId: "acct_b",
+          debit: new Prisma.Decimal("0.00"),
+          credit: new Prisma.Decimal("1000.00"),
+        },
+      ],
+    }));
+    const update = vi.fn(async () => ({}));
+    const upsert = vi.fn(async () => ({}));
+    const auditCreate = vi.fn(async () => ({}));
+
+    const txMock = {
+      journalEntry: { findUniqueOrThrow, update },
+      accountBalance: { upsert },
+      journalEntryAudit: { create: auditCreate },
+    } as unknown as Prisma.TransactionClient;
+
+    transactionMock.mockClear();
+
+    await postJournalEntryInTx(txMock, "je_tx_test", "user_clerk_test");
+
+    // Crucial assertion: the helper used the caller's tx, not its own transaction.
+    expect(transactionMock).toHaveBeenCalledTimes(0);
+
+    // And the work happened against the passed-in tx mock.
+    expect(findUniqueOrThrow).toHaveBeenCalledTimes(1);
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(upsert).toHaveBeenCalledTimes(2); // one per line item
+    expect(auditCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it("postJournalEntry public wrapper still opens its own prisma.$transaction exactly once", async () => {
+    const { postJournalEntry } = await import("./post");
+
+    // Configure $transaction mock to provide a usable tx for one invocation.
+    transactionMock.mockClear();
+    transactionMock.mockImplementationOnce(async (cb) => {
+      const findUniqueOrThrow = vi.fn(async () => ({
+        id: "je_wrapper_test",
+        status: "DRAFT",
+        lineItems: [
+          {
+            accountId: "acct_x",
+            debit: new Prisma.Decimal("500.00"),
+            credit: new Prisma.Decimal("0.00"),
+          },
+          {
+            accountId: "acct_y",
+            debit: new Prisma.Decimal("0.00"),
+            credit: new Prisma.Decimal("500.00"),
+          },
+        ],
+      }));
+      const update = vi.fn(async () => ({}));
+      const upsert = vi.fn(async () => ({}));
+      const auditCreate = vi.fn(async () => ({}));
+      const tx = {
+        journalEntry: { findUniqueOrThrow, update },
+        accountBalance: { upsert },
+        journalEntryAudit: { create: auditCreate },
+      };
+      return cb(tx);
+    });
+
+    await postJournalEntry("je_wrapper_test", "user_clerk_test");
+
+    expect(transactionMock).toHaveBeenCalledTimes(1);
   });
 });
