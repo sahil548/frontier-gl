@@ -238,6 +238,12 @@ Plans:
 5. CAT-03 position-targeted rule cases live in `tests/bank-transactions/categorize.test.ts` with real assertions
 6. `npm test` passes green with new tests included
 
+**Plans:** 2 plans
+
+Plans:
+- [ ] 13-01-PLAN.md — Create 3 new dimension test files (CLASS-03/04/05) via Prisma $queryRaw mocks
+- [ ] 13-02-PLAN.md — Convert 5 existing bank-transactions it.todo stubs (CAT-03, REC-01, REC-04, OBE-03, CAT-01) + declare REC-03 manual-only
+
 ---
 
 ### Phase 14: Code Hygiene & Wizard Behavioral Fix
