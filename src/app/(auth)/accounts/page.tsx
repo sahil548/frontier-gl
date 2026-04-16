@@ -6,20 +6,7 @@ import { useEntityContext } from "@/providers/entity-provider";
 import { Button } from "@/components/ui/button";
 import { AccountTable } from "@/components/accounts/account-table";
 import { AccountForm } from "@/components/accounts/account-form";
-
-type SerializedAccount = {
-  id: string;
-  entityId: string;
-  number: string;
-  name: string;
-  type: string;
-  description: string | null;
-  parentId: string | null;
-  isActive: boolean;
-  balance: string;
-  debitTotal?: string;
-  creditTotal?: string;
-};
+import type { SerializedAccount } from "@/types/account";
 
 /**
  * Chart of Accounts page.

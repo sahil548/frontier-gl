@@ -38,6 +38,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { AccountNumberInput } from "./account-number-input";
+import type { SerializedAccount } from "@/types/account";
 
 const ACCOUNT_TYPES = [
   { value: "ASSET", label: "Asset" },
@@ -55,20 +56,6 @@ const CASH_FLOW_CATEGORIES = [
 ];
 
 const BALANCE_SHEET_TYPES = ["ASSET", "LIABILITY", "EQUITY"];
-
-type SerializedAccount = {
-  id: string;
-  entityId: string;
-  number: string;
-  name: string;
-  type: string;
-  description: string | null;
-  parentId: string | null;
-  isActive: boolean;
-  balance: string;
-  cashFlowCategory: string | null;
-  isContra: boolean;
-};
 
 type AccountFormProps = {
   mode: "create" | "edit";

@@ -43,20 +43,7 @@ import {
 import { AccountTypeChips } from "./account-type-chips";
 import { AccountForm } from "./account-form";
 import Decimal from "decimal.js";
-
-type SerializedAccount = {
-  id: string;
-  entityId: string;
-  number: string;
-  name: string;
-  type: string;
-  description: string | null;
-  parentId: string | null;
-  isActive: boolean;
-  balance: string;
-  debitTotal?: string;
-  creditTotal?: string;
-};
+import type { SerializedAccount } from "@/types/account";
 
 /**
  * Account type badge color mapping.
