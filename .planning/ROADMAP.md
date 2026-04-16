@@ -261,7 +261,7 @@ Plans:
 4. Deferred-items.md items #1, #3, #5, #6, #7 resolved (Select `onValueChange` types, `SerializedAccount` duplicate, `localStorage.clear` jsdom, column-mapping-ui `string | null`, blob-storage test mock)
 5. `tsc --noEmit` passes clean across touched files; full test suite green
 
-**Plans:** 5 plans (Wave 1: 14-01, 14-04, 14-05 || Wave 2: 14-02, 14-03)
+**Plans:** 2/5 plans executed
 
 Plans:
 - [ ] 14-01-PLAN.md — Extract postJournalEntryInTx from postJournalEntry (Wave 1; foundation for 14-02 + 14-03)

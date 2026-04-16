@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Phase 13 advancing — dimensions tests shipped, bank-transactions tests shipped, VALIDATION sign-off pending
-stopped_at: Phase 14 plans verified (5 plans, 2 waves)
-last_updated: "2026-04-16T13:28:09.653Z"
-last_activity: "2026-04-16 -- Phase 13 Plan 01: 3 new dimensions test files (CLASS-03/04/05) with 10 live assertions, +26 passing suite-wide (10 from this plan + 16 sibling-agent Plan 02); 7 pre-existing deferred-items.md failures unchanged."
+status: Phase 14 starting — postJournalEntryInTx tx-aware helper extracted; foundation in place for 14-02 (auto-post default) and 14-03 (bank-tx delegation)
+stopped_at: Completed 14-04-PLAN.md (applyRules orphan deletion + test cleanup)
+last_updated: "2026-04-16T13:35:00.587Z"
+last_activity: "2026-04-16 -- Phase 14 Plan 01: extracted postJournalEntryInTx tx-aware helper from src/lib/journal-entries/post.ts using Prisma.TransactionClient; postJournalEntry public API unchanged (3-line wrapper). 8/8 tests pass in scoped suite, zero new TS errors in touched files."
 progress:
   total_phases: 15
   completed_phases: 11
   total_plans: 58
-  completed_plans: 52
-  percent: 96
+  completed_plans: 54
+  percent: 91
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 
 ## Current Position
 
-Phase: 13 of 15 (Test Coverage Gaps) — in progress
-Plan: 13-01 complete (CLASS-03/04/05 regression tests); Plan 13-02 landed in parallel by sibling agent
-Status: Phase 13 advancing — dimensions tests shipped, bank-transactions tests shipped, VALIDATION sign-off pending
-Last activity: 2026-04-16 -- Phase 13 Plan 01: 3 new dimensions test files (CLASS-03/04/05) with 10 live assertions, +26 passing suite-wide (10 from this plan + 16 sibling-agent Plan 02); 7 pre-existing deferred-items.md failures unchanged.
+Phase: 14 of 15 (Code Hygiene & Wizard Behavioral Fix) — in progress
+Plan: 14-01 complete (postJournalEntryInTx extraction); 14-02/03/04/05 pending
+Status: Phase 14 starting — postJournalEntryInTx tx-aware helper extracted; foundation in place for 14-02 (auto-post default) and 14-03 (bank-tx delegation)
+Last activity: 2026-04-16 -- Phase 14 Plan 01: extracted postJournalEntryInTx tx-aware helper from src/lib/journal-entries/post.ts using Prisma.TransactionClient; postJournalEntry public API unchanged (3-line wrapper). 8/8 tests pass in scoped suite, zero new TS errors in touched files.
 
-Progress: [██████████] 96%
+Progress: [█████████░] 91%
 
 ## Performance Metrics
 
@@ -101,6 +101,8 @@ Progress: [██████████] 96%
 | Phase 12 P09 | 5min+checkpoint | 3 tasks | 12 files |
 | Phase 13-test-coverage-gaps P01 | 8min | 3 tasks | 3 files |
 | Phase 13-test-coverage-gaps P02 | 9min | 3 tasks | 6 files |
+| Phase 14-code-hygiene-wizard-fix P01 | 3min | 2 tasks | 2 files |
+| Phase 14-code-hygiene-wizard-fix P04 | 4min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -247,6 +249,11 @@ Recent decisions affecting current work:
 - [Phase 13-02]: Mirror-inline pattern for non-extractable route/component logic (REC-01 route handler, REC-04 component useMemo): captures shape contract in test file without touching production
 - [Phase 13-02]: CAT-03 applyRules test asserts matched-bucket membership only (not positionId propagation); propagation is Phase 14 orphan-applyRules scope
 - [Phase 13-02]: OBE-03 uses vi.mock("@/lib/journal-entries/auto-number") module-level mock instead of tx.journalEntry.findFirst stubbing (Blocker #5)
+- [Phase 14-code-hygiene-wizard-fix]: [Phase 14-01]: Prisma.TransactionClient over the any-typed PrismaTransactionClient shortcut — establishes the better tx-aware helper pattern; Phase 11 opening-balance.ts stays as-is per CONTEXT.md
+- [Phase 14-code-hygiene-wizard-fix]: [Phase 14-01]: postJournalEntry public wrapper delegates via prisma.dollar-transaction(async (tx) => postJournalEntryInTx(tx, ...)) — single source of truth for the post body, public API unchanged
+- [Phase 14-code-hygiene-wizard-fix]: [Phase 14-01]: Module-level vi.mock(@/lib/db/prisma) with shared transactionMock spy — enables both isolation (helper does NOT call dollar-transaction) and regression (wrapper calls dollar-transaction once) assertions in the same suite
+- [Phase 14-code-hygiene-wizard-fix]: [Phase 14-04]: Surgical describe-block + it-block deletion (single Edit collapsed two adjacent test removals) — preserved sibling test scaffolding (TestRule, makeRule) without rewriting the file
+- [Phase 14-code-hygiene-wizard-fix]: [Phase 14-04]: applyRules orphan deletion paired with test-import line trim — single source of truth for orphan export removal (BANK-04 v1.0-MILESTONE-AUDIT closed)
 
 ### Pending Todos
 
@@ -259,6 +266,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-16T13:28:09.649Z
-Stopped at: Phase 14 plans verified (5 plans, 2 waves)
-Resume file: .planning/phases/14-code-hygiene-wizard-fix/
+Last session: 2026-04-16T13:35:00.584Z
+Stopped at: Completed 14-04-PLAN.md (applyRules orphan deletion + test cleanup)
+Resume file: None
