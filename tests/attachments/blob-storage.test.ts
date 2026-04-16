@@ -32,7 +32,9 @@ async function simulateUpload(
 ) {
   const path = buildBlobPath(entityId, journalEntryId, file.name);
   // In the real route: put(path, file, { access: "public", contentType: file.type })
-  await (put as ReturnType<typeof vi.fn>)(path, file, {
+  // Cast file to Blob: the mock ignores body type at runtime; we only need
+  // TS to accept the call. The real upload route constructs a proper File.
+  await vi.mocked(put)(path, file as unknown as Blob, {
     access: "public",
     contentType: file.type,
   });
@@ -40,7 +42,7 @@ async function simulateUpload(
 
 /** Simulate what the DELETE route does when removing an attachment */
 async function simulateDelete(attachmentUrl: string) {
-  await (del as ReturnType<typeof vi.fn>)(attachmentUrl);
+  await vi.mocked(del)(attachmentUrl);
 }
 
 describe("Vercel Blob storage integration", () => {
