@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Phase 14 starting — postJournalEntryInTx tx-aware helper extracted; foundation in place for 14-02 (auto-post default) and 14-03 (bank-tx delegation)
-stopped_at: Completed 14-04-PLAN.md (applyRules orphan deletion + test cleanup)
-last_updated: "2026-04-16T13:35:00.587Z"
-last_activity: "2026-04-16 -- Phase 14 Plan 01: extracted postJournalEntryInTx tx-aware helper from src/lib/journal-entries/post.ts using Prisma.TransactionClient; postJournalEntry public API unchanged (3-line wrapper). 8/8 tests pass in scoped suite, zero new TS errors in touched files."
+status: Phase 14 advancing — 14-05 deferred-items sweep complete (5 Phase 12 TS/test issues closed, +7 use-entity tests recovered, single-source SerializedAccount); waiting on 14-02 + 14-03
+stopped_at: Completed 14-05-PLAN.md
+last_updated: "2026-04-16T13:39:21.547Z"
+last_activity: "2026-04-16 -- Phase 14 Plan 05: closed all 5 remaining Phase 12 deferred items (#1, #3, #5, #6, #7) — tsc clean across 6 touched files; new src/types/account.ts canonical type; NODE_OPTIONS in test script recovered 7 use-entity tests; vi.mocked in blob-storage; full suite 538 passed."
 progress:
   total_phases: 15
   completed_phases: 11
   total_plans: 58
-  completed_plans: 54
+  completed_plans: 55
   percent: 91
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 14 of 15 (Code Hygiene & Wizard Behavioral Fix) — in progress
-Plan: 14-01 complete (postJournalEntryInTx extraction); 14-02/03/04/05 pending
-Status: Phase 14 starting — postJournalEntryInTx tx-aware helper extracted; foundation in place for 14-02 (auto-post default) and 14-03 (bank-tx delegation)
-Last activity: 2026-04-16 -- Phase 14 Plan 01: extracted postJournalEntryInTx tx-aware helper from src/lib/journal-entries/post.ts using Prisma.TransactionClient; postJournalEntry public API unchanged (3-line wrapper). 8/8 tests pass in scoped suite, zero new TS errors in touched files.
+Plan: 14-01 + 14-04 + 14-05 complete; 14-02 (auto-post default) and 14-03 (bank-tx delegation) pending
+Status: Phase 14 advancing — 14-05 deferred-items sweep complete (5 Phase 12 TS/test issues closed, +7 use-entity tests recovered, single-source SerializedAccount); waiting on 14-02 + 14-03
+Last activity: 2026-04-16 -- Phase 14 Plan 05: closed all 5 remaining Phase 12 deferred items (#1, #3, #5, #6, #7) — tsc clean across 6 touched files; new src/types/account.ts canonical type; NODE_OPTIONS in test script recovered 7 use-entity tests; vi.mocked in blob-storage; full suite 538 passed.
 
-Progress: [█████████░] 91%
+Progress: [██████████] 95%
 
 ## Performance Metrics
 
@@ -103,6 +103,7 @@ Progress: [█████████░] 91%
 | Phase 13-test-coverage-gaps P02 | 9min | 3 tasks | 6 files |
 | Phase 14-code-hygiene-wizard-fix P01 | 3min | 2 tasks | 2 files |
 | Phase 14-code-hygiene-wizard-fix P04 | 4min | 2 tasks | 2 files |
+| Phase 14 P05 | 7 min | 6 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -254,6 +255,10 @@ Recent decisions affecting current work:
 - [Phase 14-code-hygiene-wizard-fix]: [Phase 14-01]: Module-level vi.mock(@/lib/db/prisma) with shared transactionMock spy — enables both isolation (helper does NOT call dollar-transaction) and regression (wrapper calls dollar-transaction once) assertions in the same suite
 - [Phase 14-code-hygiene-wizard-fix]: [Phase 14-04]: Surgical describe-block + it-block deletion (single Edit collapsed two adjacent test removals) — preserved sibling test scaffolding (TestRule, makeRule) without rewriting the file
 - [Phase 14-code-hygiene-wizard-fix]: [Phase 14-04]: applyRules orphan deletion paired with test-import line trim — single source of truth for orphan export removal (BANK-04 v1.0-MILESTONE-AUDIT closed)
+- [Phase 14-05]: Coalesce-at-call-site for base-ui Select onValueChange handlers (no SafeSelect wrapper); state types stay string
+- [Phase 14-05]: Single-source-of-truth canonical SerializedAccount in src/types/account.ts (deep import @/types/account; matches @/types/SerializedEntity pattern)
+- [Phase 14-05]: vi.mocked(fn)(...args) over (fn as ReturnType<typeof vi.fn>)(...) for vitest 4 callable mock invocation; reserve cast pattern for assertion access only
+- [Phase 14-05]: NODE_OPTIONS=--no-experimental-webstorage in package.json scripts.test (not vitest.config.ts) — issue is Node 25 global, not jsdom URL; spelled-out flag for maintainer discoverability
 
 ### Pending Todos
 
@@ -266,6 +271,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-16T13:35:00.584Z
-Stopped at: Completed 14-04-PLAN.md (applyRules orphan deletion + test cleanup)
+Last session: 2026-04-16T13:39:21.544Z
+Stopped at: Completed 14-05-PLAN.md
 Resume file: None
