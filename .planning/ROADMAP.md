@@ -16,6 +16,8 @@ Frontier GL delivers a multi-entity general ledger that replaces QuickBooks Onli
 - [x] **Phase 8: Family Office I** — Multi-entity consolidation with eliminations (completed 2010-04-10)
 - [x] **Phase 9: Bank Transactions** — CSV import and Plaid integration for automatic bank feeds (completed 2010-04-11)
 - [x] **Phase 10: Positions Model & Holdings Overhaul** — Position model, 13 holding types, GL account hierarchy, holdings page restructure (completed 2026-04-12)
+- [x] **Phase 11: Categorization UX & Opening Balances** — Position-first categorization, auto-generated opening balance JEs, bank-feed reconciliation integration (completed 2026-04-14)
+- [x] **Phase 12: Reporting Fixes & Onboarding Wizard** — Cash flow enum, contra accounts, rate-based budgets, onboarding wizard, AI CSV column mapping, multi-account CSV import (completed 2026-04-15)
 
 ---
 
@@ -180,9 +182,10 @@ Plans:
 - [x] 10-02-PLAN.md — Data migration script for existing holdings, bank transaction posting updated to position-level GL accounts
 - [x] 10-03-PLAN.md — Holdings page restructured with 13-type grouping, aggregate totals, position GL display, AddPositionsPrompt
 
-### Phase 11: Categorization UX & Opening Balances
+### Phase 11: Categorization UX & Opening Balances ✓
 
 **Goal:** Bank feed categorization uses holdings/positions as offset targets instead of raw GL accounts. Opening balance JEs auto-generated when holdings are created with balances. Reconciliation workflow fully integrated with bank feed as single source of truth.
+**Status:** Complete (2026-04-14)
 **Requirements:** CAT-01, CAT-03, OBE-01, OBE-02, OBE-03, REC-01, REC-03, REC-04
 **Depends on:** Phase 10
 **Plans:** 5/5 plans complete
@@ -194,12 +197,13 @@ Plans:
 - [x] 11-04-PLAN.md — Auto-reconcile on post, reconciliation status badges, running totals, holdings navigation
 - [ ] 11-05-PLAN.md — Gap closure: wire inline position picker in TransactionTable + positionId flow to CategorizePrompt
 
-### Phase 12: Reporting Fixes & Onboarding Wizard
+### Phase 12: Reporting Fixes & Onboarding Wizard ✓
 
 **Goal:** Cash flow classification uses cashFlowCategory enum field instead of name pattern matching. Contra account types via isContra boolean flag. Rate-based budget targets for investment returns. Onboarding wizard guides new entity setup (COA template, Holdings, Opening balances, First transactions). AI-powered CSV import with LLM column detection and saved mappings.
+**Status:** Complete (2026-04-15)
 **Requirements:** SCHEMA-01, CF-01, CF-02, CF-03, CONTRA-01, CONTRA-02, RATE-01, RATE-02, WIZ-01, WIZ-02, WIZ-03, CSV-01, CSV-02, CSV-03, CSV-04
 **Depends on:** Phase 11
-**Plans:** 9/10 plans executed
+**Plans:** 10/10 plans complete (6 initial + 4 gap-closure from UAT)
 
 Plans:
 - [x] 12-00-PLAN.md — Wave 0 test stubs for all phase requirements (Nyquist compliance)
@@ -208,5 +212,9 @@ Plans:
 - [x] 12-03-PLAN.md — Rate-based budget computation utility, rate-target API endpoint, budget page UI integration
 - [x] 12-04-PLAN.md — LLM column mapper with Anthropic SDK, mapping persistence store, confirmation UI, integration into all 3 CSV import flows
 - [x] 12-05-PLAN.md — Onboarding wizard (4-step: COA template, holdings, opening balances, first transactions), wizard progress API, entity form redirect
+- [x] 12-06-PLAN.md — Gap closure: header-fingerprint saved-mapping reuse (CSV-03) + COA Import dialog layout fix (CSV-04)
+- [x] 12-07-PLAN.md — Gap closure: ReturnToWizardBanner in header + opening balance JE date fidelity + wizardProgress backfill for pre-existing entities (WIZ-01/02/03)
+- [x] 12-08-PLAN.md — Gap closure: rate-target holdings eligibility based on effective FMV (holding FMV OR sum of active position marketValues) (RATE-02)
+- [x] 12-09-PLAN.md — Gap closure: multi-account bank CSV import via per-row Account column resolution (CSV-01/02/03)
 
 ---

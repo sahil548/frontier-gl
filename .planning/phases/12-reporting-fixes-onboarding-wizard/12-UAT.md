@@ -8,14 +8,19 @@ source:
   - 12-03-SUMMARY.md
   - 12-04-SUMMARY.md
   - 12-05-SUMMARY.md
+  - 12-06-SUMMARY.md
+  - 12-07-SUMMARY.md
+  - 12-08-SUMMARY.md
+  - 12-09-SUMMARY.md
 started: 2026-04-15T01:36:50Z
-updated: 2026-04-15T02:45:00Z
+updated: 2026-04-15T04:55:00Z
+gap_closure: all gaps addressed by plans 12-06 / 12-07 / 12-08 / 12-09
 ---
 
 ## Current Test
 
-status: all tests complete
-awaiting: routing to diagnose-issues
+status: all tests complete; all 7 gaps closed by plans 12-06 / 12-07 / 12-08 / 12-09
+awaiting: phase roll-up
 
 ## Tests
 
@@ -97,71 +102,100 @@ skipped: 1
 ## Gaps
 
 - truth: "User can return to the wizard after navigating away mid-step (e.g., Customize accounts)"
-  status: failed
+  status: closed
   reason: "User reported: yes that works but when clicking away from the wizard to check on the COA i now cant get back to the wizard which is not helpful"
   severity: major
   test: 2a
-  root_cause: ""     # To be filled by diagnosis
-  artifacts: []      # To be filled by diagnosis
-  missing: []        # To be filled by diagnosis
-  debug_session: ""  # To be filled by diagnosis
+  root_cause: "No persistent return-to-wizard affordance when user navigated away from /onboarding; wizardProgress JSON was written at step completion but header had no awareness of incomplete-wizard state across routes."
+  artifacts:
+    - src/components/onboarding/return-to-wizard-banner.tsx
+    - src/components/layout/header.tsx
+    - src/lib/onboarding/wizard-progress.ts
+  missing: []
+  debug_session: "closed by plan 12-07 (ReturnToWizardBanner mounted in header, isWizardInProgress pure helper)"
 
 - truth: "Rate-Based Budget slide-over shows existing holdings with FMV in the holding picker"
-  status: failed
+  status: closed
   reason: "User reported: holding dropdown empty when there are 4 holdings in the system"
   severity: major
   test: 5
-  root_cause: ""     # To be filled by diagnosis
-  artifacts: []      # To be filled by diagnosis
-  missing: []        # To be filled by diagnosis
-  debug_session: ""  # To be filled by diagnosis
+  root_cause: "Budget page filter used holding.fairMarketValue directly; Phase 10 positions-overhaul moved FMV onto Position.marketValue and left holding.fairMarketValue null for new holdings, so the dropdown found nothing."
+  artifacts:
+    - src/lib/holdings/rate-target-eligibility.ts
+    - src/__tests__/utils/rate-target-eligibility.test.ts
+    - src/app/(auth)/budgets/page.tsx
+    - src/app/api/entities/[entityId]/budgets/rate-target/route.ts
+  missing: []
+  debug_session: "closed by plan 12-08 (isHoldingEligibleForRateTarget + computeEffectiveMarketValue pure helpers; holding FMV wins when non-zero, else SUM active position marketValues)"
 
 - truth: "Bank CSV import supports multi-account CSVs by treating account as a mappable column/dimension (like date, amount, entity)"
-  status: failed
+  status: closed
   reason: "User reported: cant import for multiple accounts at once. financial accounts/holdings are just dimensional like entity, like date, like anything else and the architecture should allow for multi account import very easily and more"
   severity: major
   test: 6
-  root_cause: ""     # To be filled by diagnosis
-  artifacts: []      # To be filled by diagnosis
-  missing: []        # To be filled by diagnosis
-  debug_session: ""  # To be filled by diagnosis
+  root_cause: "CSV import route required a single top-level subledgerItemId and bank-feed page blocked file-pick until one was selected; there was no per-row account resolution path at all."
+  artifacts:
+    - src/lib/bank-transactions/resolve-account-refs.ts
+    - src/lib/bank-transactions/csv-parser.ts
+    - src/validators/bank-transaction.ts
+    - src/app/api/entities/[entityId]/bank-transactions/route.ts
+    - src/app/api/entities/[entityId]/csv-column-map/route.ts
+    - src/components/csv-import/column-mapping-ui.tsx
+    - src/app/(auth)/bank-feed/page.tsx
+    - src/__tests__/utils/csv-parser-multi-account.test.ts
+    - src/__tests__/validators/bank-transaction.test.ts
+    - src/__tests__/api/bank-transactions-multi-account.test.ts
+  missing: []
+  debug_session: "closed by plan 12-09 (ParsedBankRow.accountRef, csvImportSchema union, resolveAccountRefs pure helper, per-group dedup + createMany). Chrome-verified on Three Pagodas end-to-end with Citibank Checking / Savings."
 
 - truth: "COA CSV Import dialog layout renders cleanly without overflow/clipping"
-  status: failed
+  status: closed
   reason: "User reported: UI looks a biy screwy tho on test 7. Observed: dialog header description gets clipped above viewport when Column Mapping panel opens; modal grows taller than viewport."
   severity: cosmetic
   test: 7
-  root_cause: ""     # To be filled by diagnosis
-  artifacts: []      # To be filled by diagnosis
-  missing: []        # To be filled by diagnosis
-  debug_session: ""  # To be filled by diagnosis
+  root_cause: "DialogContent had no max-height and DialogHeader wasn't sticky, so when the Column Mapping panel expanded the dialog dynamically grew past viewport height and pushed the header off-screen."
+  artifacts:
+    - src/components/settings/coa-import-dialog.tsx
+  missing: []
+  debug_session: "closed by plan 12-06 (max-h-[90vh] overflow-y-auto on DialogContent + sticky top-0 on DialogHeader — reusable pattern for modals with dynamic content growth)"
 
 - truth: "Saved column mappings are auto-reused on subsequent imports with same CSV structure; badge reads 'Saved'"
-  status: failed
+  status: closed
   reason: "First import saved with sourceName='TestSource-UAT'. Second import with identical columns: badge shows 'Auto-detected', Source name empty. Saved mapping lookup never fires."
   severity: major
   test: 9
-  root_cause: "src/app/api/entities/[entityId]/csv-column-map/route.ts line 99-104 gates saved-mapping lookup on `if (sourceName)` in request body. But client src/components/csv-import/column-mapping-ui.tsx lines 84-92 only sends {headers, sampleRows, importType} — no sourceName. So the server always falls through to LLM/heuristic. Fix options: (a) server-side match saved mappings by fingerprint of headers for entity+importType; (b) client-side GET /api/entities/[entityId]/column-mappings, match by headers set, then apply with source='saved'."
-  artifacts: ["src/app/api/entities/[entityId]/csv-column-map/route.ts", "src/components/csv-import/column-mapping-ui.tsx", "src/lib/bank-transactions/column-mapping-store.ts"]
+  root_cause: "csv-column-map route gated saved-mapping lookup on `if (sourceName)` in request body, but the client only sent headers/sampleRows/importType. Server always fell through to LLM/heuristic even when an identical saved mapping existed."
+  artifacts:
+    - src/app/api/entities/[entityId]/csv-column-map/route.ts
+    - src/components/csv-import/column-mapping-ui.tsx
+    - src/lib/bank-transactions/column-mapping-store.ts
+    - src/app/api/entities/[entityId]/column-mappings/route.ts
+    - src/__tests__/api/column-mappings.test.ts
   missing: []
-  debug_session: ""
+  debug_session: "closed by plan 12-06 (findMappingByHeaders fingerprint helper: normalize trim+lowercase, superset-check stored headers against incoming CSV headers, orderBy updatedAt desc. Server returns sourceName on saved hits so UI pre-fills the Source name field with a 'Saved' badge)"
 
 - truth: "Opening Balance JE is dated at the entity's fiscal year start, matching the date shown in the wizard form"
-  status: failed
+  status: closed
   reason: "Form defaulted JE Date to 01/01/2026 (FY start for 12-31 FYE entity) but generated JE was saved with date Dec 31, 2025 (prior day). Standard accounting convention places opening balance JEs on the last day of prior FY so balances are available Jan 1 — but the UX mismatch between form date and stored date is confusing."
   severity: cosmetic
   test: 11
-  root_cause: ""     # To be filled by diagnosis
-  artifacts: []      # To be filled by diagnosis
-  missing: []        # To be filled by diagnosis
-  debug_session: ""
+  root_cause: "generateOpeningBalanceJE accepted a Date object that got serialized through an API boundary, triggering UTC/local timezone shift — a form date of 2026-01-01 in America/Chicago became 2025-12-31 UTC on the server."
+  artifacts:
+    - src/lib/onboarding/opening-balance.ts
+    - src/components/onboarding/wizard-balances-step.tsx
+    - src/__tests__/utils/opening-balance.test.ts
+  missing: []
+  debug_session: "closed by plan 12-07 (generateOpeningBalanceJE signature changed from Date to YYYY-MM-DD string; string is passed through API unchanged — stored date == form date)"
 
 - truth: "Setup banner is absent for entities that have substantive data but pre-date the wizard feature (no explicit wizard run)"
-  status: failed
+  status: closed
   reason: "Three Pagodas, LLC (pre-existing entity with full COA, JEs, holdings) shows banner 'Continue setting up Three Pagodas, LLC / 0 of 4 steps complete'. User can dismiss via × but this is noise — banner logic should detect that the entity has substantive data (posted JEs, COA imported, holdings present) and suppress the banner, OR the system should backfill wizardProgress for existing entities on migration."
   severity: cosmetic
   test: 12
-  root_cause: ""     # To be filled by diagnosis
-  artifacts: []      # To be filled by diagnosis
-  missing: []        # To be filled by diagnosis
-  debug_session: ""
+  root_cause: "wizardProgress JSON defaulted to {} on pre-existing entities because the onboarding wizard (plan 12-05) shipped after those entities were created; the banner treated {} as 'all 4 steps incomplete'."
+  artifacts:
+    - src/app/api/entities/[entityId]/wizard-progress/route.ts
+    - src/lib/onboarding/wizard-progress.ts
+    - src/components/onboarding/setup-banner.tsx
+  missing: []
+  debug_session: "closed by plan 12-07 (hasSubstantiveData helper + backfill-on-first-GET: when GET /wizard-progress sees {} AND hasSubstantiveData returns true, server writes all 4 steps as complete and returns the backfilled state)"
