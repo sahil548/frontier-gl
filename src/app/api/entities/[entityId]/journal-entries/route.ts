@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db/prisma";
 import { journalEntrySchema } from "@/lib/validators/journal-entry";
 import { successResponse, errorResponse } from "@/lib/validators/api-response";
 import { generateNextEntryNumber } from "@/lib/journal-entries/auto-number";
+import { postJournalEntryInTx } from "@/lib/journal-entries/post";
 import { Prisma } from "@/generated/prisma/client";
 
 /**
@@ -196,6 +197,13 @@ export async function POST(
 
   const { date, description, lineItems } = result.data;
 
+  // Phase 14: status field semantics
+  // - undefined (omitted) → shouldPost = true (new default; auto-post when balanced)
+  // - "POSTED" (explicit) → shouldPost = true
+  // - "DRAFT" (explicit opt-out, e.g. manual JE form Save Draft) → shouldPost = false
+  const status = result.data.status;
+  const shouldPost = status !== "DRAFT";
+
   // Validate all accountIds exist and belong to this entity
   const accountIds = lineItems.map((li) => li.accountId);
   const accounts = await prisma.account.findMany({
@@ -271,7 +279,8 @@ export async function POST(
         await tx.journalEntryLineDimensionTag.createMany({ data: tagCreates });
       }
 
-      // Step 3: Create audit trail
+      // Step 3: Create audit trail (CREATED before any POSTED audit so the
+      // audit ordering matches the standalone /post route: CREATED → POSTED).
       await tx.journalEntryAudit.create({
         data: {
           journalEntryId: je.id,
@@ -280,7 +289,17 @@ export async function POST(
         },
       });
 
-      // Step 4: Re-fetch with full includes for response
+      // Step 4 (Phase 14): auto-post when requested. Status flips from DRAFT
+      // to POSTED, AccountBalance is upserted, POSTED audit is written —
+      // all inside this same $transaction. Closed-period or "already posted"
+      // errors thrown by postJournalEntryInTx propagate to the outer catch
+      // and are mapped to 400 responses there.
+      if (shouldPost) {
+        await postJournalEntryInTx(tx, je.id, userId);
+      }
+
+      // Step 5: Re-fetch with full includes for response (status will reflect
+      // POSTED when shouldPost was true).
       const full = await tx.journalEntry.findUniqueOrThrow({
         where: { id: je.id },
         include: {
@@ -308,6 +327,18 @@ export async function POST(
       201
     );
   } catch (err) {
+    // Phase 14: map postJournalEntryInTx errors surfaced from auto-post path
+    // to user-friendly 400s (mirrors standalone /post route behavior).
+    const message = err instanceof Error ? err.message : "Failed to create journal entry";
+    if (message.includes("already posted")) {
+      return errorResponse("Journal entry is already posted", 400);
+    }
+    if (message.includes("closed period") || message.includes("period is closed")) {
+      return errorResponse(
+        "Cannot post to a closed period. Reopen the period first.",
+        400
+      );
+    }
     console.error("JE create error:", err);
     return errorResponse("Failed to create journal entry", 500);
   }

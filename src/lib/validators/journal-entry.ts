@@ -56,6 +56,10 @@ export const journalEntrySchema = z
     lineItems: z
       .array(lineItemSchema)
       .min(2, "At least 2 line items required"),
+    // Phase 14: opt-out for callers that explicitly want a draft.
+    // Omitted = post-when-balanced (new default). Send "DRAFT" to preserve
+    // the legacy draft-only create behavior (e.g., manual JE form Save Draft).
+    status: z.enum(["DRAFT", "POSTED"]).optional(),
   })
   .refine(
     (data) => {
