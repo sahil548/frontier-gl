@@ -743,7 +743,7 @@ export default function BudgetsPage() {
                 <Label htmlFor="rate-holding">Holding</Label>
                 <Select
                   value={selectedHoldingId}
-                  onValueChange={setSelectedHoldingId}
+                  onValueChange={(v) => setSelectedHoldingId(v ?? "")}
                 >
                   <SelectTrigger id="rate-holding">
                     <SelectValue placeholder="Select holding..." />
@@ -772,7 +772,7 @@ export default function BudgetsPage() {
                 <Label htmlFor="rate-account">Income Account</Label>
                 <Select
                   value={selectedAccountId}
-                  onValueChange={setSelectedAccountId}
+                  onValueChange={(v) => setSelectedAccountId(v ?? "")}
                 >
                   <SelectTrigger id="rate-account">
                     <SelectValue placeholder="Select income account..." />

@@ -15,17 +15,6 @@ export interface RuleInput {
 }
 
 /**
- * Minimal transaction shape used by the categorization engine.
- */
-export interface TransactionInput {
-  id: string;
-  description: string;
-  amount: number | { toNumber?: () => number };
-  status: string;
-  accountId: string | null;
-}
-
-/**
  * Safely converts a value to a number.
  * Handles Prisma Decimal objects (which have a toNumber method) and plain numbers.
  */
@@ -72,40 +61,4 @@ export function matchRule<R extends RuleInput>(
   }
 
   return null;
-}
-
-/**
- * Applies categorization rules to a batch of transactions.
- *
- * For each transaction:
- * - If a rule matches, assigns the rule's accountId and dimensionTags
- * - Transactions are sorted into matched/unmatched buckets
- *
- * Rules are sorted by priority before matching.
- *
- * @returns Object with matched and unmatched transaction arrays
- */
-export function applyRules<R extends RuleInput, T extends TransactionInput>(
-  transactions: T[],
-  rules: R[]
-): { matched: T[]; unmatched: T[] } {
-  // Sort rules by priority (lower = higher priority)
-  const sortedRules = [...rules].sort((a, b) => a.priority - b.priority);
-
-  const matched: T[] = [];
-  const unmatched: T[] = [];
-
-  for (const txn of transactions) {
-    const rule = matchRule(txn, sortedRules);
-
-    if (rule) {
-      // Assign account and dimension tags from the matched rule
-      const updated = { ...txn, accountId: rule.accountId };
-      matched.push(updated);
-    } else {
-      unmatched.push(txn);
-    }
-  }
-
-  return { matched, unmatched };
 }
