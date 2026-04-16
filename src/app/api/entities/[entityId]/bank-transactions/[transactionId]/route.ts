@@ -5,6 +5,7 @@ import { getInternalUser } from "@/lib/db/entity-access";
 import { splitTransactionSchema } from "@/validators/bank-transaction";
 import { createJournalEntryFromTransaction } from "@/lib/bank-transactions/create-je";
 import { generateNextEntryNumber } from "@/lib/journal-entries/auto-number";
+import { postJournalEntryInTx } from "@/lib/journal-entries/post";
 import { Prisma } from "@/generated/prisma/client";
 import { z } from "zod";
 
@@ -258,17 +259,20 @@ export async function POST(
     const result = await prisma.$transaction(async (tx) => {
       const entryNumber = await generateNextEntryNumber(tx, entityId);
 
-      // Create the journal entry with line items
+      // Step 1: Create the journal entry with line items.
+      // Always created as DRAFT — postJournalEntryInTx flips status to POSTED
+      // and stamps postedBy/postedAt when postImmediately is true. This keeps
+      // the canonical post body (balance upserts + POSTED audit + status flip)
+      // in one place (src/lib/journal-entries/post.ts) per Phase 14-01.
       const je = await tx.journalEntry.create({
         data: {
           entityId,
           entryNumber,
           date: jeInput.date,
           description: jeInput.description,
-          status: jeInput.status,
+          status: "DRAFT",
           createdBy: userId,
-          postedBy: jeInput.postedBy || null,
-          postedAt: jeInput.postedAt || null,
+          // postedBy/postedAt intentionally omitted — postJournalEntryInTx sets them.
           lineItems: {
             create: jeInput.lineItems.map((li, index) => ({
               accountId: li.accountId,
@@ -289,40 +293,8 @@ export async function POST(
         },
       });
 
-      // If posting immediately, update account balances
-      if (postImmediately) {
-        for (const line of je.lineItems) {
-          const debitAmount = new Prisma.Decimal(line.debit.toString());
-          const creditAmount = new Prisma.Decimal(line.credit.toString());
-          const balanceChange = debitAmount.minus(creditAmount);
-
-          await tx.accountBalance.upsert({
-            where: { accountId: line.accountId },
-            create: {
-              accountId: line.accountId,
-              debitTotal: debitAmount,
-              creditTotal: creditAmount,
-              balance: balanceChange,
-            },
-            update: {
-              debitTotal: { increment: debitAmount },
-              creditTotal: { increment: creditAmount },
-              balance: { increment: balanceChange },
-            },
-          });
-        }
-
-        // Audit trail
-        await tx.journalEntryAudit.create({
-          data: {
-            journalEntryId: je.id,
-            action: "POSTED",
-            userId,
-          },
-        });
-      }
-
-      // Audit trail for creation
+      // Step 2: CREATED audit (bank-tx-specific). Runs BEFORE any post call so
+      // audit ordering is the conventional CREATED → POSTED.
       await tx.journalEntryAudit.create({
         data: {
           journalEntryId: je.id,
@@ -331,7 +303,15 @@ export async function POST(
         },
       });
 
-      // Update the bank transaction status and link the JE
+      // Step 3: Post immediately if requested. Delegates AccountBalance upsert
+      // and POSTED audit to the canonical postJournalEntry logic (Phase 14-01).
+      // Period-close trigger errors propagate from here and are caught below.
+      if (postImmediately) {
+        await postJournalEntryInTx(tx, je.id, userId);
+      }
+
+      // Step 4: Update the bank transaction status and link the JE.
+      // Atomicity preserved: any failure above rolls back this update too.
       await tx.bankTransaction.update({
         where: { id: transactionId },
         data: {
@@ -353,7 +333,10 @@ export async function POST(
         entryNumber: result.entryNumber,
         date: result.date.toISOString(),
         description: result.description,
-        status: result.status,
+        // The local `result` object is the snapshot returned by tx.journalEntry.create
+        // before postJournalEntryInTx ran — it still reads "DRAFT". Reflect the
+        // post-transaction reality so the API response matches the persisted row.
+        status: postImmediately ? "POSTED" : result.status,
         lineItems: result.lineItems.map((li) => ({
           id: li.id,
           accountId: li.accountId,
