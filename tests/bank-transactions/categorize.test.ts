@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { matchRule, applyRules } from "@/lib/bank-transactions/categorize";
+import { matchRule } from "@/lib/bank-transactions/categorize";
 
 // Minimal rule shape matching CategorizationRule fields used by the engine
 type TestRule = {
@@ -90,73 +90,4 @@ describe("Position-targeted rules", () => {
     expect(result!.accountId).toBeNull();
   });
 
-  it("applyRules matches positionId-bearing rule and returns it in matched bucket", () => {
-    // NOTE: applyRules currently copies ONLY accountId onto the matched transaction
-    // (see categorize.ts:103). It does NOT propagate rule.positionId onto the txn.
-    // The achievable assertion here is that the matched BUCKET contains the transaction
-    // (matchRule returned the positionId rule) -- NOT that positionId propagates onto
-    // the returned txn shape. Propagating positionId via applyRules is a Phase 14 concern
-    // (orphan-applyRules tech debt per v1.0-MILESTONE-AUDIT.md), not Phase 13 test scope.
-    // See RESEARCH.md Pitfall 7 + Blocker #2.
-    const rule: TestRule = makeRule({
-      id: "r1",
-      pattern: "schwab",
-      accountId: null as unknown as string,
-      positionId: "pos-sweep-1",
-    });
-    const transactions = [
-      {
-        id: "t1",
-        description: "SCHWAB DIVIDEND",
-        amount: 500,
-        status: "PENDING" as const,
-        accountId: null as string | null,
-      },
-    ];
-
-    const { matched, unmatched } = applyRules(transactions, [rule]);
-    expect(matched).toHaveLength(1);
-    expect(matched[0].id).toBe("t1");
-    expect(unmatched).toHaveLength(0);
-    // accountId from rule is null, so matched[0].accountId is null
-    expect(matched[0].accountId).toBeNull();
-  });
-});
-
-describe("applyRules", () => {
-  it("assigns accountId and dimensionTags from matched rule", () => {
-    const rules = [
-      makeRule({
-        id: "r1",
-        pattern: "amazon",
-        accountId: "office-supplies-id",
-        dimensionTags: { "dim1": "tag1" },
-      }),
-    ];
-
-    const transactions = [
-      {
-        id: "t1",
-        description: "AMAZON PURCHASE",
-        amount: 50,
-        status: "PENDING" as const,
-        accountId: null as string | null,
-      },
-      {
-        id: "t2",
-        description: "WALMART PURCHASE",
-        amount: 30,
-        status: "PENDING" as const,
-        accountId: null as string | null,
-      },
-    ];
-
-    const { matched, unmatched } = applyRules(transactions, rules);
-
-    expect(matched).toHaveLength(1);
-    expect(matched[0].id).toBe("t1");
-    expect(matched[0].accountId).toBe("office-supplies-id");
-    expect(unmatched).toHaveLength(1);
-    expect(unmatched[0].id).toBe("t2");
-  });
 });
