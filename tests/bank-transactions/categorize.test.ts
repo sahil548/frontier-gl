@@ -73,8 +73,54 @@ describe("matchRule", () => {
 
 describe("Position-targeted rules", () => {
   // CAT-03: Rules with positionId instead of accountId
-  it.todo("matchRule matches rule with positionId and null accountId");
-  it.todo("applyRules returns positionId in matched result for caller to resolve GL");
+  it("matchRule matches rule with positionId and null accountId", () => {
+    const rule: TestRule = makeRule({
+      id: "r1",
+      pattern: "schwab",
+      accountId: null as unknown as string, // null allowed when positionId set (Phase 11)
+      positionId: "pos-sweep-1",
+    });
+    const result = matchRule(
+      { description: "SCHWAB DIVIDEND DEPOSIT", amount: 500 },
+      [rule]
+    );
+    expect(result).not.toBeNull();
+    expect(result!.id).toBe("r1");
+    expect(result!.positionId).toBe("pos-sweep-1");
+    expect(result!.accountId).toBeNull();
+  });
+
+  it("applyRules matches positionId-bearing rule and returns it in matched bucket", () => {
+    // NOTE: applyRules currently copies ONLY accountId onto the matched transaction
+    // (see categorize.ts:103). It does NOT propagate rule.positionId onto the txn.
+    // The achievable assertion here is that the matched BUCKET contains the transaction
+    // (matchRule returned the positionId rule) -- NOT that positionId propagates onto
+    // the returned txn shape. Propagating positionId via applyRules is a Phase 14 concern
+    // (orphan-applyRules tech debt per v1.0-MILESTONE-AUDIT.md), not Phase 13 test scope.
+    // See RESEARCH.md Pitfall 7 + Blocker #2.
+    const rule: TestRule = makeRule({
+      id: "r1",
+      pattern: "schwab",
+      accountId: null as unknown as string,
+      positionId: "pos-sweep-1",
+    });
+    const transactions = [
+      {
+        id: "t1",
+        description: "SCHWAB DIVIDEND",
+        amount: 500,
+        status: "PENDING" as const,
+        accountId: null as string | null,
+      },
+    ];
+
+    const { matched, unmatched } = applyRules(transactions, [rule]);
+    expect(matched).toHaveLength(1);
+    expect(matched[0].id).toBe("t1");
+    expect(unmatched).toHaveLength(0);
+    // accountId from rule is null, so matched[0].accountId is null
+    expect(matched[0].accountId).toBeNull();
+  });
 });
 
 describe("applyRules", () => {
