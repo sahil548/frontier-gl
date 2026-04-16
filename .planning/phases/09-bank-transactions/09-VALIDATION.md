@@ -1,10 +1,11 @@
 ---
 phase: 9
 slug: bank-transactions
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: complete
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-04-11
+audited: 2026-04-16
 ---
 
 # Phase 9 — Validation Strategy
@@ -38,16 +39,16 @@ created: 2026-04-11
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 09-01-01 | 01 | 1 | BANK-01 | unit | `npx vitest run tests/bank-transactions/csv-parser.test.ts -x` | Wave 0 | pending |
-| 09-01-02 | 01 | 1 | BANK-01 | unit | `npx vitest run tests/bank-transactions/csv-parser.test.ts -x` | Wave 0 | pending |
-| 09-02-01 | 02 | 1 | BANK-02 | unit | `npx vitest run tests/bank-transactions/plaid-sync.test.ts -x` | Wave 0 | pending |
-| 09-02-02 | 02 | 1 | BANK-02 | unit | `npx vitest run tests/bank-transactions/plaid-sync.test.ts -x` | Wave 0 | pending |
-| 09-03-01 | 03 | 2 | BANK-03 | unit | `npx vitest run tests/bank-transactions/create-je.test.ts -x` | Wave 0 | pending |
-| 09-03-02 | 03 | 2 | BANK-03 | unit | `npx vitest run tests/bank-transactions/create-je.test.ts -x` | Wave 0 | pending |
-| 09-04-01 | 04 | 2 | BANK-04 | unit | `npx vitest run tests/bank-transactions/categorize.test.ts -x` | Wave 0 | pending |
-| 09-04-02 | 04 | 2 | BANK-04 | unit | `npx vitest run tests/bank-transactions/categorize.test.ts -x` | Wave 0 | pending |
-| 09-05-01 | 05 | 2 | BANK-05 | unit | `npx vitest run tests/bank-transactions/duplicate-check.test.ts -x` | Wave 0 | pending |
-| 09-05-02 | 05 | 2 | BANK-05 | unit | `npx vitest run tests/bank-transactions/duplicate-check.test.ts -x` | Wave 0 | pending |
+| 09-01-01 | 01 | 1 | BANK-01 | unit | `npx vitest run tests/bank-transactions/csv-parser.test.ts` | ✅ | ✅ green |
+| 09-01-02 | 01 | 1 | BANK-01 | unit | `npx vitest run tests/bank-transactions/csv-parser.test.ts` | ✅ | ✅ green |
+| 09-02-01 | 02 | 1 | BANK-02 | unit | `npx vitest run tests/bank-transactions/plaid-sync.test.ts` | ✅ | ✅ green |
+| 09-02-02 | 02 | 1 | BANK-02 | unit | `npx vitest run tests/bank-transactions/plaid-sync.test.ts` | ✅ | ✅ green |
+| 09-03-01 | 03 | 2 | BANK-03 | unit | `npx vitest run tests/bank-transactions/create-je.test.ts` | ✅ | ✅ green |
+| 09-03-02 | 03 | 2 | BANK-03 | unit | `npx vitest run tests/bank-transactions/create-je.test.ts` | ✅ | ✅ green |
+| 09-04-01 | 04 | 2 | BANK-04 | unit | `npx vitest run tests/bank-transactions/categorize.test.ts` | ✅ | ✅ green |
+| 09-04-02 | 04 | 2 | BANK-04 | unit | `npx vitest run tests/bank-transactions/categorize.test.ts` | ✅ | ✅ green |
+| 09-05-01 | 05 | 2 | BANK-05 | unit | `npx vitest run tests/bank-transactions/duplicate-check.test.ts` | ✅ | ✅ green |
+| 09-05-02 | 05 | 2 | BANK-05 | unit | `npx vitest run tests/bank-transactions/duplicate-check.test.ts` | ✅ | ✅ green |
 
 *Status: pending / green / red / flaky*
 
@@ -74,11 +75,23 @@ created: 2026-04-11
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 30s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 30s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** complete
+
+---
+
+## Validation Audit 2026-04-16
+
+| Metric | Count |
+|--------|-------|
+| Gaps found | 10 (stale W0 entries) |
+| Resolved | 10 (all task rows flipped to ✅ green) |
+| Escalated | 0 |
+
+All 5 gated REQ-IDs (BANK-01..05) have live, passing test files in `tests/bank-transactions/` (9 files total): `csv-parser.test.ts`, `plaid-sync.test.ts`, `create-je.test.ts`, `categorize.test.ts`, `duplicate-check.test.ts`. The suite also includes `opening-balance.test.ts`, `position-picker.test.ts`, `auto-reconcile.test.ts`, and `reconciliation-summary.test.ts` (these cover Phase 11 gated REQ-IDs).
