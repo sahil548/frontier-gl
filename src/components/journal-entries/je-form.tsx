@@ -229,7 +229,14 @@ function JEFormInner({
         const res = await fetch(url, {
           method,
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
+          body: JSON.stringify({
+            ...data,
+            // Phase 14: explicitly opt out of new POSTED-by-default API behavior.
+            // The form's draft → approve → post UX requires the entry to start
+            // as DRAFT. Removing this would auto-post on Save Draft, surprising
+            // the user. Applies to both POST (create) and PUT (edit) paths.
+            status: "DRAFT",
+          }),
         });
         const json = await res.json();
 

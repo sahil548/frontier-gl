@@ -155,8 +155,11 @@ export function WizardBalancesStep({
         gridState,
         jeDate
       );
+      // Phase 14: copy refinement — JE is now auto-posted (POSTED-when-balanced
+      // API default). Wording reflects the immediate-Balance-Sheet outcome.
+      // JE id retained for support/debugging continuity.
       toast.success(
-        `Opening balance JE created for ${jeDate} (${result.journalEntryId})`
+        `Opening balance JE posted for ${jeDate} — your Balance Sheet is ready (${result.journalEntryId})`
       );
       onComplete();
     } catch (err) {
