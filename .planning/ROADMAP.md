@@ -18,6 +18,9 @@ Frontier GL delivers a multi-entity general ledger that replaces QuickBooks Onli
 - [x] **Phase 10: Positions Model & Holdings Overhaul** — Position model, 13 holding types, GL account hierarchy, holdings page restructure (completed 2026-04-12)
 - [x] **Phase 11: Categorization UX & Opening Balances** — Position-first categorization, auto-generated opening balance JEs, bank-feed reconciliation integration (completed 2026-04-14)
 - [x] **Phase 12: Reporting Fixes & Onboarding Wizard** — Cash flow enum, contra accounts, rate-based budgets, onboarding wizard, AI CSV column mapping, multi-account CSV import (completed 2026-04-15)
+- [ ] **Phase 13: Test Coverage Gaps** — Backfill missing Phase 6 dimension tests (CLASS-03/04/05) + replace Phase 11 `it.todo` stubs with real assertions
+- [ ] **Phase 14: Code Hygiene & Wizard Behavioral Fix** — Resolve Phase 9 `applyRules` orphan, refactor bank-tx POST to delegate to `postJournalEntry`, align Wizard OB JE behavior with Holdings OBE, sweep 7 deferred TS/test issues
+- [ ] **Phase 15: Verification & Planning Docs Refresh** — Generate missing `10-VERIFICATION.md` + `12-VERIFICATION.md`, refresh 9 stale VALIDATION.md frontmatter entries, update REQUIREMENTS.md traceability for Phases 10–12
 
 ---
 
@@ -216,5 +219,57 @@ Plans:
 - [x] 12-07-PLAN.md — Gap closure: ReturnToWizardBanner in header + opening balance JE date fidelity + wizardProgress backfill for pre-existing entities (WIZ-01/02/03)
 - [x] 12-08-PLAN.md — Gap closure: rate-target holdings eligibility based on effective FMV (holding FMV OR sum of active position marketValues) (RATE-02)
 - [x] 12-09-PLAN.md — Gap closure: multi-account bank CSV import via per-row Account column resolution (CSV-01/02/03)
+
+---
+
+### Phase 13: Test Coverage Gaps
+
+**Goal:** Close the regression-test gaps accumulated in Phase 6 (dimensions) and Phase 11 (categorization/reconciliation/opening-balance) so CLASS-03/04/05, CAT-03, REC-01/03/04, and OBE-03 have live assertions rather than declared-but-missing test files or `it.todo` stubs.
+**Status:** Pending — gap closure from v1.0 milestone audit
+**Depends on:** Phase 12
+**Requirements:** CLASS-03, CLASS-04, CLASS-05, CAT-03, REC-01, REC-03, REC-04, OBE-03 (test-coverage only; REQs already satisfied in production code)
+**Gap Closure:** Closes test-coverage items in `.planning/v1.0-MILESTONE-AUDIT.md` for Phase 6 and Phase 11
+
+**Success Criteria:**
+1. `tests/dimensions/income-statement-by-dimension.test.ts` exercises `getIncomeStatementByDimension` end-to-end against a dimension-tagged posted JE
+2. `tests/dimensions/tb-dimension-filter.test.ts` asserts trial balance filters transactions by `dimensionId`
+3. `tests/dimensions/unclassified-entries.test.ts` asserts null-dimension rows appear in the "Unclassified" column
+4. `tests/bank-transactions/position-picker.test.ts`, `reconciliation-summary.test.ts`, and `auto-reconcile.test.ts` contain real assertions — zero `it.todo` remaining
+5. CAT-03 position-targeted rule cases live in `tests/bank-transactions/categorize.test.ts` with real assertions
+6. `npm test` passes green with new tests included
+
+---
+
+### Phase 14: Code Hygiene & Wizard Behavioral Fix
+
+**Goal:** Remove orphan production code in Phase 9 bank-transactions, eliminate AccountBalance maintenance-coupling risk by delegating to `postJournalEntry`, align Wizard opening-balance JE behavior with the Holdings OBE path (auto-post or UI disclaimer), and sweep the 7 pre-existing TypeScript/test issues catalogued in `deferred-items.md`.
+**Status:** Pending — gap closure from v1.0 milestone audit
+**Depends on:** Phase 13
+**Requirements:** BANK-03, BANK-04, WIZ-03 (behavioral/refactor refinements; REQs already satisfied)
+**Gap Closure:** Closes Phase 9 hygiene items, Phase 12 WIZ-03 behavioral gap, and all 7 deferred TS/test items from `.planning/v1.0-MILESTONE-AUDIT.md`
+
+**Success Criteria:**
+1. `src/lib/bank-transactions/categorize.ts` no longer exports a dead `applyRules` — either deleted or imported by a live production callsite
+2. `src/app/api/entities/[entityId]/bank-transactions/[transactionId]/route.ts` POST path delegates AccountBalance mutation to `postJournalEntry` instead of inlining `AccountBalance.upsert`
+3. Wizard opening-balance JE is either auto-posted to match Holdings OBE behavior OR the wizard UI surfaces a clear "draft — post before use" affordance
+4. Deferred-items.md items #1, #3, #5, #6, #7 resolved (Select `onValueChange` types, `SerializedAccount` duplicate, `localStorage.clear` jsdom, column-mapping-ui `string | null`, blob-storage test mock)
+5. `tsc --noEmit` passes clean across touched files; full test suite green
+
+---
+
+### Phase 15: Verification & Planning Docs Refresh
+
+**Goal:** Produce the two missing VERIFICATION.md files (Phases 10 and 12) via `/gsd:verify-phase`, refresh Nyquist frontmatter for the 9 stale VALIDATION.md entries, and bring `.planning/REQUIREMENTS.md` traceability table current for Phases 10–12.
+**Status:** Pending — gap closure from v1.0 milestone audit
+**Depends on:** Phase 14
+**Requirements:** (documentation hygiene — no REQ-IDs gated)
+**Gap Closure:** Closes verification-coverage gap + Nyquist-frontmatter drift + traceability-table staleness from `.planning/v1.0-MILESTONE-AUDIT.md`
+
+**Success Criteria:**
+1. `.planning/phases/10-positions-model-holdings-overhaul/10-VERIFICATION.md` exists with verifier-approved status
+2. `.planning/phases/12-reporting-fixes-onboarding-wizard/12-VERIFICATION.md` exists with verifier-approved status
+3. VALIDATION.md frontmatter for phases 02, 03, 06, 07, 08, 09, 10, 11, 12 accurately reflects current `nyquist_compliant`, `wave_0_complete`, and `status` given the actual test suite
+4. `REQUIREMENTS.md` traceability table marks POS-01–08 as Complete and adds entries for CAT-01, CAT-03, OBE-01–03, REC-01/03/04 (Phase 11) + SCHEMA-01, CF-01/02/03, CONTRA-01/02, RATE-01/02, WIZ-01/02/03, CSV-01–04 (Phase 12) with correct phase assignments and Complete status
+5. Coverage count at top of REQUIREMENTS.md reflects the total unique REQ-IDs across all 12 phases
 
 ---
