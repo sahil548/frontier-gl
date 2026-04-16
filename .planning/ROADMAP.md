@@ -264,10 +264,10 @@ Plans:
 **Plans:** 2/5 plans executed
 
 Plans:
-- [ ] 14-01-PLAN.md — Extract postJournalEntryInTx from postJournalEntry (Wave 1; foundation for 14-02 + 14-03)
+- [x] 14-01-PLAN.md — Extract postJournalEntryInTx from postJournalEntry (Wave 1; foundation for 14-02 + 14-03)
 - [ ] 14-02-PLAN.md — JE POST API auto-post-when-balanced + manual JE form audit-switch + 2 Wave 0 regression tests (Wave 2; closes WIZ-03)
 - [ ] 14-03-PLAN.md — Bank-tx POST route delegation to postJournalEntryInTx + audit-ordering test (Wave 2; closes BANK-03)
-- [ ] 14-04-PLAN.md — Delete applyRules + TransactionInput orphan + clean test suites (Wave 1; closes BANK-04)
+- [x] 14-04-PLAN.md — Delete applyRules + TransactionInput orphan + clean test suites (Wave 1; closes BANK-04)
 - [ ] 14-05-PLAN.md — TS/test sweep: 5 deferred-items.md fixes + Node 25 localStorage flag + SerializedAccount canonical (Wave 1; closes success criterion #4)
 
 ---
