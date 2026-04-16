@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Upload, Loader2 } from "lucide-react";
@@ -78,6 +78,20 @@ async function fetchAccounts(entityId: string): Promise<AccountOption[]> {
 const TABS: TabKey[] = ["ALL", "PENDING", "CATEGORIZED", "POSTED"];
 
 export default function BankFeedPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <BankFeedPageContent />
+    </Suspense>
+  );
+}
+
+function BankFeedPageContent() {
   const { currentEntityId, entities, isLoading: entityLoading } = useEntityContext();
   const searchParams = useSearchParams();
   const urlSubledgerItemId = searchParams.get("subledgerItemId") ?? "";
