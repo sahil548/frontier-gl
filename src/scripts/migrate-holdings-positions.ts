@@ -1,3 +1,5 @@
+import { Prisma } from "@/generated/prisma/client";
+import type { PositionType } from "@/generated/prisma/enums";
 import {
   HOLDING_TYPE_TO_GL,
   DEFAULT_POSITION_NAME,
@@ -7,6 +9,12 @@ import {
   createPositionGLAccount,
   createHoldingSummaryAccount,
 } from "@/lib/holdings/position-gl";
+
+// Local type for helpers that use a narrower structural interface.
+// The migration script passes a real Prisma.TransactionClient, which is
+// structurally compatible at runtime but requires a cast at compile time
+// because the helpers' PrismaTx interface uses tighter return types.
+type MigrationTxHelper = Parameters<typeof createHoldingSummaryAccount>[0];
 
 /**
  * Result object returned by the migration function.
@@ -53,7 +61,7 @@ interface HoldingForMigration {
  * @returns Migration statistics
  */
 export async function migrateHoldingsToPositionModel(
-  tx: any
+  tx: Prisma.TransactionClient
 ): Promise<MigrationResult> {
   // Fetch all active holdings with their account and positions
   const holdings: HoldingForMigration[] = await tx.subledgerItem.findMany({
@@ -91,7 +99,7 @@ export async function migrateHoldingsToPositionModel(
 
     // 1. Create summary GL account under the type parent
     const summaryAccount = await createHoldingSummaryAccount(
-      tx,
+      tx as unknown as MigrationTxHelper,
       holding.entityId,
       glMapping.parentPrefix,
       holding.name,
@@ -110,8 +118,8 @@ export async function migrateHoldingsToPositionModel(
       // Determine default position name and type
       const positionName =
         DEFAULT_POSITION_NAME[holding.itemType] || "General";
-      const positionType =
-        DEFAULT_POSITION_TYPE[holding.itemType] || "OTHER";
+      const positionType = (DEFAULT_POSITION_TYPE[holding.itemType] ||
+        "OTHER") as PositionType;
 
       // Create default position pointing to the existing (now re-parented) GL account
       await tx.position.create({
@@ -130,7 +138,7 @@ export async function migrateHoldingsToPositionModel(
 
       for (const position of holding.positions) {
         const leafAccount = await createPositionGLAccount(
-          tx,
+          tx as unknown as MigrationTxHelper,
           holding.entityId,
           summaryAccount.id,
           position.name,
