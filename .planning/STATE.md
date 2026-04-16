@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 15-03-PLAN.md (REQUIREMENTS.md refresh)
-last_updated: "2026-04-16T15:30:37.318Z"
-last_activity: "2026-04-16 -- Phase 15 Plan 03: REQUIREMENTS.md refresh — promoted Phase 11 (8 REQ-IDs) + Phase 12 (15 REQ-IDs) to first-class entries; 99 unique REQ-IDs now documented; POS-01--08 flipped to Complete; CAT-02/CAT-04/OBE-04 correctly excluded."
+stopped_at: Completed 15-02-PLAN.md — 9 VALIDATION.md files refreshed (8 nyquist_compliant true, Phase 06 stays false with Phase 13 pointer)
+last_updated: "2026-04-16T15:35:15.946Z"
+last_activity: "2026-04-16 -- Phase 15 Plan 03: REQUIREMENTS.md refresh — promoted Phase 11 (8 REQ-IDs) + Phase 12 (15 REQ-IDs) to first-class entries; 99 unique REQ-IDs now documented; CAT-02/CAT-04/OBE-04 correctly excluded."
 progress:
   total_phases: 15
   completed_phases: 12
   total_plans: 61
-  completed_plans: 58
-  percent: 98
+  completed_plans: 59
+  percent: 95
 ---
 
 # Project State
@@ -107,6 +107,7 @@ Progress: [██████████] 95%
 | Phase 14-code-hygiene-wizard-fix P03 | 3 min | 2 tasks tasks | 2 files files |
 | Phase 14 P02 | 6 min | 3 tasks | 6 files |
 | Phase 15-verification-docs-refresh P03 | 2min | 2 tasks | 1 files |
+| Phase 15-verification-docs-refresh P02 | 15min | 10 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -271,6 +272,9 @@ Recent decisions affecting current work:
 - [Phase 15-verification-docs-refresh]: [Phase 15-03]: Flat bullet list chosen for Phase 11/12 sections (matching Phase 6/7/8/9/10 style) — simpler than Phase 5 subsection-heading style for mixed-prefix REQ-ID groups
 - [Phase 15-verification-docs-refresh]: [Phase 15-03]: Used Edit tool single-point updates for all 6 REQUIREMENTS.md mutations (not MultiEdit) — each old_string was unique enough to match exactly once; Steps 1-2 line-shift concern addressed via content-based anchors in Steps 3-6
 - [Phase 15-verification-docs-refresh]: [Phase 15-03]: 99 REQ-ID count used verbatim from v1.0-MILESTONE-AUDIT.md per 15-RESEARCH.md §P7 — did NOT recount; audit is authoritative
+- [Phase 15-verification-docs-refresh]: [15-02]: Direct-edit fallback chosen over Skill(gsd:validate-phase) to guarantee PITFALL P1 refuse of gsd-nyquist-auditor test-generation
+- [Phase 15-verification-docs-refresh]: [15-02]: Phase 06 stays nyquist_compliant false with yaml comment (option a) pointing to Phase 13 for CLASS-03/04/05 assertion-depth remediation
+- [Phase 15-verification-docs-refresh]: [15-02]: Phase 10 orphan task 10-04-01 reconciled to 10-03-03 (not removed) — POS-08 has live test coverage at tests/bank-transactions/create-je.test.ts
 
 ### Pending Todos
 
@@ -283,6 +287,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-16T15:30:29.042Z
-Stopped at: Completed 15-03-PLAN.md (REQUIREMENTS.md refresh)
+Last session: 2026-04-16T15:35:15.943Z
+Stopped at: Completed 15-02-PLAN.md — 9 VALIDATION.md files refreshed (8 nyquist_compliant true, Phase 06 stays false with Phase 13 pointer)
 Resume file: None
