@@ -1,9 +1,9 @@
 ---
 phase: 13
 slug: test-coverage-gaps
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: complete
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-04-16
 ---
 
@@ -38,14 +38,14 @@ created: 2026-04-16
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 13-01-01 | 01 | 1 | CLASS-03 | unit | `npx vitest run tests/dimensions/income-statement-by-dimension.test.ts` | ❌ W0 | ⬜ pending |
-| 13-01-02 | 01 | 1 | CLASS-04 | unit | `npx vitest run tests/dimensions/tb-dimension-filter.test.ts` | ❌ W0 | ⬜ pending |
-| 13-01-03 | 01 | 1 | CLASS-05 | unit | `npx vitest run tests/dimensions/unclassified-entries.test.ts` | ❌ W0 | ⬜ pending |
-| 13-02-01 | 02 | 1 | CAT-03 | unit | `npx vitest run tests/bank-transactions/categorize.test.ts` | ✅ | ⬜ pending |
-| 13-02-02 | 02 | 1 | REC-01 | unit (mirror-inline) | `npx vitest run tests/bank-transactions/auto-reconcile.test.ts` | ✅ | ⬜ pending |
-| 13-02-03 | 02 | 1 | REC-04 | unit (mirror-inline) | `npx vitest run tests/bank-transactions/reconciliation-summary.test.ts` | ✅ | ⬜ pending |
-| 13-02-04 | 02 | 1 | OBE-03 | unit | `npx vitest run tests/bank-transactions/opening-balance.test.ts` | ✅ | ⬜ pending |
-| 13-02-05 | 02 | 1 | CAT-01 (file named in criteria) | unit | `npx vitest run tests/bank-transactions/position-picker.test.ts` | ✅ | ⬜ pending |
+| 13-01-01 | 01 | 1 | CLASS-03 | unit | `npx vitest run tests/dimensions/income-statement-by-dimension.test.ts` | ✅ | ✅ green |
+| 13-01-02 | 01 | 1 | CLASS-04 | unit | `npx vitest run tests/dimensions/tb-dimension-filter.test.ts` | ✅ | ✅ green |
+| 13-01-03 | 01 | 1 | CLASS-05 | unit | `npx vitest run tests/dimensions/unclassified-entries.test.ts` | ✅ | ✅ green |
+| 13-02-01 | 02 | 1 | CAT-03 | unit | `npx vitest run tests/bank-transactions/categorize.test.ts` | ✅ | ✅ green |
+| 13-02-02 | 02 | 1 | REC-01 | unit (mirror-inline) | `npx vitest run tests/bank-transactions/auto-reconcile.test.ts` | ✅ | ✅ green |
+| 13-02-03 | 02 | 1 | REC-04 | unit (mirror-inline) | `npx vitest run tests/bank-transactions/reconciliation-summary.test.ts` | ✅ | ✅ green |
+| 13-02-04 | 02 | 1 | OBE-03 | unit | `npx vitest run tests/bank-transactions/opening-balance.test.ts` | ✅ | ✅ green |
+| 13-02-05 | 02 | 1 | CAT-01 (file named in criteria) | unit | `npx vitest run tests/bank-transactions/position-picker.test.ts` | ✅ | ✅ green |
 
 *Task IDs are indicative; planner may renumber. Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -78,4 +78,10 @@ created: 2026-04-16
 - [ ] Feedback latency < 15s
 - [ ] `nyquist_compliant: true` set in frontmatter after all tasks complete and `npm test` passes
 
-**Approval:** pending
+**Approval:** approved — 2026-04-16
+
+**Sign-off notes:**
+- All 8 target test files have zero `it.todo` (verified via grep).
+- `npm test`: 530 passing / 75 todo (elsewhere, out-of-scope) / 7 pre-existing failures in `src/__tests__/hooks/use-entity.test.ts` documented in Phase 12 `deferred-items.md` #5 (localStorage.clear jsdom setup — unrelated to Phase 13).
+- Zero files modified under `src/` (verified via `git diff --name-only HEAD -- 'src/'`).
+- REC-03 declared manual-only and retained in the Manual-Only Verifications table above — Chrome verification is the acceptance path.
