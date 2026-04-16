@@ -9,6 +9,7 @@ Out-of-scope discoveries logged during plan execution. Not auto-fixed because th
 - **Error:** `Type 'Dispatch<SetStateAction<string>>' is not assignable to type '(value: string | null, eventDetails: SelectRootChangeEventDetails) => void'`
 - **Context:** `<Select onValueChange={setSelectedHoldingId}>` — the shadcn/base-ui Select types emit `string | null` but React useState setter expects `string`.
 - **Why deferred:** Pre-existed before 12-08 (verified via `git stash` + `tsc --noEmit`). Touching this would change every Select onValueChange call site in the codebase.
+- **RESOLVED in Phase 14:** Per-site `(v) => setFoo(v ?? "")` inline coalesce at both Select sites (746, 775) in budgets/page.tsx. No SafeSelect wrapper introduced. (Change landed via sibling commit `f26480e` during Phase 14 wave 1; verified by `tsc --noEmit` clean for budgets/page.tsx in 14-05.)
 
 **2. Pre-existing test file type errors (opening-balance.test.ts)** — RESOLVED in 12-07
 - **Files:** `src/__tests__/utils/opening-balance.test.ts` lines 113, 130, 144
@@ -19,6 +20,7 @@ Out-of-scope discoveries logged during plan execution. Not auto-fixed because th
 - **Files:** `src/app/(auth)/accounts/page.tsx:122`, `src/components/accounts/account-table.tsx:324/326/528/530`
 - **Error:** `Two different types with this name exist, but they are unrelated.` (missing `cashFlowCategory`, `isContra`)
 - **Why deferred:** Pre-existing duplicate type definition. Out of scope for 12-08 (budgets).
+- **RESOLVED in Phase 14:** Canonical type extracted to `src/types/account.ts` with `cashFlowCategory` + `isContra` (Phase 12 fields). All three consumers (accounts/page.tsx, account-table.tsx, account-form.tsx) now import from `@/types/account`. Single-source-of-truth verified by grep.
 
 **4. Pre-existing wizard-progress JSON types** — RESOLVED in 12-07
 - **Files:** `src/app/api/entities/[entityId]/wizard-progress/route.ts:99`
@@ -29,13 +31,16 @@ Out-of-scope discoveries logged during plan execution. Not auto-fixed because th
 - **Files:** `src/__tests__/hooks/use-entity.test.ts:49, 111`
 - **Error:** `TypeError: localStorage.clear is not a function` (jsdom setup issue)
 - **Why deferred:** Test infrastructure bug unrelated to budgets.
+- **RESOLVED in Phase 14:** Added `NODE_OPTIONS="--no-experimental-webstorage"` to `package.json scripts.test`. Disables Node 25's experimental built-in localStorage global (which shadows jsdom's). All 7 use-entity tests pass.
 
 **6. Pre-existing column-mapping-ui type error**
 - **Files:** `src/components/csv-import/column-mapping-ui.tsx:218`
 - **Error:** `Argument of type 'string | null' is not assignable to parameter of type 'string'`
 - **Why deferred:** Plan 12-04 (CSV column mapping) territory.
+- **RESOLVED in Phase 14:** Inline coalesce at line 230: `(val) => handleRoleChange(role, val ?? "__none__")` — the sentinel value clears the mapping, matching handleRoleChange's existing semantics.
 
 **7. Pre-existing blob-storage test mock type**
 - **Files:** `tests/attachments/blob-storage.test.ts:35, 43`
 - **Error:** Vitest Mock constructable type mismatch.
 - **Why deferred:** Unrelated attachment subsystem test.
+- **RESOLVED in Phase 14:** Replaced `(put as ReturnType<typeof vi.fn>)(...)` with `vi.mocked(put)(...)` at lines 35 and 43. vitest 4 Mock generic narrowing handled. Companion `file as unknown as Blob` cast to satisfy real PutBody signature surfaced by vi.mocked typing (mock ignores body at runtime).
